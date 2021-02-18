@@ -6,6 +6,24 @@ import (
 	"github.com/libsv/go-bc"
 )
 
+func TestDifficultyToHashratBSV(t *testing.T) {
+	a := bc.DifficultyToHashrate("BSV", 22000, 7)
+	b := bc.HumanHash(a)
+	expected := "13.50 TH/s"
+	if b != expected {
+		t.Errorf("Failed to calculate hashrate, expected %s got %s", expected, b)
+	}
+}
+
+func TestDifficultyToHashrateRSV(t *testing.T) {
+	a := bc.DifficultyToHashrate("RSV", 22000, 7)
+	b := bc.HumanHash(a)
+	expected := "6.29 kH/s"
+	if b != expected {
+		t.Errorf("Failed to calculate hashrate, expected %s got %s", expected, b)
+	}
+}
+
 func TestExpandTargetFrom_GenesisBlock(t *testing.T) {
 	expected := "00000000ffff0000000000000000000000000000000000000000000000000000"
 	got, _ := bc.ExpandTargetFrom("1d00ffff")
@@ -35,5 +53,20 @@ func TestExpandTargetFrom_InvalidBits(t *testing.T) {
 func BenchmarkExpandTargetFrom(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		bc.ExpandTargetFrom("182815ee")
+	}
+}
+
+func TestDifficultyFromBits(t *testing.T) {
+	// genesis block should be difficulty 1
+	testDifficulty("1d00ffff", float64(1), t)
+	testDifficulty("1745fb53", float64(4.022059196164954e+12), t)
+	testDifficulty("207fffff", float64(4.6565423739069247e-10), t)
+}
+
+func testDifficulty(bits string, expected float64, t *testing.T) {
+	d, _ := bc.DifficultyFromBits(bits)
+
+	if d != expected {
+		t.Errorf("Expected difficulty of '%s' to be '%v', got %v", bits, expected, d)
 	}
 }

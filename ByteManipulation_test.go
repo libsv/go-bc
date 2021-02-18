@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/libsv/go-bc"
 	"github.com/libsv/go-bt"
 	"github.com/libsv/go-bt/crypto"
 )
@@ -34,5 +35,29 @@ func TestGenesisBlockHash(t *testing.T) {
 
 	if str != expected {
 		t.Errorf("Expected %q, got %q", expected, str)
+	}
+}
+
+func TestReverseHexString(t *testing.T) {
+
+	expectedEven := "3910"
+	expectedOdd := "391004"
+	expectedLong := "4512710951122431"
+
+	rhEven := bc.ReverseHexString("1039")
+
+	if rhEven != expectedEven {
+		t.Errorf("Expected reversed string to be '%+v', got %+v", expectedEven, rhEven)
+	}
+
+	rhOdd := bc.ReverseHexString("41039")
+	if rhOdd != expectedOdd {
+		t.Errorf("Expected reversed string to be '%+v', got %+v", expectedOdd, rhOdd)
+	}
+
+	rhLong := bc.ReverseHexString("3124125109711245")
+
+	if rhLong != expectedLong {
+		t.Errorf("Expected reversed string to be '%+v', got %+v", expectedLong, rhLong)
 	}
 }
