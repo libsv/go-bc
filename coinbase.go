@@ -9,7 +9,7 @@ Here is a real example coinbase broken down...
 | 00000000000000000000000000000000 ...  Previous outpoint TXID
 | ffffffff ............................ Previous outpoint index
 |
-| 43 .................................. Input coinbase count of bytes (4 block height + 12 (extra nonces) + Arbitary data length)
+| 43 .................................. Input coinbase count of bytes (4 block height + 12 (extra nonces) + Arbitrary data length)
 | |
 | | 03 ................................ Bytes in height
 | | | bfea07 .......................... Height: 518847
@@ -73,15 +73,6 @@ func GetCoinbaseParts(height uint32, coinbaseValue uint64, defaultWitnessCommitm
 	return
 }
 
-func makeCoinbaseInputTransaction(coinbaseData []byte) []byte {
-	buf := make([]byte, 32)                                    // 32 bytes - All bits are zero: Not a transaction hash reference
-	buf = append(buf, []byte{0xff, 0xff, 0xff, 0xff}...)       // 4 bytes - All bits are ones: 0xFFFFFFFF
-	buf = append(buf, bt.VarInt(uint64(len(coinbaseData)))...) // Length of the coinbase data, from 2 to 100 bytes
-	buf = append(buf, coinbaseData...)                         // Arbitrary data used for extra nonce and mining tags. In v2 blocks; must begin with block height
-	buf = append(buf, []byte{0xff, 0xff, 0xff, 0xff}...)       //  4 bytes = Set to 0xFFFFFFFF
-	return buf
-}
-
 func makeCoinbaseOutputTransactions(coinbaseValue uint64, defaultWitnessCommitment string, wallet string, minerIDBytes []byte) ([]byte, error) {
 	o, err := bt.NewP2PKHOutputFromAddress(wallet, coinbaseValue)
 	if err != nil {
@@ -127,7 +118,7 @@ func makeCoinbase1(height uint32, coinbaseText string) []byte {
 	spaceForExtraNonce := 12
 
 	blockHeightBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(blockHeightBytes, uint32(height)) // Block height
+	binary.LittleEndian.PutUint32(blockHeightBytes, height) // Block height
 
 	arbitraryData := []byte{}
 	arbitraryData = append(arbitraryData, 0x03)
@@ -162,18 +153,26 @@ func makeCoinbase2(ot []byte) []byte {
 	return ot
 }
 
-func chunk(msg string, limit int) (chunks []string) {
+// TODO: check what these are used for:
 
-	chunkNumber := (len(msg) / limit) + 1
+// func makeCoinbaseInputTransaction(coinbaseData []byte) []byte {
+// 	buf := make([]byte, 32)                                    // 32 bytes - All bits are zero: Not a transaction hash reference
+// 	buf = append(buf, []byte{0xff, 0xff, 0xff, 0xff}...)       // 4 bytes - All bits are ones: 0xFFFFFFFF
+// 	buf = append(buf, bt.VarInt(uint64(len(coinbaseData)))...) // Length of the coinbase data, from 2 to 100 bytes
+// 	buf = append(buf, coinbaseData...)                         // Arbitrary data used for extra nonce and mining tags. In v2 blocks; must begin with block height
+// 	buf = append(buf, []byte{0xff, 0xff, 0xff, 0xff}...)       //  4 bytes = Set to 0xFFFFFFFF
+// 	return buf
+// }
 
-	for i := 0; i < chunkNumber; i++ {
-		s := i * limit
-		e := (i + 1) * limit
-		if e > len(msg) {
-			e = len(msg)
-		}
-
-		chunks = append(chunks, msg[s:e])
-	}
-	return
-}
+// func chunk(msg string, limit int) (chunks []string) {
+// 	chunkNumber := (len(msg) / limit) + 1
+// 	for i := 0; i < chunkNumber; i++ {
+// 		s := i * limit
+// 		e := (i + 1) * limit
+// 		if e > len(msg) {
+// 			e = len(msg)
+// 		}
+// 		chunks = append(chunks, msg[s:e])
+// 	}
+// 	return
+// }

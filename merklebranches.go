@@ -9,10 +9,10 @@ import (
 )
 
 func getHashes(txHashes []string) []string {
-	var hashes []string
+	hashes := make([]string, 0, len(txHashes))
 
-	for _, tx := range txHashes {
-		hashes = append(hashes, ReverseHexString(tx))
+	for i, tx := range txHashes {
+		hashes[i] = (ReverseHexString(tx))
 	}
 
 	return hashes
