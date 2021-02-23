@@ -8,14 +8,25 @@ import (
 	"github.com/libsv/go-bt"
 )
 
+/*
+Field 													Purpose 									 														Size (Bytes)
+----------------------------------------------------------------------------------------------------
+Version 							Block version number 																									4
+hashPrevBlock 				256-bit hash of the previous block header 	 													32
+hashMerkleRoot 				256-bit hash based on all of the transactions in the block 	 					32
+Time 									Current block timestamp as seconds since 1970-01-01T00:00 UTC 				4
+Bits 									Current target in compact format 	 																		4
+Nonce 								32-bit number (starts at 0) 	 																				4
+*/
+
 // A BlockHeader in the Bitcoin blockchain.
 type BlockHeader struct {
 	Version        uint32
+	Time           uint32
+	Nonce          uint32
 	HashPrevBlock  string
 	HashMerkleRoot string
-	Time           uint32
 	Bits           string
-	Nonce          uint32
 }
 
 // EncodeBlockHeaderStr will encode a block header byte slice
