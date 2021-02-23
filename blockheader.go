@@ -123,3 +123,13 @@ func BuildBlockHeader(version uint32, previousBlockHash string, merkleRoot []byt
 	a = append(a, nonce...)
 	return a
 }
+
+// ExtractMerkleRootFromBlockHeader will take an 80 byte Bitcoin block
+// header hex string and return the Merkle Root from it.
+func ExtractMerkleRootFromBlockHeader(header string) (string, error) {
+	bh, err := EncodeBlockHeaderStr(header)
+	if err != nil {
+		return "", err
+	}
+	return bh.HashMerkleRoot, nil
+}

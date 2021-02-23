@@ -51,7 +51,7 @@ For more information around the technical aspects of Bitcoin, please see the upd
 - Block header building
 - Coinbase transaction building (cb1 + cb2 in stratum protocol)
 - Bitcoin block hash difficulty and hashrate functions
-- Merkle root and branches functions
+- Merkle proof/root/branch functions
 
 <details>
 <summary><strong><code>Library Deployment</code></strong></summary>
