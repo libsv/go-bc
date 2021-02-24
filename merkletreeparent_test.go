@@ -1,6 +1,7 @@
 package bc_test
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"github.com/libsv/go-bc"
@@ -8,39 +9,24 @@ import (
 )
 
 func TestGetMerkleTreeParentStr(t *testing.T) {
-	proof := &bc.MerkleProof{
-		Index:  12,
-		TxOrID: "ffeff11c25cde7c06d407490d81ef4d0db64aad6ab3d14393530701561a465ef",
-		Target: "75edb0a69eb195cdd81e310553aa4d25e18450e08f168532a2c2e9cf447bf169",
-		Nodes: []string{
-			"b9ef07a62553ef8b0898a79c291b92c60f7932260888bde0dab2dd2610d8668e",
-			"0fc1c12fb1b57b38140442927fbadb3d1e5a5039a5d6db355ea25486374f104d",
-			"60b0e75dd5b8d48f2d069229f20399e07766dd651ceeed55ee3c040aa2812547",
-			"c0d8dbda46366c2050b430a05508a3d96dc0ed55aea685bb3d9a993f8b97cc6f",
-			"391e62b3419d8a943f7dbc7bddc90e30ec724c033000dc0c8872253c27b03a42",
-		},
-	}
+	leftNode := "d6c79a6ef05572f0cb8e9a450c561fc40b0a8a7d48faad95e20d93ddeb08c231"
+	rightNode := "b1ed931b79056438b990d8981ba46fae97e5574b142445a74a44b978af284f98"
 
-	valid, _, err := bc.VerifyMerkleProofJSON(proof)
+	expected := "b0d537b3ee52e472507f453df3d69561720346118a5a8c4d85ca0de73bc792be"
+
+	parent, err := bc.MerkleTreeParentStr(leftNode, rightNode)
+
 	assert.NoError(t, err)
-	assert.True(t, valid)
+	assert.Equal(t, expected, parent)
 }
 
 func TestGetMerkleTreeParent(t *testing.T) {
-	proof := &bc.MerkleProof{
-		Index:  12,
-		TxOrID: "ffeff11c25cde7c06d407490d81ef4d0db64aad6ab3d14393530701561a465ef",
-		Target: "75edb0a69eb195cdd81e310553aa4d25e18450e08f168532a2c2e9cf447bf169",
-		Nodes: []string{
-			"b9ef07a62553ef8b0898a79c291b92c60f7932260888bde0dab2dd2610d8668e",
-			"0fc1c12fb1b57b38140442927fbadb3d1e5a5039a5d6db355ea25486374f104d",
-			"60b0e75dd5b8d48f2d069229f20399e07766dd651ceeed55ee3c040aa2812547",
-			"c0d8dbda46366c2050b430a05508a3d96dc0ed55aea685bb3d9a993f8b97cc6f",
-			"391e62b3419d8a943f7dbc7bddc90e30ec724c033000dc0c8872253c27b03a42",
-		},
-	}
+	leftNode, _ := hex.DecodeString("d6c79a6ef05572f0cb8e9a450c561fc40b0a8a7d48faad95e20d93ddeb08c231")
+	rightNode, _ := hex.DecodeString("b1ed931b79056438b990d8981ba46fae97e5574b142445a74a44b978af284f98")
 
-	valid, _, err := bc.VerifyMerkleProofJSON(proof)
-	assert.NoError(t, err)
-	assert.True(t, valid)
+	expected, _ := hex.DecodeString("b0d537b3ee52e472507f453df3d69561720346118a5a8c4d85ca0de73bc792be")
+
+	parent := bc.MerkleTreeParent(leftNode, rightNode)
+
+	assert.Equal(t, expected, parent)
 }
