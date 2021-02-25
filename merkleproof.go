@@ -1,15 +1,86 @@
 package bc
 
-// type merkleProof struct {
-// 	bytes     byte
-// 	index     uint64
-// 	txOrID    []byte
-// 	target    []byte
-// 	nodeCount uint64
-// 	nodes     []byte
-// }
+import (
+	"encoding/hex"
 
-// // VerifyMerkleProof verifies a Merkle Proof in standard JSON format.
-// func VerifyMerkleProof(proof []byte) (valid, isLastInTree bool, err error) {
-// 	return false, false, nil
-// }
+	"github.com/libsv/go-bt"
+)
+
+// A MerkleProof is a structure that proves inclusion of a
+// Bitcoin transaction in a block.
+type MerkleProof struct {
+	Index      uint64   `json:"index"`
+	TxOrID     string   `json:"txOrId"`
+	Target     string   `json:"target"`
+	Nodes      []string `json:"nodes"`
+	TargetType string   `json:"targetType,omitempty"`
+	ProofType  string   `json:"proofType,omitempty"`
+	Composite  bool     `json:"composite,omitempty"`
+}
+
+// ToBytes converts the JSON Merkle Proof
+// into byte encoding.
+func (mp *MerkleProof) ToBytes() ([]byte, error) {
+	index := bt.VarInt(mp.Index)
+
+	txOrID, err := hex.DecodeString(mp.TxOrID)
+	if err != nil {
+		return nil, err
+	}
+	txOrID = bt.ReverseBytes(txOrID)
+
+	txLength := bt.VarInt(uint64(len(txOrID)))
+
+	target, err := hex.DecodeString(mp.Target)
+	if err != nil {
+		return nil, err
+	}
+	target = bt.ReverseBytes(target)
+
+	nodeCount := len(mp.Nodes)
+
+	nodes := []byte{}
+
+	for _, n := range mp.Nodes {
+		if n == "*" {
+			nodes = append(nodes, []byte{1}...)
+			continue
+		}
+
+		nodes = append(nodes, []byte{0}...)
+		nb, err := hex.DecodeString(n)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, bt.ReverseBytes(nb)...)
+
+	}
+
+	var flags uint8
+
+	if len(mp.TxOrID) > 64 {
+		// set bit at index 0
+		flags |= (1 << 0)
+	}
+
+	if mp.TargetType == "header" {
+		// set bit at index 1
+		flags |= (1 << 1)
+	} else if mp.TargetType == "merkleRoot" {
+		// set bit at index 2
+		flags |= (1 << 2)
+	}
+
+	// ignore proofType and compositeType for this version
+
+	bytes := []byte{}
+	bytes = append(bytes, flags)
+	bytes = append(bytes, index...)
+	bytes = append(bytes, txLength...)
+	bytes = append(bytes, txOrID...)
+	bytes = append(bytes, target...)
+	bytes = append(bytes, byte(nodeCount))
+	bytes = append(bytes, nodes...)
+
+	return bytes, nil
+}
