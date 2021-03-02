@@ -9,6 +9,87 @@ import (
 	"github.com/libsv/go-bt"
 )
 
+const (
+	txOrIDFlag      byte = 1 << iota // 1 << 0 which is 00000001
+	targetTypeFlag1                  // 1 << 1 which is 00000010
+	targetTypeFlag2                  // 1 << 2 which is 00000100
+	proofTypeFlag                    // 1 << 3 which is 00001000
+	compositeFlag                    // 1 << 4 which is 00010000
+
+	targetTypeFlags = targetTypeFlag1 | targetTypeFlag2
+)
+
+// VerifyMerkleProof verifies a Merkle Proof in standard byte format.
+func (spvc *SPVClient) VerifyMerkleProof(ctx context.Context, proof []byte) (valid, isLastInTree bool, err error) {
+
+	mpb, err := parseBinaryMerkleProof(proof)
+	if err != nil {
+		return false, false, err
+	}
+
+	err = validateTxOrID(mpb.flags, mpb.txOrID)
+	if err != nil {
+		return false, false, err
+	}
+
+	txid, err := txidFromTxOrID(mpb.txOrID)
+	if err != nil {
+		return false, false, err
+	}
+
+	var merkleRoot string
+	switch mpb.flags & targetTypeFlags {
+	// if bits 1 and 2 of flags are NOT set, target should contain a block hash (32 bytes)
+	case 0:
+		// The `target` field contains a block hash
+
+		blockHeader, err := spvc.mrr.MerkleRoot(ctx, mpb.target)
+		if err != nil {
+			return false, false, err
+		}
+
+		merkleRoot, err = ExtractMerkleRootFromBlockHeader(blockHeader)
+		if err != nil {
+			return false, false, err
+		}
+
+	// if bit 2 of flags is set, target should contain a merkle root (32 bytes)
+	case 4:
+		// the `target` field contains a merkle root
+		merkleRoot = mpb.target
+
+	// if bit 1 of flags is set, target should contain a block header (80 bytes)
+	case 2:
+		// The `target` field contains a block header
+		var err error
+		merkleRoot, err = ExtractMerkleRootFromBlockHeader(mpb.target)
+		if err != nil {
+			return false, false, err
+		}
+
+	default:
+		return false, false, errors.New("invalid flags")
+	}
+
+	if mpb.flags&proofTypeFlag == 1 {
+		return false, false, errors.New("only merkle branch supported in this version") // merkle tree proof type not supported
+	}
+
+	if mpb.flags&compositeFlag == 1 {
+		return false, false, errors.New("only single proof supported in this version") // composite proof type not supported
+	}
+
+	if txid == "" {
+		return false, false, errors.New("txid missing")
+	}
+
+	if merkleRoot == "" {
+		return false, false, errors.New("merkleRoot missing")
+	}
+
+	return verifyProof(txid, merkleRoot, mpb.index, mpb.nodes)
+}
+
 // VerifyMerkleProofJSON verifies a Merkle Proof in standard JSON format.
 func (spvc *SPVClient) VerifyMerkleProofJSON(ctx context.Context, proof *MerkleProof) (bool, bool, error) {
 
@@ -70,97 +151,6 @@ func (spvc *SPVClient) VerifyMerkleProofJSON(ctx context.Context, proof *MerkleP
 	return verifyProof(txid, merkleRoot, proof.Index, proof.Nodes)
 }
 
-// VerifyMerkleProof verifies a Merkle Proof in standard JSON format.
-func (spvc *SPVClient) VerifyMerkleProof(ctx context.Context, proof []byte) (valid, isLastInTree bool, err error) {
-
-	mpb, err := parseBinaryMerkleProof(proof)
-	if err != nil {
-		return false, false, err
-	}
-
-	txid, err := txidFromTxOrID(mpb.txOrID)
-	if err != nil {
-		return false, false, err
-	}
-
-	var merkleRoot string
-	switch mpb.flags & (0x04 | 0x02) {
-	// if bits 1 and 2 of flags are NOT set, target should contain a block hash (32 bytes)
-	case 0:
-		// The `target` field contains a block hash
-
-		blockHeader, err := spvc.mrr.MerkleRoot(ctx, mpb.target)
-		if err != nil {
-			return false, false, err
-		}
-
-		merkleRoot, err = ExtractMerkleRootFromBlockHeader(blockHeader)
-		if err != nil {
-			return false, false, err
-		}
-
-	// if bit 2 of flags is set, target should contain a merkle root (32 bytes)
-	case 4:
-		// the `target` field contains a merkle root
-		merkleRoot = mpb.target
-
-	// if bit 1 of flags is set, target should contain a block header (80 bytes)
-	case 2:
-		// The `target` field contains a block header
-		var err error
-		merkleRoot, err = ExtractMerkleRootFromBlockHeader(mpb.target)
-		if err != nil {
-			return false, false, err
-		}
-
-	default:
-		return false, false, errors.New("invalid flags")
-	}
-
-	// TODO: check flags for these types
-	// if proof.ProofType != "" && proof.ProofType != "branch" {
-	// 	return false, false, errors.New("only merkle branch supported in this version") // merkle tree proof type not supported
-	// }
-
-	// if proof.Composite { // OR if (proof.composite && proof.composite != false)
-	// 	return false, false, errors.New("only single proof supported in this version") // composite proof type not supported
-	// }
-
-	if txid == "" {
-		return false, false, errors.New("txid missing")
-	}
-
-	if merkleRoot == "" {
-		return false, false, errors.New("merkleRoot missing")
-	}
-
-	return verifyProof(txid, merkleRoot, mpb.index, mpb.nodes)
-}
-
-func txidFromTxOrID(txOrID string) (string, error) {
-
-	// The `txOrId` field contains a transaction ID
-	if len(txOrID) == 64 {
-		return txOrID, nil
-	}
-
-	// The `txOrId` field contains a full transaction
-	if len(txOrID) > 64 {
-		tx, err := bt.NewTxFromString(txOrID)
-		if err != nil {
-			return "", err
-		}
-
-		return tx.GetTxID(), nil
-	}
-
-	return "", errors.New("invalid txOrId length - must be at least 64 chars (32 bytes)")
-}
-
-// func merkleRootFromTarget(target string, mrr MerkleRootReader) {
-
-// }
-
 func verifyProof(c, merkleRoot string, index uint64, nodes []string) (bool, bool, error) {
 	isLastInTree := true
 
@@ -206,6 +196,40 @@ func verifyProof(c, merkleRoot string, index uint64, nodes []string) (bool, bool
 	return c == merkleRoot, isLastInTree, nil
 }
 
+func validateTxOrID(flags byte, txOrID string) error {
+	// The `txOrId` field contains a full transaction
+	if len(txOrID) > 64 && flags&txOrIDFlag == 0 {
+		return errors.New("expecting txid but got tx")
+	}
+
+	// The `txOrId` field contains a transaction ID
+	if len(txOrID) == 64 && flags&txOrIDFlag == 1 {
+		return errors.New("expecting tx but got txid")
+	}
+
+	return nil
+}
+
+func txidFromTxOrID(txOrID string) (string, error) {
+
+	// The `txOrId` field contains a transaction ID
+	if len(txOrID) == 64 {
+		return txOrID, nil
+	}
+
+	// The `txOrId` field contains a full transaction
+	if len(txOrID) > 64 {
+		tx, err := bt.NewTxFromString(txOrID)
+		if err != nil {
+			return "", err
+		}
+
+		return tx.GetTxID(), nil
+	}
+
+	return "", errors.New("invalid txOrId length - must be at least 64 chars (32 bytes)")
+}
+
 type merkleProofBinary struct {
 	flags  byte
 	index  uint64
@@ -245,7 +269,7 @@ func parseBinaryMerkleProof(proof []byte) (*merkleProofBinary, error) {
 	mpb.txOrID = hex.EncodeToString(bt.ReverseBytes(proof[offset : offset+int(txLength)]))
 	offset += int(txLength)
 
-	switch mpb.flags & (0x04 | 0x02) {
+	switch mpb.flags & targetTypeFlags {
 	// if bits 1 and 2 of flags are NOT set, target should contain a block hash (32 bytes)
 	// if bit 2 of flags is set, target should contain a merkle root (32 bytes)
 	case 0, 4:

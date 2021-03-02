@@ -36,17 +36,19 @@ func TestVerifyMerkleProof(t *testing.T) {
 	spvc := bc.NewSPVClient(&mmrr)
 
 	t.Run("JSON", func(t *testing.T) {
-		valid, _, err := spvc.VerifyMerkleProofJSON(context.Background(), proofJSON)
+		valid, isLastInTree, err := spvc.VerifyMerkleProofJSON(context.Background(), proofJSON)
 
 		assert.NoError(t, err)
+		assert.False(t, isLastInTree)
 		assert.True(t, valid)
 	})
 
 	t.Run("Bytes", func(t *testing.T) {
 		proof, _ := proofJSON.ToBytes()
-		valid, _, err := spvc.VerifyMerkleProof(context.Background(), proof)
+		valid, isLastInTree, err := spvc.VerifyMerkleProof(context.Background(), proof)
 
 		assert.NoError(t, err)
+		assert.False(t, isLastInTree)
 		assert.True(t, valid)
 	})
 }
