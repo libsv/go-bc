@@ -29,6 +29,19 @@ type BlockHeader struct {
 	Bits           string
 }
 
+// TODO: make fields private and make getters and setters
+
+// ToString returns the Block Header encoded as hex string.
+func (bh *BlockHeader) ToString() string {
+	return hex.EncodeToString(bh.ToBytes())
+}
+
+// ToBytes returns the Block Header encoded as bytes.
+func (bh *BlockHeader) ToBytes() []byte {
+	// TODO:
+	return []byte{}
+}
+
 // EncodeBlockHeaderStr will encode a block header byte slice
 // into the bitcoin block header structure.
 // See https://en.bitcoin.it/wiki/Block_hashing_algorithm
@@ -103,25 +116,6 @@ func DecodeBlockHeader(header *BlockHeader) ([]byte, error) {
 	bytes = append(bytes, n...)
 
 	return bytes, nil
-}
-
-// BuildBlockHeader builds the block header byte array from the specific fields in the header.
-// TODO: check if still needed
-func BuildBlockHeader(version uint32, previousBlockHash string, merkleRoot []byte, time []byte, bits []byte, nonce []byte) []byte {
-	v := make([]byte, 4)
-	binary.LittleEndian.PutUint32(v, version)
-	p, _ := hex.DecodeString(previousBlockHash)
-
-	p = bt.ReverseBytes(p)
-
-	a := []byte{}
-	a = append(a, v...)
-	a = append(a, p...)
-	a = append(a, merkleRoot...)
-	a = append(a, time...)
-	a = append(a, bits...)
-	a = append(a, nonce...)
-	return a
 }
 
 // ExtractMerkleRootFromBlockHeader will take an 80 byte Bitcoin block
