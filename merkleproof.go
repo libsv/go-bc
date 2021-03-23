@@ -20,6 +20,16 @@ type MerkleProof struct {
 
 // ToBytes converts the JSON Merkle Proof
 // into byte encoding.
+//
+// Check the following encoding:
+//
+// flags: 			byte,
+// index: 			varint,
+// txLength: 		varint, //omitted if flag bit 0 == 0 as it's a fixed length transaction ID
+// txOrId: 			byte[32 or variable length],
+// target: 			byte[32 or 80], //determined by flag bits 1 and 2
+// nodeCount: 	varint,
+// nodes: 			node[]
 func (mp *MerkleProof) ToBytes() ([]byte, error) {
 	index := bt.VarInt(mp.Index)
 
@@ -28,8 +38,6 @@ func (mp *MerkleProof) ToBytes() ([]byte, error) {
 		return nil, err
 	}
 	txOrID = bt.ReverseBytes(txOrID)
-
-	txLength := bt.VarInt(uint64(len(txOrID)))
 
 	target, err := hex.DecodeString(mp.Target)
 	if err != nil {
@@ -58,9 +66,12 @@ func (mp *MerkleProof) ToBytes() ([]byte, error) {
 
 	var flags uint8
 
-	if len(mp.TxOrID) > 64 {
+	var txLength []byte
+	if len(mp.TxOrID) > 64 { // tx bytes instead of txid
 		// set bit at index 0
 		flags |= (1 << 0)
+
+		txLength = bt.VarInt(uint64(len(txOrID)))
 	}
 
 	if mp.TargetType == "header" {

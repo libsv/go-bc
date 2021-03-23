@@ -251,21 +251,24 @@ func parseBinaryMerkleProof(proof []byte) (*merkleProofBinary, error) {
 	mpb.index, size = bt.DecodeVarInt(proof[offset:])
 	offset += size
 
-	// txLength is the next varint after the 1st byte + index size
-	txLength, size := bt.DecodeVarInt(proof[offset:])
-	offset += size
-
+	var txLength uint64
 	// if bit 1 of flags is NOT set, txOrId should contain txid (= 32 bytes)
-	if mpb.flags&1 == 0 && txLength < 32 {
-		return nil, errors.New("invalid tx length (should be greater than 32 bytes)")
+	if mpb.flags&1 == 0 {
+		txLength = 32
 	}
 
 	// if bit 1 of flags is set, txOrId should contain tx hex (> 32 bytes)
-	if mpb.flags&1 == 1 && txLength <= 32 {
-		return nil, errors.New("invalid tx length (should be greater than 32 bytes)")
+	if mpb.flags&1 == 1 {
+		if txLength <= 32 {
+			return nil, errors.New("invalid tx length (should be greater than 32 bytes)")
+		}
+
+		// txLength is the next varint after the 1st byte + index size
+		txLength, size = bt.DecodeVarInt(proof[offset:])
+		offset += size
 	}
 
-	// txOrID is the next txLength bytes after 1st byte + index size + txLength size
+	// txOrID is the next txLength bytes after 1st byte + index size (+ txLength size)
 	mpb.txOrID = hex.EncodeToString(bt.ReverseBytes(proof[offset : offset+int(txLength)]))
 	offset += int(txLength)
 
