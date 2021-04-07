@@ -43,7 +43,7 @@ func (spvc *SPVClient) VerifyMerkleProof(ctx context.Context, proof []byte) (val
 	case 0:
 		// The `target` field contains a block hash
 
-		blockHeader, err := spvc.hcm.MerkleRoot(ctx, mpb.target)
+		blockHeader, err := spvc.bhc.BlockHeader(ctx, mpb.target)
 		if err != nil {
 			return false, false, err
 		}
@@ -106,7 +106,7 @@ func (spvc *SPVClient) VerifyMerkleProofJSON(ctx context.Context, proof *MerkleP
 			return false, false, errors.New("invalid target field")
 		}
 
-		blockHeader, err := spvc.hcm.MerkleRoot(ctx, proof.Target)
+		blockHeader, err := spvc.bhc.BlockHeader(ctx, proof.Target)
 		if err != nil {
 			return false, false, err
 		}

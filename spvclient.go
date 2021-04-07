@@ -4,17 +4,17 @@ package bc
 // used to complete Simple Payment Verification (SPV)
 // in conjunction with a Merkle Proof.
 type SPVClient struct {
-	hcm HeaderChainMapper
+	bhc BlockHeaderChain
 }
 
 // NewSPVClient creates a new SPVClient based on params
 // passed or will use defaults if nil is passed.
-func NewSPVClient(mrr HeaderChainMapper) *SPVClient {
-	if mrr == nil {
+func NewSPVClient(bhc BlockHeaderChain) *SPVClient {
+	if bhc == nil {
 		return &SPVClient{}
 	}
 
 	return &SPVClient{
-		hcm: mrr,
+		bhc: bhc,
 	}
 }
