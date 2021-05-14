@@ -9,7 +9,7 @@ Here is a real example coinbase broken down...
 | 00000000000000000000000000000000 ...  Previous outpoint TXID
 | ffffffff ............................ Previous outpoint index
 |
-| 43 .................................. Input coinbase count of bytes (4 block height + 12 (extra nonces) + Arbitrary data length)
+| 43 .................................. Input coinbase count of bytes (4 block height + 12(extra nonces) + Arbitrary data length)
 | |
 | | 03 ................................ Bytes in height
 | | | bfea07 .......................... Height: 518847
@@ -60,7 +60,8 @@ func BuildCoinbase(c1 []byte, c2 []byte, extraNonce1 string, extraNonce2 string)
 
 // GetCoinbaseParts returns the two split coinbase parts from coinbase metadata.
 // See https://arxiv.org/pdf/1703.06545.pdf section 2.2 for more info.
-func GetCoinbaseParts(height uint32, coinbaseValue uint64, defaultWitnessCommitment string, coinbaseText string, walletAddress string, minerIDBytes []byte) (coinbase1 []byte, coinbase2 []byte, err error) {
+func GetCoinbaseParts(height uint32, coinbaseValue uint64, defaultWitnessCommitment string, coinbaseText string,
+	walletAddress string, minerIDBytes []byte) (coinbase1 []byte, coinbase2 []byte, err error) {
 	coinbase1 = makeCoinbase1(height, coinbaseText)
 
 	ot, err := makeCoinbaseOutputTransactions(coinbaseValue, defaultWitnessCommitment, walletAddress, minerIDBytes)
@@ -73,6 +74,7 @@ func GetCoinbaseParts(height uint32, coinbaseValue uint64, defaultWitnessCommitm
 	return
 }
 
+//nolint:makezero
 func makeCoinbaseOutputTransactions(coinbaseValue uint64, defaultWitnessCommitment string, wallet string, minerIDBytes []byte) ([]byte, error) {
 	o, err := bt.NewP2PKHOutputFromAddress(wallet, coinbaseValue)
 	if err != nil {
@@ -114,6 +116,7 @@ func makeCoinbaseOutputTransactions(coinbaseValue uint64, defaultWitnessCommitme
 	return buf, nil
 }
 
+//nolint:makezero
 func makeCoinbase1(height uint32, coinbaseText string) []byte {
 	spaceForExtraNonce := 12
 
@@ -159,7 +162,8 @@ func makeCoinbase2(ot []byte) []byte {
 // 	buf := make([]byte, 32)                                    // 32 bytes - All bits are zero: Not a transaction hash reference
 // 	buf = append(buf, []byte{0xff, 0xff, 0xff, 0xff}...)       // 4 bytes - All bits are ones: 0xFFFFFFFF
 // 	buf = append(buf, bt.VarInt(uint64(len(coinbaseData)))...) // Length of the coinbase data, from 2 to 100 bytes
-// 	buf = append(buf, coinbaseData...)                         // Arbitrary data used for extra nonce and mining tags. In v2 blocks; must begin with block height
+// 	buf = append(buf, coinbaseData...)                         // Arbitrary data used for extra nonce and mining tags.
+// 	In v2 blocks; must begin with block height
 // 	buf = append(buf, []byte{0xff, 0xff, 0xff, 0xff}...)       //  4 bytes = Set to 0xFFFFFFFF
 // 	return buf
 // }
