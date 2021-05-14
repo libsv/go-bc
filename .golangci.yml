@@ -223,7 +223,7 @@ linters-settings:
       - atomicalign
     enable-all: false
     disable:
-      #- shadow
+    #- shadow
     disable-all: false
   depguard:
     list-type: blacklist
@@ -234,9 +234,9 @@ linters-settings:
       # specify an error message to output when a blacklisted package is used
       - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
   lll:
-    # max line length, lines longer will be reported. Default is 220.
+    # max line length, lines longer will be reported. Default is 120.
     # '\t' is counted as 1 character by default, and can be changed with the tab-width option
-    line-length: 220
+    line-length: 120
     # tab width in spaces. Default to 1.
     tab-width: 1
   maligned:
@@ -246,7 +246,7 @@ linters-settings:
     # Correct spellings using locale preferences for US or UK.
     # Default is to use a neutral variety of English.
     # Setting locale to US will correct the British spelling of 'colour' to 'color'.
-    locale: US
+    locale: UK
     ignore-words:
       - bsv
       - bitcoin
@@ -270,7 +270,7 @@ linters-settings:
     # Exclude following linters from requiring an explanation.  Default is [].
     allow-no-explanation: []
     # Enable to require an explanation of nonzero length after each nolint directive. Default is false.
-    require-explanation: true
+    require-explanation: false
     # Enable to require nolint directives to mention the specific linter being suppressed. Default is false.
     require-specific: true
   rowserrcheck:
@@ -347,7 +347,6 @@ linters:
     - exhaustive
     - sqlclosecheck
     - nolintlint
-    - gci
     - goconst
     - lll
   disable:
@@ -360,6 +359,7 @@ linters:
     - testpackage
     - nestif
     - nlreturn
+    - gci
   disable-all: false
   presets:
     - bugs
@@ -374,6 +374,8 @@ issues:
   # excluded by default patterns execute `golangci-lint run --help`
   exclude:
     - Using the variable on range scope .* in function literal
+    - lines are duplicate of `bec/field.go
+    - declaration of "err" shadows declaration
 
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
