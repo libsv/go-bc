@@ -36,7 +36,7 @@ func TestDecodeBlockHeader(t *testing.T) {
 	}
 	expectedHeader := "00000020fb9eacea87c1cc294a4f1633a45b9bfb21cf9878b439c6138d96b8ca3a856e3a37307cd123724eaa4ade23d29feea1358458d5c110275b6cca4e2b79cd14d98e39573460ffff7f2000000000"
 
-	headerBytes, err := bc.DecodeBlockHeader(bh)
+	headerBytes, err := bh.Bytes()
 	header := hex.EncodeToString(headerBytes)
 
 	assert.NoError(t, err)
