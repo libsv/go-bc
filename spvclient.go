@@ -27,9 +27,6 @@ func WithBlockHeaderChain(bhc BlockHeaderChain) SPVOpts {
 
 // NewSPVClient creates a new SPVClient based on the options provided.
 // If no BlockHeaderChain implementation is provided, the setup will return an error.
-// If both a BlockHeaderChain AND a WithBlockHeaderChainStringer are provided it will
-// attempt to use BlockHeaderChain first before falling back to the WithBlockHeaderChainStringer
-// in the event of an error.
 func NewSPVClient(opts ...SPVOpts) (*SPVClient, error) {
 	cli := &SPVClient{}
 	for _, opt := range opts {
