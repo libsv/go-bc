@@ -10,10 +10,8 @@ import (
 
 type mockBlockHeaderChain struct{}
 
-func (bhc *mockBlockHeaderChain) BlockHeader(ctx context.Context, blockHash string) (blockHeader string, err error) {
-	return map[string]string{
-		"75edb0a69eb195cdd81e310553aa4d25e18450e08f168532a2c2e9cf447bf169": "000000208e33a53195acad0ab42ddbdbe3e4d9ca081332e5b01a62e340dbd8167d1a787b702f61bb913ac2063e0f2aed6d933d3386234da5c8eb9e30e498efd25fb7cb96fff12c60ffff7f2001000000",
-	}[blockHash], nil
+func (bhc *mockBlockHeaderChain) BlockHeader(ctx context.Context, blockHash string) (blockHeader *bc.BlockHeader, err error) {
+	return bc.EncodeBlockHeaderStr("000000208e33a53195acad0ab42ddbdbe3e4d9ca081332e5b01a62e340dbd8167d1a787b702f61bb913ac2063e0f2aed6d933d3386234da5c8eb9e30e498efd25fb7cb96fff12c60ffff7f2001000000")
 }
 
 func TestVerifyMerkleProof(t *testing.T) {
@@ -31,9 +29,9 @@ func TestVerifyMerkleProof(t *testing.T) {
 			"391e62b3419d8a943f7dbc7bddc90e30ec724c033000dc0c8872253c27b03a42",
 		},
 	}
-	hcm := mockBlockHeaderChain{}
+	hcm := &mockBlockHeaderChain{}
 
-	spvc := bc.NewSPVClient(&hcm)
+	spvc, _ := bc.NewSPVClient(bc.WithBlockHeaderChain(hcm))
 
 	t.Run("JSON", func(t *testing.T) {
 		valid, isLastInTree, err := spvc.VerifyMerkleProofJSON(context.Background(), proofJSON)

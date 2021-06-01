@@ -31,18 +31,58 @@ type BlockHeader struct {
 
 // TODO: make fields private and make getters and setters
 
-// ToString returns the Block Header encoded as hex string.
-func (bh *BlockHeader) ToString() string {
-	return hex.EncodeToString(bh.ToBytes())
+// String returns the Block Header encoded as hex string.
+func (bh *BlockHeader) String() (string, error) {
+	bb, err := bh.Bytes()
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bb), nil
 }
 
-// ToBytes returns the Block Header encoded as bytes.
-func (bh *BlockHeader) ToBytes() []byte {
-	// TODO:
-	return []byte{}
+// Bytes will decode a bitcoin block header struct
+// into a byte slice.
+// See https://en.bitcoin.it/wiki/Block_hashing_algorithm
+func (bh *BlockHeader) Bytes() ([]byte, error) {
+	bytes := []byte{}
+
+	v := make([]byte, 4)
+	binary.LittleEndian.PutUint32(v, bh.Version)
+	bytes = append(bytes, v...)
+
+	p, err := hex.DecodeString(bh.HashPrevBlock)
+	if err != nil {
+		return nil, err
+	}
+	p = bt.ReverseBytes(p)
+	bytes = append(bytes, p...)
+
+	m, err := hex.DecodeString(bh.HashMerkleRoot)
+	if err != nil {
+		return nil, err
+	}
+	m = bt.ReverseBytes(m)
+	bytes = append(bytes, m...)
+
+	t := make([]byte, 4)
+	binary.LittleEndian.PutUint32(t, bh.Time)
+	bytes = append(bytes, t...)
+
+	b, err := hex.DecodeString(bh.Bits)
+	if err != nil {
+		return nil, err
+	}
+	b = bt.ReverseBytes(b)
+	bytes = append(bytes, b...)
+
+	n := make([]byte, 4)
+	binary.LittleEndian.PutUint32(t, bh.Nonce)
+	bytes = append(bytes, n...)
+
+	return bytes, nil
 }
 
-// EncodeBlockHeaderStr will encode a block header byte slice
+// EncodeBlockHeaderStr will encode a block header hash
 // into the bitcoin block header structure.
 // See https://en.bitcoin.it/wiki/Block_hashing_algorithm
 func EncodeBlockHeaderStr(headerStr string) (*BlockHeader, error) {
@@ -74,48 +114,6 @@ func EncodeBlockHeader(headerBytes []byte) (*BlockHeader, error) {
 		Bits:           hex.EncodeToString(bt.ReverseBytes(headerBytes[72:76])),
 		Nonce:          binary.LittleEndian.Uint32(headerBytes[76:]),
 	}, nil
-}
-
-// DecodeBlockHeader will decode a bitcoin block header struct
-// into a byte slice.
-// See https://en.bitcoin.it/wiki/Block_hashing_algorithm
-func DecodeBlockHeader(header *BlockHeader) ([]byte, error) {
-	bytes := []byte{}
-
-	v := make([]byte, 4)
-	binary.LittleEndian.PutUint32(v, header.Version)
-	bytes = append(bytes, v...)
-
-	p, err := hex.DecodeString(header.HashPrevBlock)
-	if err != nil {
-		return nil, err
-	}
-	p = bt.ReverseBytes(p)
-	bytes = append(bytes, p...)
-
-	m, err := hex.DecodeString(header.HashMerkleRoot)
-	if err != nil {
-		return nil, err
-	}
-	m = bt.ReverseBytes(m)
-	bytes = append(bytes, m...)
-
-	t := make([]byte, 4)
-	binary.LittleEndian.PutUint32(t, header.Time)
-	bytes = append(bytes, t...)
-
-	b, err := hex.DecodeString(header.Bits)
-	if err != nil {
-		return nil, err
-	}
-	b = bt.ReverseBytes(b)
-	bytes = append(bytes, b...)
-
-	n := make([]byte, 4)
-	binary.LittleEndian.PutUint32(t, header.Nonce)
-	bytes = append(bytes, n...)
-
-	return bytes, nil
 }
 
 // ExtractMerkleRootFromBlockHeader will take an 80 byte Bitcoin block
