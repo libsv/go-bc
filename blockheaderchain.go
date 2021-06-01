@@ -21,14 +21,3 @@ var (
 type BlockHeaderChain interface {
 	BlockHeader(ctx context.Context, blockHash string) (*BlockHeader, error)
 }
-
-// A BlockHeaderChainStringer is a generic interface used to map things in the block header chain
-// (chain of block headers). For example, it is used to get a block Header from a bitcoin
-// block hash if it exists in the longest block header chain.
-// This will return the blockheader hash as a string.
-//
-// Errors can be returned if the header isn't found or is on a stale chain, you may also use the
-// ErrHeaderNotFound & ErrNotOnLongestChain sentinel errors when implementing the interface.
-type BlockHeaderChainStringer interface {
-	BlockHeaderHash(ctx context.Context, blockHash string) (blockHeader string, err error)
-}

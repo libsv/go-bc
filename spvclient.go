@@ -1,7 +1,6 @@
 package bc
 
 import (
-	"context"
 	"errors"
 )
 
@@ -14,8 +13,6 @@ import (
 type SPVClient struct {
 	// BlockHeaderChain will be set when an implementation returning a bc.BlockHeader type is provided.
 	bhc BlockHeaderChain
-	// BlockHeaderChainStringer will be set when an implementation returning a block header hash is provided.
-	bhchash BlockHeaderChainStringer
 }
 
 // SPVOpts can be implemented to provided functional options for an SPVClient.
@@ -25,13 +22,6 @@ type SPVOpts func(*SPVClient)
 func WithBlockHeaderChain(bhc BlockHeaderChain) SPVOpts {
 	return func(s *SPVClient) {
 		s.bhc = bhc
-	}
-}
-
-// WithBlockHeaderChainStringer will inject the provided BlockHeaderChainStringer into the SPVClient.
-func WithBlockHeaderChainStringer(bhc BlockHeaderChainStringer) SPVOpts {
-	return func(s *SPVClient) {
-		s.bhchash = bhc
 	}
 }
 
@@ -45,34 +35,8 @@ func NewSPVClient(opts ...SPVOpts) (*SPVClient, error) {
 	for _, opt := range opts {
 		opt(cli)
 	}
-	if cli.bhc == nil && cli.bhchash == nil {
+	if cli.bhc == nil  {
 		return nil, errors.New("at least one blockchain header implementation should be returned")
 	}
 	return cli, nil
-}
-
-// BlockHeader will return the block header using the client implementation provided to the SPVClient.
-func (spvc *SPVClient) BlockHeader(ctx context.Context, blockHash string) (*BlockHeader, error) {
-	if spvc.bhc == nil && spvc.bhchash == nil {
-		return nil, errors.New("no BlockHeaderChain implementation provided, setup the SPVClient with at least one")
-	}
-	// try the strong typed version first.
-	var err error
-	if spvc.bhc != nil {
-		bh, e := spvc.bhc.BlockHeader(ctx, blockHash)
-		if e == nil {
-			return bh, nil
-		}
-		err = e
-	}
-	// if strong typed failed, or isn't set, try the hash version, which will then convert to a
-	// strong typed bc.BlockHeader
-	if spvc.bhchash != nil {
-		bh, e := spvc.bhchash.BlockHeaderHash(ctx, blockHash)
-		if e == nil {
-			return EncodeBlockHeaderStr(bh)
-		}
-		err = e
-	}
-	return nil, err
 }
