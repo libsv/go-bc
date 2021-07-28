@@ -282,9 +282,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp: true,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*BlockHeader, error) {
 				switch blockHash {
-				case "4980969d0fa17a8bfb541c54cf715cfb07b5c1bd6c272a5ba739810aa786dbc2":
+				case "4980969d0fa17a8bfb541c54cf715cfb07b5c1bd6c272a5ba739810aa786dbc2": //nolint:goconst
 					return EncodeBlockHeaderStr("000000206e687283a5fb7b5e3a1e8e3452e431f8f987c9624b709d0bb65222adde722a6b219d5619fe8b4fc9dc056c81b28eedbd38be9f5e9b2e51def60106e836da8cf9164e0161ffff7f2000000000")
-				case "6b2a72dead2252b60b9d704b62c987f9f831e452348e1e3a5e7bfba58372686e":
+				case "6b2a72dead2252b60b9d704b62c987f9f831e452348e1e3a5e7bfba58372686e": //nolint:goconst
 					return EncodeBlockHeaderStr("00000020b575b47d65d7ef45b33facecef8b24b46ed1f2900413f0396fbc4dc8fc3e517f35ab994946ff6b342e24ff55b08a2f36b167dca104c49d9103b8d2bb83e991d3c44d0161ffff7f2001000000")
 				}
 				return EncodeBlockHeaderStr("00000020de9b608240602bc7d4fd84db40828435cf29939f63d7acdaf080490992ca244dc13856f79f45f57721d007a2bb93d165625dc944b629bd231c1de5437ff7e5786e320161ffff7f2000000000")
