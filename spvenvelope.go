@@ -19,17 +19,19 @@ type SPVEnvelope struct {
 	Inputs        map[string]*SPVEnvelope `json:"inputs"`
 }
 
+// MapiResponse is a callback from mApi
 type MapiResponse struct {
 	CallbackPayload MerkleProof `json:"callbackPayload"`
-	ApiVersion      string      `json:"apiVersion"`
+	APIVersion      string      `json:"apiVersion"`
 	Timestamp       time.Time   `json:"timestamp"`
-	MinerId         string      `json:"minerId"`
+	MinerID         string      `json:"minerId"`
 	BlockHash       string      `json:"blockHash"`
 	BlockHeight     uint64      `json:"blockHeight"`
 	CallbackTxID    string      `json:"callbackTxId"`
 	CallbackReason  string      `json:"callbackReason"`
 }
 
+// VerifyPayment verifieds whether or not the supplied SPVEnvelope is valid
 func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bool, error) {
 	proofs := make(map[string]bool)
 	outputValues := make(map[string]uint64)
@@ -81,7 +83,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, parentI
 		}
 		valid, err := s.verifyTxs(ctx, input, tx.GetInputs(), proofs)
 		if err != nil {
-			return false, nil
+			return false, err
 		}
 		if !valid {
 			return valid, nil
