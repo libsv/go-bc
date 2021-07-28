@@ -90,6 +90,10 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, parentI
 		}
 	}
 
+	if (payment.Inputs == nil || len(payment.Inputs) == 0) && payment.Proof == nil {
+		return false, errors.New("no confirmed transaction provided")
+	}
+
 	if payment.Proof != nil {
 		proofTxID := payment.Proof.TxOrID
 		if len(proofTxID) != 64 {
