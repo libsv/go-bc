@@ -31,7 +31,7 @@ type MapiResponse struct {
 	CallbackReason  string      `json:"callbackReason"`
 }
 
-// VerifyPayment verifieds whether or not the supplied SPVEnvelope is valid
+// VerifyPayment verifies whether or not the txs supplied via the supplied SPVEnvelope are valid
 func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bool, error) {
 	proofs := make(map[string]bool)
 	outputValues := make(map[string]uint64)
