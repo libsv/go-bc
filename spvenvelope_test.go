@@ -218,14 +218,14 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				},
 			},
 		},
-		"wrong tx supplied as input in envlope errs": {
+		"wrong tx supplied as input in envelope errs": {
 			exp:    false,
-			expErr: errors.New("invalid payment"),
+			expErr: errors.New("proof for different tx supplied"),
 			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
 				return EncodeBlockHeaderStr("00000020d9c6bb358e13ec549c3e78ad67b2975f72e164d44f925ccf36fdaf3a35959b0348f38f71db7afaecc2b8b324c44ec05eed43a98de16fcb2e7e501622abff759cb2210161ffff7f2000000000")
 			},
 			envelope: &SPVEnvelope{
-				TxID:  "000000200adb899e30726063e84b74d439b67309497c4717825a6ba6aa575fe349750561d5b08c94d2beae4847cec09da1aea32cfd5e0f11add310eb7c6d1b427fbc09c647320161ffff7f2000000000",
+				TxID:  "e3c66e4eddaa7e7e7560cdd8a80c82126dcbb728b4a3bf48a2be95a7847feacc",
 				RawTX: "02000000043324273707a2a5da452461d0e4f02b2bec2f87a134fe10cd04a6a8b77978d11c000000006b483045022100a1e96789f10de15167385eb1f7505628755aa43750ed0df998066d1b6526a5fe02205883662a7c231509ab233026a9bd7dac1221fcfd22cf92c543ce761588ead52b4121029312d305d805dcbf68a0ffaee417a4852d86ce38708725feff2b1a85db53cc59feffffff0f316367b51170c4c80a4285a3f47712efc4b47b56e736a284aa38bd0e1ec9d4000000006a47304402205d7100dd0bcc901507e84cd94e88da90973fd8381eeec24bdc84e70519604b0c02207bb9eacd817eb04378655a32807f3e76d5ed65cff147fac659db270699b44ef5412103792d3c6e2bb718a515bc8fa8250d92a548ebe94be39a5676ad5bdcfc5c3dd17ffefffffffadf675b2205f8382155091cf046ed63a543734f3c5344d92b7c067bd987f505000000006a4730440220255e048d53f6e3897ea1adebe3ce09259ec8f4814939091a0ff93d754c2f508d02201cbda92db5f25b62363dbf744e6a4b82ec3eb9a9a075d08d8051c9729021d69f4121033e792b95ce7a8c70f68ae6070d5b545957343919fab8b0cb4d6915b6117477d3fefffffffadf675b2205f8382155091cf046ed63a543734f3c5344d92b7c067bd987f505010000006b483045022100ff091628f91fbb9ceda9cd62747e570508f95d14205211288071bd3ae4a4500c0220080dba7b1b9379b21c1bd5fed22f582094b54fdb29c16cfe4de3f709d12975e4412103792d3c6e2bb718a515bc8fa8250d92a548ebe94be39a5676ad5bdcfc5c3dd17ffeffffff029ee8fa02000000001976a9146922fe7841288aa0d71292cb8325c4205e4674d288ac8055c820000000001976a914e4e6936b51ecbe715846556b083747bae09e769088ac6b000000",
 				Inputs: map[string]*SPVEnvelope{
 					"61d6ecaa9045124f6b812c76128caf025a1f15a005d3dbbd49f90120d47559dd": {
@@ -246,7 +246,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"wrong merkle proof suppled with otherwise correct input errors": {
 			exp:    false,
-			expErr: errors.New("invalid proof supplied with payment"),
+			expErr: errors.New("input and proof id mismatch"),
 			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
 				return EncodeBlockHeaderStr("00000020de9b608240602bc7d4fd84db40828435cf29939f63d7acdaf080490992ca244dc13856f79f45f57721d007a2bb93d165625dc944b629bd231c1de5437ff7e5786e320161ffff7f2000000000")
 			},
@@ -271,7 +271,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"wrong merkle proof suppled via hex with otherwise correct input errors": {
 			exp:    false,
-			expErr: errors.New("invalid proof supplied with payment"),
+			expErr: errors.New("input and proof id mismatch"),
 			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
 				return EncodeBlockHeaderStr("00000020de9b608240602bc7d4fd84db40828435cf29939f63d7acdaf080490992ca244dc13856f79f45f57721d007a2bb93d165625dc944b629bd231c1de5437ff7e5786e320161ffff7f2000000000")
 			},
@@ -424,7 +424,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"wrong merkle proof suppled with otherwise correct layered input errors": {
 			exp:    false,
-			expErr: errors.New("invalid proof supplied with payment"),
+			expErr: errors.New("input and proof id mismatch"),
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*BlockHeader, error) {
 				switch blockHash {
 				case "4980969d0fa17a8bfb541c54cf715cfb07b5c1bd6c272a5ba739810aa786dbc2":
