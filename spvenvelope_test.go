@@ -52,7 +52,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				},
 			},
 		},
-		"envelop without any proof fails": {
+		"envelope without any proof fails": {
 			exp:    false,
 			expErr: errors.New("no confirmed transaction provided"),
 			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
@@ -537,6 +537,25 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 								"4d43e5fd615782958402e8b231171ee03eebeccb37817f13d380295cc958abee",
 							},
 						},
+					},
+				},
+			},
+		},
+		"envelope with confirmed root errs": {
+			exp:    false,
+			expErr: errors.New("root payment must be unconfirmed"),
+			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
+				return EncodeBlockHeaderStr("00000020f274078cebf6b61dd94b2124d9e967f7a7b9ccf0e95f46535768e333295b1e0633c974e51079022676c9319cd1cabcbf033282934f2d4fb4846ee6521d652e51fc680161ffff7f2000000000")
+			},
+			envelope: &SPVEnvelope{
+				TxID:  "06894e08c0e4137d70274c538351f5cea2e82011fafb3cc0192c74447dda19fd",
+				RawTX: "0200000002f16ba9c4f21683b6840400418d4a0d27422e410e4cd398e4c64941363072ce5b000000006b4830450221009d2e7e89c0e0545ff0906cbc47060d0a74ee08948691180f59d9171ced24601a02202566505eaa97b4fb54830e33bb41a644e5d4c16b9d59ac1a61c45836da2961df412102b6dd19e32923d694ee510aa73e2eedf437783fce648b7b53effe31bfa6fee724feffffffb037e485154b5ae41f7cf229d519cd28b8d0f41f2f195309b8794cea95965116000000006a4730440220117995a5050437e1fd3866af61bb53f637fafcd051fcebcc9f40cc72cd40b395022036694fabae9720b03ecce1bf8d9d28e58123bfeb28a79814d95904e754c424634121028300e674b820a0f0df1c3399e9ef26dbca6ca1fdd9a4c53e5dbc964dcc6f2111feffffff0280ddf505000000001976a9149e5408eb250a1f9980ec735765dec14407c195ec88ac00ca9a3b000000001976a9146e8f17ecfc40ef5b429d22c86ffe8acb2acc886988acda000000",
+				Proof: &MerkleProof{
+					Index:  1,
+					TxOrID: "06894e08c0e4137d70274c538351f5cea2e82011fafb3cc0192c74447dda19fd",
+					Target: "4f40da9ccedebb65ec7c29e4188ca11461668d7f2ae2e4e35b59b0fe4d266406",
+					Nodes: []string{
+						"00a43044caef87323a3ddee74dc7917e1dfd2371e9c43f208040cfe3737ee5ec",
 					},
 				},
 			},
