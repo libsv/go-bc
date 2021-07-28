@@ -32,7 +32,7 @@ func NewSPVClient(opts ...SPVOpts) (*SPVClient, error) {
 	for _, opt := range opts {
 		opt(cli)
 	}
-	if cli.bhc == nil  {
+	if cli.bhc == nil {
 		return nil, errors.New("at least one blockchain header implementation should be returned")
 	}
 	return cli, nil

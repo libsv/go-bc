@@ -1,0 +1,135 @@
+package bc
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/libsv/go-bk/envelope"
+	"github.com/libsv/go-bt"
+)
+
+// SPVEnvelope is a struct which contains all information needed
+// for a transaction to be verified.
+type SPVEnvelope struct {
+	TxID          string                  `json:"txid"`
+	RawTX         string                  `json:"rawTx,omitempty"`
+	Proof         *MerkleProof            `json:"proof,omitempty"`
+	MapiResponses []envelope.JSONEnvelope `json:"mapiResponses,omitempty"`
+	Inputs        map[string]*SPVEnvelope `json:"inputs"`
+}
+
+type MapiResponse struct {
+	CallbackPayload MerkleProof `json:"callbackPayload"`
+	ApiVersion      string      `json:"apiVersion"`
+	Timestamp       time.Time   `json:"timestamp"`
+	MinerId         string      `json:"minerId"`
+	BlockHash       string      `json:"blockHash"`
+	BlockHeight     uint64      `json:"blockHeight"`
+	CallbackTxID    string      `json:"callbackTxId"`
+	CallbackReason  string      `json:"callbackReason"`
+}
+
+func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bool, error) {
+	proofs := make(map[string]bool)
+	outputValues := make(map[string]uint64)
+
+	tx, err := bt.NewTxFromString(payment.RawTX)
+	if err != nil {
+		return false, err
+	}
+
+	if payment.Proof != nil {
+		return false, errors.New("root payment must be unconfirmed")
+	}
+
+	for inputTxID, input := range payment.Inputs {
+		if input.TxID == "" {
+			input.TxID = inputTxID
+		}
+		valid, err := s.verifyTxs(ctx, input, tx.GetInputs(), proofs)
+		if err != nil {
+			return false, err
+		}
+		if !valid {
+			return valid, nil
+		}
+	}
+
+	for _, v := range proofs {
+		if !v {
+			return false, errors.New("payment was not verified")
+		}
+	}
+
+	outputValues[tx.GetTxID()] = tx.GetTotalOutputSatoshis()
+
+	return true, nil
+}
+
+func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, parentInputs []*bt.Input, proofs map[string]bool) (bool, error) {
+	tx, err := bt.NewTxFromString(payment.RawTX)
+	if err != nil {
+		return false, err
+	}
+	txID := tx.GetTxID()
+	proofs[txID] = false
+
+	for inputTxID, input := range payment.Inputs {
+		if input.TxID == "" {
+			input.TxID = inputTxID
+		}
+		valid, err := s.verifyTxs(ctx, input, tx.GetInputs(), proofs)
+		if err != nil {
+			return false, nil
+		}
+		if !valid {
+			return valid, nil
+		}
+	}
+
+	if payment.Proof != nil {
+		proofTxID := payment.Proof.TxOrID
+		if len(proofTxID) != 64 {
+			proofTx, err := bt.NewTxFromString(payment.Proof.TxOrID)
+			if err != nil {
+				return false, err
+			}
+
+			proofTxID = proofTx.GetTxID()
+		}
+
+		if proofTxID != payment.TxID {
+			return false, errors.New("invalid proof supplied with payment")
+		}
+
+		valid, _, err := s.VerifyMerkleProofJSON(ctx, payment.Proof)
+		if err != nil {
+			return false, err
+		}
+
+		if !valid {
+			return valid, nil
+		}
+	}
+
+	var pass bool
+	for _, input := range parentInputs {
+		if input.PreviousTxID != txID {
+			continue
+		}
+		pass = true
+
+		// verify input and output
+		output := tx.Outputs[int(input.PreviousTxOutIndex)]
+		_ = output
+	}
+
+	if !pass {
+		return false, errors.New("invalid payment")
+	}
+
+	proofs[txID] = true
+
+	return true, nil
+}
