@@ -9,6 +9,15 @@ import (
 	"github.com/libsv/go-bt"
 )
 
+var (
+	ErrPaymentNotVerified     = errors.New("a tx was missed during validation")
+	ErrRootPaymentConfirmed   = errors.New("root payment must be unconfirmed")
+	ErrNoConfirmedTransaction = errors.New("not confirmed tx(s) provided")
+	ErrTxIDMismatch           = errors.New("input and proof ID mismatch")
+	ErrProofTxMismatch        = errors.New("proof tx id does not match input tx id")
+	ErrTxNotInInputs          = errors.New("could not find tx in child inputs")
+)
+
 // SPVEnvelope is a struct which contains all information needed
 // for a transaction to be verified.
 type SPVEnvelope struct {
@@ -51,7 +60,7 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bo
 
 	for _, v := range proofs {
 		if !v {
-			return false, errors.New("payment was not verified")
+			return false, ErrPaymentNotVerified
 		}
 	}
 
@@ -60,7 +69,7 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bo
 	return true, nil
 }
 
-func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, parentInputs []*bt.Input,
+func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childInputs []*bt.Input,
 	isRoot bool, proofs map[string]bool) (bool, error) {
 	tx, err := bt.NewTxFromString(payment.RawTX)
 	if err != nil {
@@ -70,7 +79,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, parentI
 	proofs[txID] = false
 
 	if isRoot && payment.Proof != nil {
-		return false, errors.New("root payment must be unconfirmed")
+		return false, ErrRootPaymentConfirmed
 	}
 
 	for inputTxID, input := range payment.Inputs {
@@ -94,14 +103,10 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, parentI
 
 	// if at the leafs of tree and transaction is unconfirmed, fail
 	if (payment.Inputs == nil || len(payment.Inputs) == 0) && payment.Proof == nil {
-		return false, errors.New("no confirmed transaction provided")
+		return false, ErrNoConfirmedTransaction
 	}
 
-	parentInputsMap := make(map[string]bool)
-	for _, parentInput := range parentInputs {
-		parentInputsMap[parentInput.PreviousTxID] = true
-	}
-
+	//childTxInputMap := make(map[string]bool)
 	if payment.Proof != nil {
 		proofTxID := payment.Proof.TxOrID
 		if len(proofTxID) != 64 {
@@ -114,11 +119,19 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, parentI
 		}
 
 		if proofTxID != payment.TxID {
-			return false, errors.New("input and proof id mismatch")
+			return false, ErrTxIDMismatch
 		}
 
-		if _, ok := parentInputsMap[proofTxID]; !ok {
-			return false, errors.New("proof for different tx supplied")
+		var proofPresent bool
+		for _, childInput := range childInputs {
+			if childInput.PreviousTxID == proofTxID {
+				proofPresent = true
+				break
+			}
+		}
+
+		if !proofPresent {
+			return false, ErrProofTxMismatch
 		}
 
 		valid, _, err := s.VerifyMerkleProofJSON(ctx, payment.Proof)
@@ -132,7 +145,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, parentI
 	}
 
 	var pass bool
-	for _, input := range parentInputs {
+	for _, input := range childInputs {
 		if input.PreviousTxID != txID {
 			continue
 		}
@@ -144,7 +157,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, parentI
 	}
 
 	if !pass {
-		return false, errors.New("could not find any inputs in tx")
+		return false, ErrTxNotInInputs
 	}
 
 	proofs[txID] = true

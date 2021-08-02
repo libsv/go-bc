@@ -54,7 +54,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"envelope without any proof fails": {
 			exp:    false,
-			expErr: errors.New("no confirmed transaction provided"),
+			expErr: ErrNoConfirmedTransaction,
 			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
 				return EncodeBlockHeaderStr("00000020d9c6bb358e13ec549c3e78ad67b2975f72e164d44f925ccf36fdaf3a35959b0348f38f71db7afaecc2b8b324c44ec05eed43a98de16fcb2e7e501622abff759cb2210161ffff7f2000000000")
 			},
@@ -220,7 +220,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"wrong tx supplied as input in envelope errs": {
 			exp:    false,
-			expErr: errors.New("proof for different tx supplied"),
+			expErr: ErrProofTxMismatch,
 			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
 				return EncodeBlockHeaderStr("00000020d9c6bb358e13ec549c3e78ad67b2975f72e164d44f925ccf36fdaf3a35959b0348f38f71db7afaecc2b8b324c44ec05eed43a98de16fcb2e7e501622abff759cb2210161ffff7f2000000000")
 			},
@@ -246,7 +246,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"wrong merkle proof suppled with otherwise correct input errors": {
 			exp:    false,
-			expErr: errors.New("input and proof id mismatch"),
+			expErr: ErrTxIDMismatch,
 			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
 				return EncodeBlockHeaderStr("00000020de9b608240602bc7d4fd84db40828435cf29939f63d7acdaf080490992ca244dc13856f79f45f57721d007a2bb93d165625dc944b629bd231c1de5437ff7e5786e320161ffff7f2000000000")
 			},
@@ -271,7 +271,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"wrong merkle proof suppled via hex with otherwise correct input errors": {
 			exp:    false,
-			expErr: errors.New("input and proof id mismatch"),
+			expErr: ErrTxIDMismatch,
 			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
 				return EncodeBlockHeaderStr("00000020de9b608240602bc7d4fd84db40828435cf29939f63d7acdaf080490992ca244dc13856f79f45f57721d007a2bb93d165625dc944b629bd231c1de5437ff7e5786e320161ffff7f2000000000")
 			},
@@ -424,7 +424,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"wrong merkle proof suppled with otherwise correct layered input errors": {
 			exp:    false,
-			expErr: errors.New("input and proof id mismatch"),
+			expErr: ErrTxIDMismatch,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*BlockHeader, error) {
 				switch blockHash {
 				case "4980969d0fa17a8bfb541c54cf715cfb07b5c1bd6c272a5ba739810aa786dbc2":
@@ -488,7 +488,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"single missing merkle proof in layered and branching tx errors": {
 			exp:    false,
-			expErr: errors.New("no confirmed transaction provided"),
+			expErr: ErrNoConfirmedTransaction,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*BlockHeader, error) {
 				switch blockHash {
 				case "4980969d0fa17a8bfb541c54cf715cfb07b5c1bd6c272a5ba739810aa786dbc2":
@@ -543,7 +543,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"envelope with confirmed root errs": {
 			exp:    false,
-			expErr: errors.New("root payment must be unconfirmed"),
+			expErr: ErrRootPaymentConfirmed,
 			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
 				return EncodeBlockHeaderStr("00000020f274078cebf6b61dd94b2124d9e967f7a7b9ccf0e95f46535768e333295b1e0633c974e51079022676c9319cd1cabcbf033282934f2d4fb4846ee6521d652e51fc680161ffff7f2000000000")
 			},
