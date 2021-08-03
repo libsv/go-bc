@@ -57,12 +57,6 @@ type MapiResponse struct {
 // VerifyPayment verifies whether or not the txs supplied via the supplied SPVEnvelope are valid
 func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bool, error) {
 	proofs := make(map[string]bool)
-	outputValues := make(map[string]uint64)
-
-	tx, err := bt.NewTxFromString(payment.RawTX)
-	if err != nil {
-		return false, err
-	}
 
 	valid, err := s.verifyTxs(ctx, payment, nil, true, proofs)
 	if err != nil {
@@ -77,8 +71,6 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bo
 			return false, ErrPaymentNotVerified
 		}
 	}
-
-	outputValues[tx.GetTxID()] = tx.GetTotalOutputSatoshis()
 
 	return true, nil
 }
@@ -120,7 +112,6 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childIn
 		return false, ErrNoConfirmedTransaction
 	}
 
-	//childTxInputMap := make(map[string]bool)
 	if payment.Proof != nil {
 		proofTxID := payment.Proof.TxOrID
 		if len(proofTxID) != 64 {
