@@ -10,12 +10,25 @@ import (
 )
 
 var (
-	ErrPaymentNotVerified     = errors.New("a tx was missed during validation")
-	ErrRootPaymentConfirmed   = errors.New("root payment must be unconfirmed")
+	// ErrPaymentNotVerified returns if a transaction in the tree provided was missed during verification
+	ErrPaymentNotVerified = errors.New("a tx was missed during validation")
+
+	// ErrRootPaymentConfirmed returns if the root payment is already confirmed
+	ErrRootPaymentConfirmed = errors.New("root payment must be unconfirmed")
+
+	// ErrNoConfirmedTransaction returns if a path from root to leaf contains no confirmed transcation
 	ErrNoConfirmedTransaction = errors.New("not confirmed tx(s) provided")
-	ErrTxIDMismatch           = errors.New("input and proof ID mismatch")
-	ErrProofTxMismatch        = errors.New("proof tx id does not match input tx id")
-	ErrTxNotInInputs          = errors.New("could not find tx in child inputs")
+
+	// ErrTxIDMismatch returns if they key value pair of a transactions input has a mismatch in txID
+	ErrTxIDMismatch = errors.New("input and proof ID mismatch")
+
+	// ErrProofTxMismatch returns if a proof (valid or not) is supplied for a transaction, but this proof
+	//is for a transaction other than the one it was bundled with
+	ErrProofTxMismatch = errors.New("proof tx id does not match input tx id")
+
+	// ErrTxNotInInputs returns if the tx.Outputs of a transaction supplied in the SPV envelope cannot be
+	// matched to any of its child transactions tx.Inputs
+	ErrTxNotInInputs = errors.New("could not find tx in child inputs")
 )
 
 // SPVEnvelope is a struct which contains all information needed
