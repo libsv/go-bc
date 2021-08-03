@@ -31,8 +31,9 @@ var (
 	ErrTxNotInInputs = errors.New("could not find tx in child inputs")
 )
 
-// SPVEnvelope is a struct which contains all information needed
-// for a transaction to be verified.
+// SPVEnvelope is a struct which contains all information needed for a transaction to be verified.
+//
+// spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/
 type SPVEnvelope struct {
 	TxID          string                  `json:"txid"`
 	RawTX         string                  `json:"rawTx,omitempty"`
