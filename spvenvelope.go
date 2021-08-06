@@ -3,10 +3,9 @@ package bc
 import (
 	"context"
 	"errors"
-	"time"
 
-	"github.com/libsv/go-bk/envelope"
 	"github.com/libsv/go-bt"
+	"github.com/tonicpow/go-minercraft"
 )
 
 var (
@@ -38,20 +37,8 @@ type SPVEnvelope struct {
 	TxID          string                  `json:"txid"`
 	RawTX         string                  `json:"rawTx,omitempty"`
 	Proof         *MerkleProof            `json:"proof,omitempty"`
-	MapiResponses []envelope.JSONEnvelope `json:"mapiResponses,omitempty"`
+	MapiResponses []minercraft.Callback   `json:"mapiResponses,omitempty"`
 	Inputs        map[string]*SPVEnvelope `json:"inputs"`
-}
-
-// MapiResponse is a callback from mApi
-type MapiResponse struct {
-	CallbackPayload MerkleProof `json:"callbackPayload"`
-	APIVersion      string      `json:"apiVersion"`
-	Timestamp       time.Time   `json:"timestamp"`
-	MinerID         string      `json:"minerId"`
-	BlockHash       string      `json:"blockHash"`
-	BlockHeight     uint64      `json:"blockHeight"`
-	CallbackTxID    string      `json:"callbackTxId"`
-	CallbackReason  string      `json:"callbackReason"`
 }
 
 // VerifyPayment verifies whether or not the txs supplied via the supplied SPVEnvelope are valid
