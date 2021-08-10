@@ -116,7 +116,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 
 	// If no merkle proof is provided, use the locking and unlocking scripts of this
 	// and the child tx to verify legitimacy.
-	return s.verifyUnconfirmedTx(ctx, txID, tx, childTxInputs, proofs)
+	return s.verifyUnconfirmedTx(txID, tx, childTxInputs, proofs)
 }
 
 func (s *SPVClient) verifyLeafTx(ctx context.Context, payment *SPVEnvelope, childTxInputs []*bt.Input,
@@ -161,7 +161,7 @@ func (s *SPVClient) verifyLeafTx(ctx context.Context, payment *SPVEnvelope, chil
 	return valid, nil
 }
 
-func (s *SPVClient) verifyUnconfirmedTx(ctx context.Context, txID string, tx *bt.Tx, childTxInputs []*bt.Input,
+func (s *SPVClient) verifyUnconfirmedTx(txID string, tx *bt.Tx, childTxInputs []*bt.Input,
 	proofs map[string]bool) (bool, error) {
 	// If current tx id is not found any tx input of the child tx, fail and error
 	var pass bool
