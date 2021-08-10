@@ -103,7 +103,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		return true, nil
 	}
 
-	// If at the leafs of tree and transaction is unconfirmed, fail
+	// If at the leaves of the tree and transaction is unconfirmed, fail and error.
 	if (payment.Inputs == nil || len(payment.Inputs) == 0) && payment.Proof == nil {
 		return false, ErrNoConfirmedTransaction
 	}
