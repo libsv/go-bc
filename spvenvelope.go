@@ -53,6 +53,7 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bo
 		return valid, nil
 	}
 
+	// Check the proofs map for safety, in case any tx was skipped during verification
 	for _, v := range proofs {
 		if !v {
 			return false, ErrPaymentNotVerified
@@ -62,7 +63,7 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bo
 	return true, nil
 }
 
-func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childInputs []*bt.Input,
+func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTxInputs []*bt.Input,
 	isRoot bool, proofs map[string]bool) (bool, error) {
 	tx, err := bt.NewTxFromString(payment.RawTX)
 	if err != nil {
@@ -71,10 +72,14 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childIn
 	txID := tx.GetTxID()
 	proofs[txID] = false
 
+	// The root tx is the transaction we're trying to verify, and it should not have a supplied
+	// merkle proof.
 	if isRoot && payment.Proof != nil {
 		return false, ErrRootPaymentConfirmed
 	}
 
+	// Recurse to the leaves of the tree and verify upward towards the root. This way, we
+	// check any merkle proofs provided first.
 	for inputTxID, input := range payment.Inputs {
 		if input.TxID == "" {
 			input.TxID = inputTxID
@@ -88,71 +93,94 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childIn
 		}
 	}
 
-	// cannot verify the proof or outputs of the root tx
+	// Given that the root of the SPVEnvelope is the tx we're trying to prove as legitimate,
+	// it will not come with a proof (or any outputs) to verify.
+	//
+	// As well as this, for this condition to be true, every previous merkle proof or
+	// tx verification will have passed. So, we can safely assume success and return true.
 	if isRoot {
 		proofs[txID] = true
 		return true, nil
 	}
 
-	// if at the leafs of tree and transaction is unconfirmed, fail
+	// If at the leafs of tree and transaction is unconfirmed, fail
 	if (payment.Inputs == nil || len(payment.Inputs) == 0) && payment.Proof == nil {
 		return false, ErrNoConfirmedTransaction
 	}
 
+	// If a merkle proof is provided, assume we are at the a leaf of the tree.
+	// Verify and return the result.
 	if payment.Proof != nil {
-		proofTxID := payment.Proof.TxOrID
-		if len(proofTxID) != 64 {
-			proofTx, err := bt.NewTxFromString(payment.Proof.TxOrID)
-			if err != nil {
-				return false, err
-			}
+		return s.verifyLeafTx(ctx, payment, childTxInputs, proofs)
+	}
 
-			proofTxID = proofTx.GetTxID()
-		}
+	// If no merkle proof is provided, use the locking and unlocking scripts of this
+	// and the child tx to verify legitimacy.
+	return s.verifyUnconfirmedTx(ctx, txID, tx, childTxInputs, proofs)
+}
 
-		if proofTxID != payment.TxID {
-			return false, ErrTxIDMismatch
-		}
-
-		var proofPresent bool
-		for _, childInput := range childInputs {
-			if childInput.PreviousTxID == proofTxID {
-				proofPresent = true
-				break
-			}
-		}
-
-		if !proofPresent {
-			return false, ErrProofTxMismatch
-		}
-
-		valid, _, err := s.VerifyMerkleProofJSON(ctx, payment.Proof)
+func (s *SPVClient) verifyLeafTx(ctx context.Context, payment *SPVEnvelope, childTxInputs []*bt.Input,
+	proofs map[string]bool) (bool, error) {
+	proofTxID := payment.Proof.TxOrID
+	if len(proofTxID) != 64 {
+		proofTx, err := bt.NewTxFromString(payment.Proof.TxOrID)
 		if err != nil {
 			return false, err
 		}
 
-		proofs[txID] = valid
-
-		return valid, nil
+		proofTxID = proofTx.GetTxID()
 	}
 
+	// If the tx id of the merkle proof doesn't match the tx id provided in the SPVEnvelope,
+	// fail and error
+	if proofTxID != payment.TxID {
+		return false, ErrTxIDMismatch
+	}
+
+	// If the tx id of the merkle proof doesn't match any of the tx inputs of the child tx,
+	// fail and error
+	var proofPresent bool
+	for _, cTxInput := range childTxInputs {
+		if cTxInput.PreviousTxID == proofTxID {
+			proofPresent = true
+			break
+		}
+	}
+
+	if !proofPresent {
+		return false, ErrProofTxMismatch
+	}
+
+	valid, _, err := s.VerifyMerkleProofJSON(ctx, payment.Proof)
+	if err != nil {
+		return false, err
+	}
+
+	proofs[payment.TxID] = valid
+
+	return valid, nil
+}
+
+func (s *SPVClient) verifyUnconfirmedTx(ctx context.Context, txID string, tx *bt.Tx, childTxInputs []*bt.Input,
+	proofs map[string]bool) (bool, error) {
+	// If current tx id is not found any tx input of the child tx, fail and error
 	var pass bool
-	for _, input := range childInputs {
-		if input.PreviousTxID != txID {
+	for _, cTxInput := range childTxInputs {
+		if cTxInput.PreviousTxID != txID {
 			continue
 		}
 		pass = true
 
-		// verify input and output
-		output := tx.Outputs[int(input.PreviousTxOutIndex)]
+		// TODO: verify child tx input's unlocking script with current tx output's locking script
+		output := tx.Outputs[int(cTxInput.PreviousTxOutIndex)]
 		_ = output
 	}
 
 	if !pass {
-		return false, ErrTxNotInInputs
+		return pass, ErrTxNotInInputs
 	}
 
-	proofs[txID] = true
+	proofs[txID] = pass
 
-	return true, nil
+	return pass, nil
 }
