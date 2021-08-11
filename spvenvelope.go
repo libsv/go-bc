@@ -81,7 +81,8 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		return false, ErrNoConfirmedTransaction
 	}
 
-	// Group all tx inputs by their tx id, to pass to the parent envelope
+	// Group all tx inputs by their tx id, to pass to the parent envelope. If we find any tx inputs
+	// that haven't been supplied as parents in the envelope, fail and error.
 	txInputs, err := s.buildInputPaymentMap(tx, payment)
 	if err != nil {
 		return false, err
