@@ -220,7 +220,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"wrong tx supplied as input in envelope errs": {
 			exp:    false,
-			expErr: ErrProofTxMismatch,
+			expErr: ErrTxNotInInputs,
 			blockHeaderFunc: func(context.Context, string) (*BlockHeader, error) {
 				return EncodeBlockHeaderStr("00000020d9c6bb358e13ec549c3e78ad67b2975f72e164d44f925ccf36fdaf3a35959b0348f38f71db7afaecc2b8b324c44ec05eed43a98de16fcb2e7e501622abff759cb2210161ffff7f2000000000")
 			},

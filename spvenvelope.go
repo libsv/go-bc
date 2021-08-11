@@ -21,10 +21,6 @@ var (
 	// ErrTxIDMismatch returns if they key value pair of a transactions input has a mismatch in txID
 	ErrTxIDMismatch = errors.New("input and proof ID mismatch")
 
-	// ErrProofTxMismatch returns if a proof (valid or not) is supplied for a transaction, but this proof
-	//is for a transaction other than the one it was bundled with
-	ErrProofTxMismatch = errors.New("proof tx id does not match input tx id")
-
 	// ErrTxNotInInputs returns if the tx.Outputs of a transaction supplied in the SPV envelope cannot be
 	// matched to any of its child transactions tx.Inputs
 	ErrTxNotInInputs = errors.New("could not find tx in child inputs")
@@ -108,19 +104,37 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		return false, ErrNoConfirmedTransaction
 	}
 
+	// Retrieve the index of the linked child tx input to prevent having to search the the inputs
+	// slice multiple times later
+	inputIdx, err := s.childTxInputIdx(txID, childTxInputs)
+	if err != nil {
+		return false, err
+	}
+
 	// If a merkle proof is provided, assume we are at the a leaf of the tree.
 	// Verify and return the result.
 	if payment.Proof != nil {
-		return s.verifyLeafTx(ctx, payment, childTxInputs, proofs)
+		return s.verifyLeafTx(ctx, payment, proofs)
 	}
 
 	// If no merkle proof is provided, use the locking and unlocking scripts of this
 	// and the child tx to verify legitimacy.
-	return s.verifyUnconfirmedTx(txID, tx, childTxInputs, proofs)
+	return s.verifyUnconfirmedTx(txID, tx, childTxInputs[inputIdx], proofs)
 }
 
-func (s *SPVClient) verifyLeafTx(ctx context.Context, payment *SPVEnvelope, childTxInputs []*bt.Input,
-	proofs map[string]bool) (bool, error) {
+func (s *SPVClient) childTxInputIdx(txID string, childTxInputs []*bt.Input) (int, error) {
+	// Search through the child tx's inputs, and when a tx id match is found, return its index.
+	for i, cTxInput := range childTxInputs {
+		if cTxInput.PreviousTxID == txID {
+			return i, nil
+		}
+	}
+
+	// Otherwise, fail and error
+	return 0, ErrTxNotInInputs
+}
+
+func (s *SPVClient) verifyLeafTx(ctx context.Context, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
 	proofTxID := payment.Proof.TxOrID
 	if len(proofTxID) != 64 {
 		proofTx, err := bt.NewTxFromString(payment.Proof.TxOrID)
@@ -137,20 +151,6 @@ func (s *SPVClient) verifyLeafTx(ctx context.Context, payment *SPVEnvelope, chil
 		return false, ErrTxIDMismatch
 	}
 
-	// If the tx id of the merkle proof doesn't match any of the tx inputs of the child tx,
-	// fail and error
-	var proofPresent bool
-	for _, cTxInput := range childTxInputs {
-		if cTxInput.PreviousTxID == proofTxID {
-			proofPresent = true
-			break
-		}
-	}
-
-	if !proofPresent {
-		return false, ErrProofTxMismatch
-	}
-
 	valid, _, err := s.VerifyMerkleProofJSON(ctx, payment.Proof)
 	if err != nil {
 		return false, err
@@ -161,26 +161,13 @@ func (s *SPVClient) verifyLeafTx(ctx context.Context, payment *SPVEnvelope, chil
 	return valid, nil
 }
 
-func (s *SPVClient) verifyUnconfirmedTx(txID string, tx *bt.Tx, childTxInputs []*bt.Input,
+func (s *SPVClient) verifyUnconfirmedTx(txID string, tx *bt.Tx, childTxInput *bt.Input,
 	proofs map[string]bool) (bool, error) {
-	// If current tx id is not found any tx input of the child tx, fail and error
-	var pass bool
-	for _, cTxInput := range childTxInputs {
-		if cTxInput.PreviousTxID != txID {
-			continue
-		}
-		pass = true
+	// TODO: verify child tx input's unlocking script with current tx output's locking script
+	output := tx.Outputs[int(childTxInput.PreviousTxOutIndex)]
+	_ = output
 
-		// TODO: verify child tx input's unlocking script with current tx output's locking script
-		output := tx.Outputs[int(cTxInput.PreviousTxOutIndex)]
-		_ = output
-	}
+	proofs[txID] = true
 
-	if !pass {
-		return pass, ErrTxNotInInputs
-	}
-
-	proofs[txID] = pass
-
-	return pass, nil
+	return true, nil
 }
