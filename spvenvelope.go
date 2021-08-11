@@ -21,6 +21,10 @@ var (
 	// ErrTxIDMismatch returns if they key value pair of a transactions input has a mismatch in txID
 	ErrTxIDMismatch = errors.New("input and proof ID mismatch")
 
+	// NotAllInputsSupplied returns if an unconfirmed transaction in envelope contains inputs which are not
+	// present in the parent envelope
+	ErrNotAllInputsSupplied = errors.New("a tx input missing in parent envelope")
+
 	// ErrTxNotInInputs returns if the tx.Outputs of a transaction supplied in the SPV envelope cannot be
 	// matched to any of its child transactions tx.Inputs
 	ErrTxNotInInputs = errors.New("could not find tx in child inputs")
@@ -117,9 +121,27 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		return s.verifyLeafTx(ctx, payment, proofs)
 	}
 
+	// Ensure that every input current present with the current tx is present in the envelope
+	// as a parent
+	if ok := s.verifyAllTxInputsPresent(payment, tx); !ok {
+		return false, ErrNotAllInputsSupplied
+	}
+
 	// If no merkle proof is provided, use the locking and unlocking scripts of this
 	// and the child tx to verify legitimacy.
 	return s.verifyUnconfirmedTx(txID, tx, childTxInputs[inputIdx], proofs)
+}
+
+func (S *SPVClient) verifyAllTxInputsPresent(payment *SPVEnvelope, tx *bt.Tx) bool {
+	// If an unconfirmed tx has an input which is not present in the spv envelope, we
+	// should fail and error, as we cannot prove the legitimacy of those inputs.
+	for _, txInput := range tx.Inputs {
+		if _, ok := payment.Inputs[txInput.PreviousTxID]; !ok {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (s *SPVClient) childTxInputIdx(txID string, childTxInputs []*bt.Input) (int, error) {
