@@ -82,7 +82,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 	}
 
 	// Group all tx inputs by their tx id, to pass to the parent envelope
-	m, err := s.buildInputPaymentMap(tx, payment)
+	txInputs, err := s.buildInputPaymentMap(tx, payment)
 	if err != nil {
 		return false, err
 	}
@@ -95,7 +95,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 			parent.TxID = parentTxID
 		}
 
-		valid, err := s.verifyTxs(ctx, parent, m[parentTxID], false, proofs)
+		valid, err := s.verifyTxs(ctx, parent, txInputs[parentTxID], false, proofs)
 		if err != nil {
 			return false, err
 		}
