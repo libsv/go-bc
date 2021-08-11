@@ -21,7 +21,7 @@ var (
 	// ErrTxIDMismatch returns if they key value pair of a transactions input has a mismatch in txID
 	ErrTxIDMismatch = errors.New("input and proof ID mismatch")
 
-	// NotAllInputsSupplied returns if an unconfirmed transaction in envelope contains inputs which are not
+	// ErrNotAllInputsSupplied returns if an unconfirmed transaction in envelope contains inputs which are not
 	// present in the parent envelope
 	ErrNotAllInputsSupplied = errors.New("a tx input missing in parent envelope")
 )
@@ -81,6 +81,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		return false, ErrNoConfirmedTransaction
 	}
 
+	// Group all tx inputs by their tx id, to pass to the parent envelope
 	m, err := s.buildInputPaymentMap(tx, payment)
 	if err != nil {
 		return false, err
@@ -147,18 +148,6 @@ func (s *SPVClient) buildInputPaymentMap(tx *bt.Tx, payment *SPVEnvelope) (map[s
 	}
 
 	return m, nil
-}
-
-func (s *SPVClient) verifyAllTxInputsPresent(payment *SPVEnvelope, tx *bt.Tx) bool {
-	// If an unconfirmed tx has an input which is not present in the spv envelope, we
-	// should fail and error, as we cannot prove the legitimacy of those inputs.
-	for _, txInput := range tx.Inputs {
-		if _, ok := payment.Parents[txInput.PreviousTxID]; !ok {
-			return false
-		}
-	}
-
-	return true
 }
 
 func (s *SPVClient) verifyAnchorTx(ctx context.Context, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
