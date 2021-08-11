@@ -24,10 +24,6 @@ var (
 	// NotAllInputsSupplied returns if an unconfirmed transaction in envelope contains inputs which are not
 	// present in the parent envelope
 	ErrNotAllInputsSupplied = errors.New("a tx input missing in parent envelope")
-
-	// ErrTxNotInInputs returns if the tx.Outputs of a transaction supplied in the SPV envelope cannot be
-	// matched to any of its child transactions tx.Inputs (no link found)
-	ErrTxNotInInputs = errors.New("could not find tx in child inputs")
 )
 
 // SPVEnvelope is a struct which contains all information needed for a transaction to be verified.
@@ -80,6 +76,16 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		return false, ErrTipTxConfirmed
 	}
 
+	// If at the beginning of the tx chain and tx is unconfirmed, fail and error.
+	if (payment.Parents == nil || len(payment.Parents) == 0) && payment.Proof == nil {
+		return false, ErrNoConfirmedTransaction
+	}
+
+	m, err := s.buildInputPaymentMap(tx, payment)
+	if err != nil {
+		return false, err
+	}
+
 	// Recurse back to the anchor transactions of the transaction chain and verify forward towards
 	// the tip transaction. This way, we check that the first transactions in the chain are anchored
 	// to the blockchain through a valid Merkle Proof.
@@ -87,7 +93,8 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		if parent.TxID == "" {
 			parent.TxID = parentTxID
 		}
-		valid, err := s.verifyTxs(ctx, parent, tx.GetInputs(), false, proofs)
+
+		valid, err := s.verifyTxs(ctx, parent, m[parentTxID], false, proofs)
 		if err != nil {
 			return false, err
 		}
@@ -106,36 +113,43 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		return true, nil
 	}
 
-	// If at the beginning of the tx chain and tx is unconfirmed, fail and error.
-	if (payment.Parents == nil || len(payment.Parents) == 0) && payment.Proof == nil {
-		return false, ErrNoConfirmedTransaction
-	}
-
-	// Retrieve the index of the linked child tx input to prevent having to search the the inputs
-	// slice multiple times later
-	inputIdx, err := s.childTxInputIdx(txID, childTxInputs)
-	if err != nil {
-		return false, err
-	}
-
 	// If a Merkle Proof is provided, assume we are at the anchor/beginning of the tx chain.
 	// Verify and return the result.
 	if payment.Proof != nil {
 		return s.verifyAnchorTx(ctx, payment, proofs)
 	}
 
-	// Ensure that every input current present with the current tx is present in the envelope
-	// as a parent
-	if ok := s.verifyAllTxInputsPresent(payment, tx); !ok {
-		return false, ErrNotAllInputsSupplied
-	}
-
 	// If no Merkle Proof is provided, we must verify the unconfirmed tx or else we can not
 	// know if any of it's child txs are valid.
-	return s.verifyUnconfirmedTx(txID, tx, childTxInputs[inputIdx], proofs)
+	return s.verifyUnconfirmedTx(txID, tx, childTxInputs, proofs)
 }
 
-func (S *SPVClient) verifyAllTxInputsPresent(payment *SPVEnvelope, tx *bt.Tx) bool {
+func (s *SPVClient) buildInputPaymentMap(tx *bt.Tx, payment *SPVEnvelope) (map[string][]*bt.Input, error) {
+	m := make(map[string][]*bt.Input, len(tx.Inputs))
+
+	// No need to manually verify the tx inputs if a Merkle Proof has been provided
+	if payment.Proof != nil {
+		return m, nil
+	}
+
+	// If an unconfirmed tx has an input which is not present in the spv envelope, we
+	// should fail and error, as we cannot prove the legitimacy of those inputs.
+	for _, txInput := range tx.Inputs {
+		if _, ok := payment.Parents[txInput.PreviousTxID]; !ok {
+			return nil, ErrNotAllInputsSupplied
+		}
+
+		if m[txInput.PreviousTxID] == nil {
+			m[txInput.PreviousTxID] = make([]*bt.Input, 0)
+		}
+
+		m[txInput.PreviousTxID] = append(m[txInput.PreviousTxID], txInput)
+	}
+
+	return m, nil
+}
+
+func (s *SPVClient) verifyAllTxInputsPresent(payment *SPVEnvelope, tx *bt.Tx) bool {
 	// If an unconfirmed tx has an input which is not present in the spv envelope, we
 	// should fail and error, as we cannot prove the legitimacy of those inputs.
 	for _, txInput := range tx.Inputs {
@@ -145,18 +159,6 @@ func (S *SPVClient) verifyAllTxInputsPresent(payment *SPVEnvelope, tx *bt.Tx) bo
 	}
 
 	return true
-}
-
-func (s *SPVClient) childTxInputIdx(txID string, childTxInputs []*bt.Input) (int, error) {
-	// Search through the child tx's inputs, and when a tx id match is found, return its index.
-	for i, cTxInput := range childTxInputs {
-		if cTxInput.PreviousTxID == txID {
-			return i, nil
-		}
-	}
-
-	// Otherwise, fail and error
-	return 0, ErrTxNotInInputs
 }
 
 func (s *SPVClient) verifyAnchorTx(ctx context.Context, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
@@ -186,11 +188,14 @@ func (s *SPVClient) verifyAnchorTx(ctx context.Context, payment *SPVEnvelope, pr
 	return valid, nil
 }
 
-func (s *SPVClient) verifyUnconfirmedTx(txID string, tx *bt.Tx, childTxInput *bt.Input,
+func (s *SPVClient) verifyUnconfirmedTx(txID string, tx *bt.Tx, childTxInputs []*bt.Input,
 	proofs map[string]bool) (bool, error) {
-	// TODO: verify child tx input's unlocking script with current tx output's locking script
-	output := tx.Outputs[int(childTxInput.PreviousTxOutIndex)]
-	_ = output
+
+	for _, cTxInput := range childTxInputs {
+		// TODO: verify child tx input's unlocking script with current tx output's locking script
+		output := tx.Outputs[int(cTxInput.PreviousTxOutIndex)]
+		_ = output
+	}
 
 	proofs[txID] = true
 
