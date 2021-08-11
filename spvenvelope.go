@@ -12,11 +12,11 @@ var (
 	// ErrPaymentNotVerified returns if a transaction in the tree provided was missed during verification
 	ErrPaymentNotVerified = errors.New("a tx was missed during validation")
 
-	// ErrRootPaymentConfirmed returns if the root payment is already confirmed
-	ErrRootPaymentConfirmed = errors.New("root payment must be unconfirmed")
+	// ErrTipTxConfirmed returns if the tip transaction is already confirmed
+	ErrTipTxConfirmed = errors.New("tip transaction must be unconfirmed")
 
-	// ErrNoConfirmedTransaction returns if a path from root to leaf contains no confirmed transcation
-	ErrNoConfirmedTransaction = errors.New("not confirmed tx(s) provided")
+	// ErrNoConfirmedTransaction returns if a path from tip to beginning/anchor contains no confirmed transcation
+	ErrNoConfirmedTransaction = errors.New("not confirmed/anchored tx(s) provided")
 
 	// ErrTxIDMismatch returns if they key value pair of a transactions input has a mismatch in txID
 	ErrTxIDMismatch = errors.New("input and proof ID mismatch")
@@ -26,7 +26,7 @@ var (
 	ErrNotAllInputsSupplied = errors.New("a tx input missing in parent envelope")
 
 	// ErrTxNotInInputs returns if the tx.Outputs of a transaction supplied in the SPV envelope cannot be
-	// matched to any of its child transactions tx.Inputs
+	// matched to any of its child transactions tx.Inputs (no link found)
 	ErrTxNotInInputs = errors.New("could not find tx in child inputs")
 )
 
@@ -38,7 +38,7 @@ type SPVEnvelope struct {
 	RawTX         string                  `json:"rawTx,omitempty"`
 	Proof         *MerkleProof            `json:"proof,omitempty"`
 	MapiResponses []minercraft.Callback   `json:"mapiResponses,omitempty"`
-	Inputs        map[string]*SPVEnvelope `json:"inputs"`
+	Parents       map[string]*SPVEnvelope `json:"parents"`
 }
 
 // VerifyPayment verifies whether or not the txs supplied via the supplied SPVEnvelope are valid
@@ -53,6 +53,7 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bo
 		return valid, nil
 	}
 
+	// TODO: check if still needed
 	// Check the proofs map for safety, in case any tx was skipped during verification
 	for _, v := range proofs {
 		if !v {
@@ -64,7 +65,8 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bo
 }
 
 func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTxInputs []*bt.Input,
-	isRoot bool, proofs map[string]bool) (bool, error) {
+	isTip bool, proofs map[string]bool) (bool, error) {
+
 	tx, err := bt.NewTxFromString(payment.RawTX)
 	if err != nil {
 		return false, err
@@ -72,19 +74,20 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 	txID := tx.GetTxID()
 	proofs[txID] = false
 
-	// The root tx is the transaction we're trying to verify, and it should not have a supplied
-	// merkle proof.
-	if isRoot && payment.Proof != nil {
-		return false, ErrRootPaymentConfirmed
+	// The tip tx is the transaction we're trying to verify, and it should not have a supplied
+	// Merkle Proof.
+	if isTip && payment.Proof != nil {
+		return false, ErrTipTxConfirmed
 	}
 
-	// Recurse to the leaves of the tree and verify upward towards the root. This way, we
-	// check any merkle proofs provided first.
-	for inputTxID, input := range payment.Inputs {
-		if input.TxID == "" {
-			input.TxID = inputTxID
+	// Recurse back to the anchor transactions of the transaction chain and verify forward towards
+	// the tip transaction. This way, we check that the first transactions in the chain are anchored
+	// to the blockchain through a valid Merkle Proof.
+	for parentTxID, parent := range payment.Parents {
+		if parent.TxID == "" {
+			parent.TxID = parentTxID
 		}
-		valid, err := s.verifyTxs(ctx, input, tx.GetInputs(), false, proofs)
+		valid, err := s.verifyTxs(ctx, parent, tx.GetInputs(), false, proofs)
 		if err != nil {
 			return false, err
 		}
@@ -93,18 +96,18 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		}
 	}
 
-	// Given that the root of the SPVEnvelope is the tx we're trying to prove as legitimate,
-	// it will not come with a proof (or any outputs) to verify.
+	// Given that the tip transaction of the SPVEnvelope is the tx we're trying to prove as
+	// legitimate, it will not come with a Merkle Proof (or any output links) to verify.
 	//
-	// As well as this, for this condition to be true, every previous merkle proof or
+	// As well as this, for this condition to be true, every previous Merkle Proof or
 	// tx verification will have passed. So, we can safely assume success and return true.
-	if isRoot {
+	if isTip {
 		proofs[txID] = true
 		return true, nil
 	}
 
-	// If at the leaves of the tree and transaction is unconfirmed, fail and error.
-	if (payment.Inputs == nil || len(payment.Inputs) == 0) && payment.Proof == nil {
+	// If at the beginning of the tx chain and tx is unconfirmed, fail and error.
+	if (payment.Parents == nil || len(payment.Parents) == 0) && payment.Proof == nil {
 		return false, ErrNoConfirmedTransaction
 	}
 
@@ -115,10 +118,10 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		return false, err
 	}
 
-	// If a merkle proof is provided, assume we are at the a leaf of the tree.
+	// If a Merkle Proof is provided, assume we are at the anchor/beginning of the tx chain.
 	// Verify and return the result.
 	if payment.Proof != nil {
-		return s.verifyLeafTx(ctx, payment, proofs)
+		return s.verifyAnchorTx(ctx, payment, proofs)
 	}
 
 	// Ensure that every input current present with the current tx is present in the envelope
@@ -127,8 +130,8 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, childTx
 		return false, ErrNotAllInputsSupplied
 	}
 
-	// If no merkle proof is provided, use the locking and unlocking scripts of this
-	// and the child tx to verify legitimacy.
+	// If no Merkle Proof is provided, we must verify the unconfirmed tx or else we can not
+	// know if any of it's child txs are valid.
 	return s.verifyUnconfirmedTx(txID, tx, childTxInputs[inputIdx], proofs)
 }
 
@@ -136,7 +139,7 @@ func (S *SPVClient) verifyAllTxInputsPresent(payment *SPVEnvelope, tx *bt.Tx) bo
 	// If an unconfirmed tx has an input which is not present in the spv envelope, we
 	// should fail and error, as we cannot prove the legitimacy of those inputs.
 	for _, txInput := range tx.Inputs {
-		if _, ok := payment.Inputs[txInput.PreviousTxID]; !ok {
+		if _, ok := payment.Parents[txInput.PreviousTxID]; !ok {
 			return false
 		}
 	}
@@ -156,7 +159,7 @@ func (s *SPVClient) childTxInputIdx(txID string, childTxInputs []*bt.Input) (int
 	return 0, ErrTxNotInInputs
 }
 
-func (s *SPVClient) verifyLeafTx(ctx context.Context, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
+func (s *SPVClient) verifyAnchorTx(ctx context.Context, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
 	proofTxID := payment.Proof.TxOrID
 	if len(proofTxID) != 64 {
 		proofTx, err := bt.NewTxFromString(payment.Proof.TxOrID)
@@ -167,7 +170,7 @@ func (s *SPVClient) verifyLeafTx(ctx context.Context, payment *SPVEnvelope, proo
 		proofTxID = proofTx.GetTxID()
 	}
 
-	// If the tx id of the merkle proof doesn't match the tx id provided in the SPVEnvelope,
+	// If the txid of the Merkle Proof doesn't match the txid provided in the SPVEnvelope,
 	// fail and error
 	if proofTxID != payment.TxID {
 		return false, ErrTxIDMismatch
