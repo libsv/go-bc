@@ -46,7 +46,7 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bo
 
 	// The tip tx is the transaction we're trying to verify, and it should not have a supplied
 	// Merkle Proof.
-	if payment.IsAnchor() {
+	if payment.IsAnchored() {
 		return false, ErrTipTxConfirmed
 	}
 
@@ -78,7 +78,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, proofs 
 	proofs[txID] = false
 
 	// If at the beginning or middle of the tx chain and tx is unconfirmed, fail and error.
-	if !payment.IsAnchor() && (payment.Parents == nil || len(payment.Parents) == 0) {
+	if !payment.IsAnchored() && (payment.Parents == nil || len(payment.Parents) == 0) {
 		return false, ErrNoConfirmedTransaction
 	}
 
@@ -95,21 +95,21 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, proofs 
 			return false, err
 		}
 		if !valid {
-			return valid, nil
+			return false, nil
 		}
 	}
 
 	// If a Merkle Proof is provided, assume we are at the anchor/beginning of the tx chain.
 	// Verify and return the result.
-	if payment.IsAnchor() {
-		return s.verifyAnchorTx(ctx, payment, proofs)
+	if payment.IsAnchored() {
+		return s.verifyTxAnchor(ctx, payment, proofs)
 	}
 
 	// We must verify the tx or else we can not know if any of it's child txs are valid.
 	return s.verifyUnconfirmedTx(tx, payment, proofs)
 }
 
-func (s *SPVClient) verifyAnchorTx(ctx context.Context, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
+func (s *SPVClient) verifyTxAnchor(ctx context.Context, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
 	proofTxID := payment.Proof.TxOrID
 	if len(proofTxID) != 64 {
 		proofTx, err := bt.NewTxFromString(payment.Proof.TxOrID)
@@ -154,6 +154,8 @@ func (s *SPVClient) verifyUnconfirmedTx(tx *bt.Tx, payment *SPVEnvelope, proofs 
 		}
 
 		output := parentTx.Outputs[int(input.PreviousTxOutIndex)]
+
+		// TODO: verify script using input and previous output
 		_ = output
 	}
 
@@ -162,7 +164,7 @@ func (s *SPVClient) verifyUnconfirmedTx(tx *bt.Tx, payment *SPVEnvelope, proofs 
 	return true, nil
 }
 
-// IsAnchor returns true if the evelope is the anchor tx.
-func (s *SPVEnvelope) IsAnchor() bool {
+// IsAnchored returns true if the evelope is the anchor tx.
+func (s *SPVEnvelope) IsAnchored() bool {
 	return s.Proof != nil
 }
