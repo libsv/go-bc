@@ -27,6 +27,12 @@ var (
 
 	// ErrNoTxInputsToVerify returns if a transaction has no inputs
 	ErrNoTxInputsToVerify = errors.New("a tx has no inputs to verify")
+
+	// ErrNilInitialPayment returns if a transaction has no inputs
+	ErrNilInitialPayment = errors.New("initial payment cannot be nil")
+
+	// ErrInputRefsOutOfBoundsOutput returns if a transaction has no inputs
+	ErrInputRefsOutOfBoundsOutput = errors.New("tx input index into output is out of bounds")
 )
 
 // SPVEnvelope is a struct which contains all information needed for a transaction to be verified.
@@ -41,16 +47,20 @@ type SPVEnvelope struct {
 }
 
 // VerifyPayment verifies whether or not the txs supplied via the supplied SPVEnvelope are valid
-func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bool, error) {
+func (s *SPVClient) VerifyPayment(ctx context.Context, initialPayment *SPVEnvelope) (bool, error) {
 	proofs := make(map[string]bool)
+
+	if initialPayment == nil {
+		return false, ErrNilInitialPayment
+	}
 
 	// The tip tx is the transaction we're trying to verify, and it should not have a supplied
 	// Merkle Proof.
-	if payment.IsAnchored() {
+	if initialPayment.IsAnchored() {
 		return false, ErrTipTxConfirmed
 	}
 
-	valid, err := s.verifyTxs(ctx, payment, proofs)
+	valid, err := s.verifyTxs(ctx, initialPayment, proofs)
 	if err != nil {
 		return false, err
 	}
@@ -153,6 +163,11 @@ func (s *SPVClient) verifyUnconfirmedTx(tx *bt.Tx, payment *SPVEnvelope, proofs 
 			return false, err
 		}
 
+		// If the input is indexing an ouput that is out of bounds, fail and error
+		if int(input.PreviousTxOutIndex) > len(parentTx.Outputs)-1 {
+			return false, ErrInputRefsOutOfBoundsOutput
+		}
+
 		output := parentTx.Outputs[int(input.PreviousTxOutIndex)]
 
 		// TODO: verify script using input and previous output
@@ -164,7 +179,7 @@ func (s *SPVClient) verifyUnconfirmedTx(tx *bt.Tx, payment *SPVEnvelope, proofs 
 	return true, nil
 }
 
-// IsAnchored returns true if the evelope is the anchor tx.
+// IsAnchored returns true if the envelope is the anchor tx.
 func (s *SPVEnvelope) IsAnchored() bool {
 	return s.Proof != nil
 }
