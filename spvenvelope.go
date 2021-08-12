@@ -44,7 +44,13 @@ type SPVEnvelope struct {
 func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bool, error) {
 	proofs := make(map[string]bool)
 
-	valid, err := s.verifyTxs(ctx, payment, true, proofs)
+	// The tip tx is the transaction we're trying to verify, and it should not have a supplied
+	// Merkle Proof.
+	if payment.IsAnchor() {
+		return false, ErrTipTxConfirmed
+	}
+
+	valid, err := s.verifyTxs(ctx, payment, proofs)
 	if err != nil {
 		return false, err
 	}
@@ -63,19 +69,13 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bo
 	return true, nil
 }
 
-func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, isTip bool, proofs map[string]bool) (bool, error) {
+func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
 	tx, err := bt.NewTxFromString(payment.RawTX)
 	if err != nil {
 		return false, err
 	}
 	txID := tx.GetTxID()
 	proofs[txID] = false
-
-	// The tip tx is the transaction we're trying to verify, and it should not have a supplied
-	// Merkle Proof.
-	if isTip && payment.IsAnchor() {
-		return false, ErrTipTxConfirmed
-	}
 
 	// If at the beginning or middle of the tx chain and tx is unconfirmed, fail and error.
 	if !payment.IsAnchor() && (payment.Parents == nil || len(payment.Parents) == 0) {
@@ -90,7 +90,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, isTip b
 			parent.TxID = parentTxID
 		}
 
-		valid, err := s.verifyTxs(ctx, parent, false, proofs)
+		valid, err := s.verifyTxs(ctx, parent, proofs)
 		if err != nil {
 			return false, err
 		}
@@ -105,7 +105,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, isTip b
 		return s.verifyAnchorTx(ctx, payment, proofs)
 	}
 
-	// We must verify the child tx or else we can not know if any of it's child txs are valid.
+	// We must verify the tx or else we can not know if any of it's child txs are valid.
 	return s.verifyUnconfirmedTx(tx, payment, proofs)
 }
 
@@ -137,7 +137,7 @@ func (s *SPVClient) verifyAnchorTx(ctx context.Context, payment *SPVEnvelope, pr
 }
 
 func (s *SPVClient) verifyUnconfirmedTx(tx *bt.Tx, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
-	// If no inputs from the child tx have been provided, fail and error
+	// If no tx inputs have been provided, fail and error
 	if len(tx.Inputs) == 0 {
 		return false, ErrNoTxInputsToVerify
 	}
