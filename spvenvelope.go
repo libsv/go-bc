@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/libsv/go-bt"
-	"github.com/tonicpow/go-minercraft"
 )
 
 var (
@@ -42,7 +41,7 @@ type SPVEnvelope struct {
 	TxID          string                  `json:"txid"`
 	RawTX         string                  `json:"rawTx,omitempty"`
 	Proof         *MerkleProof            `json:"proof,omitempty"`
-	MapiResponses []minercraft.Callback   `json:"mapiResponses,omitempty"`
+	MapiResponses []MapiCallback          `json:"mapiResponses,omitempty"`
 	Parents       map[string]*SPVEnvelope `json:"parents"`
 }
 
