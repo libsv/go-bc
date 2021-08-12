@@ -42,6 +42,7 @@ func (bh *BlockHeader) String() (string, error) {
 
 // Bytes will decode a bitcoin block header struct
 // into a byte slice.
+//
 // See https://en.bitcoin.it/wiki/Block_hashing_algorithm
 func (bh *BlockHeader) Bytes() ([]byte, error) {
 	bytes := []byte{}
@@ -84,6 +85,7 @@ func (bh *BlockHeader) Bytes() ([]byte, error) {
 
 // EncodeBlockHeaderStr will encode a block header hash
 // into the bitcoin block header structure.
+//
 // See https://en.bitcoin.it/wiki/Block_hashing_algorithm
 func EncodeBlockHeaderStr(headerStr string) (*BlockHeader, error) {
 	if len(headerStr) != 160 {
@@ -100,6 +102,7 @@ func EncodeBlockHeaderStr(headerStr string) (*BlockHeader, error) {
 
 // EncodeBlockHeader will encode a block header byte slice
 // into the bitcoin block header structure.
+//
 // See https://en.bitcoin.it/wiki/Block_hashing_algorithm
 func EncodeBlockHeader(headerBytes []byte) (*BlockHeader, error) {
 	if len(headerBytes) != 80 {
