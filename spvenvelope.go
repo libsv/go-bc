@@ -64,7 +64,6 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, payment *SPVEnvelope) (bo
 }
 
 func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, isTip bool, proofs map[string]bool) (bool, error) {
-
 	tx, err := bt.NewTxFromString(payment.RawTX)
 	if err != nil {
 		return false, err
