@@ -400,7 +400,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp:    false,
 			expErr: ErrInputRefsOutOfBoundsOutput,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*BlockHeader, error) {
-				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" { //nolint:goconst
+				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
 					return EncodeBlockHeaderStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 				}
 				return EncodeBlockHeaderStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")

@@ -48,8 +48,6 @@ type SPVEnvelope struct {
 
 // VerifyPayment verifies whether or not the txs supplied via the supplied SPVEnvelope are valid
 func (s *SPVClient) VerifyPayment(ctx context.Context, initialPayment *SPVEnvelope) (bool, error) {
-	proofs := make(map[string]bool)
-
 	if initialPayment == nil {
 		return false, ErrNilInitialPayment
 	}
@@ -60,32 +58,19 @@ func (s *SPVClient) VerifyPayment(ctx context.Context, initialPayment *SPVEnvelo
 		return false, ErrTipTxConfirmed
 	}
 
-	valid, err := s.verifyTxs(ctx, initialPayment, proofs)
+	valid, err := s.verifyTxs(ctx, initialPayment)
 	if err != nil {
 		return false, err
 	}
-	if !valid {
-		return valid, nil
-	}
 
-	// TODO: check if still needed
-	// Check the proofs map for safety, in case any tx was skipped during verification
-	for _, v := range proofs {
-		if !v {
-			return false, ErrPaymentNotVerified
-		}
-	}
-
-	return true, nil
+	return valid, nil
 }
 
-func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
+func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope) (bool, error) {
 	tx, err := bt.NewTxFromString(payment.RawTX)
 	if err != nil {
 		return false, err
 	}
-	txID := tx.GetTxID()
-	proofs[txID] = false
 
 	// If at the beginning or middle of the tx chain and tx is unconfirmed, fail and error.
 	if !payment.IsAnchored() && (payment.Parents == nil || len(payment.Parents) == 0) {
@@ -100,7 +85,7 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, proofs 
 			parent.TxID = parentTxID
 		}
 
-		valid, err := s.verifyTxs(ctx, parent, proofs)
+		valid, err := s.verifyTxs(ctx, parent)
 		if err != nil {
 			return false, err
 		}
@@ -112,14 +97,14 @@ func (s *SPVClient) verifyTxs(ctx context.Context, payment *SPVEnvelope, proofs 
 	// If a Merkle Proof is provided, assume we are at the anchor/beginning of the tx chain.
 	// Verify and return the result.
 	if payment.IsAnchored() {
-		return s.verifyTxAnchor(ctx, payment, proofs)
+		return s.verifyTxAnchor(ctx, payment)
 	}
 
 	// We must verify the tx or else we can not know if any of it's child txs are valid.
-	return s.verifyUnconfirmedTx(tx, payment, proofs)
+	return s.verifyUnconfirmedTx(tx, payment)
 }
 
-func (s *SPVClient) verifyTxAnchor(ctx context.Context, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
+func (s *SPVClient) verifyTxAnchor(ctx context.Context, payment *SPVEnvelope) (bool, error) {
 	proofTxID := payment.Proof.TxOrID
 	if len(proofTxID) != 64 {
 		proofTx, err := bt.NewTxFromString(payment.Proof.TxOrID)
@@ -141,12 +126,10 @@ func (s *SPVClient) verifyTxAnchor(ctx context.Context, payment *SPVEnvelope, pr
 		return false, err
 	}
 
-	proofs[payment.TxID] = valid
-
 	return valid, nil
 }
 
-func (s *SPVClient) verifyUnconfirmedTx(tx *bt.Tx, payment *SPVEnvelope, proofs map[string]bool) (bool, error) {
+func (s *SPVClient) verifyUnconfirmedTx(tx *bt.Tx, payment *SPVEnvelope) (bool, error) {
 	// If no tx inputs have been provided, fail and error
 	if len(tx.Inputs) == 0 {
 		return false, ErrNoTxInputsToVerify
@@ -163,7 +146,7 @@ func (s *SPVClient) verifyUnconfirmedTx(tx *bt.Tx, payment *SPVEnvelope, proofs 
 			return false, err
 		}
 
-		// If the input is indexing an ouput that is out of bounds, fail and error
+		// If the input is indexing an output that is out of bounds, fail and error
 		if int(input.PreviousTxOutIndex) > len(parentTx.Outputs)-1 {
 			return false, ErrInputRefsOutOfBoundsOutput
 		}
@@ -173,8 +156,6 @@ func (s *SPVClient) verifyUnconfirmedTx(tx *bt.Tx, payment *SPVEnvelope, proofs 
 		// TODO: verify script using input and previous output
 		_ = output
 	}
-
-	proofs[tx.GetTxID()] = true
 
 	return true, nil
 }
