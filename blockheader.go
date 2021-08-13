@@ -95,14 +95,14 @@ func NewBlockHeaderFromStr(headerStr string) (*BlockHeader, error) {
 		return nil, err
 	}
 
-	return NewBlockHeader(headerBytes)
+	return NewBlockHeaderFromBytes(headerBytes)
 }
 
-// NewBlockHeader will encode a block header byte slice
+// NewBlockHeaderFromBytes will encode a block header byte slice
 // into the bitcoin block header structure.
 //
 // See https://en.bitcoin.it/wiki/Block_hashing_algorithm
-func NewBlockHeader(headerBytes []byte) (*BlockHeader, error) {
+func NewBlockHeaderFromBytes(headerBytes []byte) (*BlockHeader, error) {
 	if len(headerBytes) != 80 {
 		return nil, errors.New("block header should be 80 bytes long")
 	}

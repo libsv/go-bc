@@ -64,17 +64,17 @@ func NewBlockFromStr(blockStr string) (*Block, error) {
 		return nil, err
 	}
 
-	return NewBlock(blockBytes)
+	return NewBlockFromBytes(blockBytes)
 }
 
-// NewBlock will encode a block header byte slice
+// NewBlockFromBytes will encode a block header byte slice
 // into the bitcoin block header structure.
 //
 // See https://btcinformation.org/en/developer-reference#serialized-blocks
-func NewBlock(b []byte) (*Block, error) {
+func NewBlockFromBytes(b []byte) (*Block, error) {
 
 	var offset int
-	bh, err := NewBlockHeader(b[:80])
+	bh, err := NewBlockHeaderFromBytes(b[:80])
 	if err != nil {
 		return nil, err
 	}
