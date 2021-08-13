@@ -38,11 +38,11 @@ var (
 //
 // spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/
 type SPVEnvelope struct {
-	TxID          string                  `json:"txid"`
+	TxID          string                  `json:"txid,omitempty"`
 	RawTX         string                  `json:"rawTx,omitempty"`
 	Proof         *MerkleProof            `json:"proof,omitempty"`
 	MapiResponses []MapiCallback          `json:"mapiResponses,omitempty"`
-	Parents       map[string]*SPVEnvelope `json:"parents"`
+	Parents       map[string]*SPVEnvelope `json:"parents,omitempty"`
 }
 
 // VerifyPayment verifies whether or not the txs supplied via the supplied SPVEnvelope are valid
