@@ -54,27 +54,27 @@ func (b *Block) Bytes() ([]byte, error) {
 	return bytes, nil
 }
 
-// EncodeBlockStr will encode a block header hash
+// NewBlockFromStr will encode a block header hash
 // into the bitcoin block header structure.
 //
 // See https://btcinformation.org/en/developer-reference#serialized-blocks
-func EncodeBlockStr(blockStr string) (*Block, error) {
+func NewBlockFromStr(blockStr string) (*Block, error) {
 	blockBytes, err := hex.DecodeString(blockStr)
 	if err != nil {
 		return nil, err
 	}
 
-	return EncodeBlock(blockBytes)
+	return NewBlock(blockBytes)
 }
 
-// EncodeBlock will encode a block header byte slice
+// NewBlock will encode a block header byte slice
 // into the bitcoin block header structure.
 //
 // See https://btcinformation.org/en/developer-reference#serialized-blocks
-func EncodeBlock(b []byte) (*Block, error) {
+func NewBlock(b []byte) (*Block, error) {
 
 	var offset int
-	bh, err := EncodeBlockHeader(b[:80])
+	bh, err := NewBlockHeader(b[:80])
 	if err != nil {
 		return nil, err
 	}

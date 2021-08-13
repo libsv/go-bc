@@ -81,11 +81,11 @@ func (bh *BlockHeader) Bytes() ([]byte, error) {
 	return bytes, nil
 }
 
-// EncodeBlockHeaderStr will encode a block header hash
+// NewBlockHeaderFromStr will encode a block header hash
 // into the bitcoin block header structure.
 //
 // See https://en.bitcoin.it/wiki/Block_hashing_algorithm
-func EncodeBlockHeaderStr(headerStr string) (*BlockHeader, error) {
+func NewBlockHeaderFromStr(headerStr string) (*BlockHeader, error) {
 	if len(headerStr) != 160 {
 		return nil, errors.New("block header should be 80 bytes long")
 	}
@@ -95,14 +95,14 @@ func EncodeBlockHeaderStr(headerStr string) (*BlockHeader, error) {
 		return nil, err
 	}
 
-	return EncodeBlockHeader(headerBytes)
+	return NewBlockHeader(headerBytes)
 }
 
-// EncodeBlockHeader will encode a block header byte slice
+// NewBlockHeader will encode a block header byte slice
 // into the bitcoin block header structure.
 //
 // See https://en.bitcoin.it/wiki/Block_hashing_algorithm
-func EncodeBlockHeader(headerBytes []byte) (*BlockHeader, error) {
+func NewBlockHeader(headerBytes []byte) (*BlockHeader, error) {
 	if len(headerBytes) != 80 {
 		return nil, errors.New("block header should be 80 bytes long")
 	}
@@ -120,7 +120,7 @@ func EncodeBlockHeader(headerBytes []byte) (*BlockHeader, error) {
 // ExtractMerkleRootFromBlockHeader will take an 80 byte Bitcoin block
 // header hex string and return the Merkle Root from it.
 func ExtractMerkleRootFromBlockHeader(header string) (string, error) {
-	bh, err := EncodeBlockHeaderStr(header)
+	bh, err := NewBlockHeaderFromStr(header)
 	if err != nil {
 		return "", err
 	}

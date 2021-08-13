@@ -19,7 +19,7 @@ func TestEncodeBlockHeader(t *testing.T) {
 		Nonce:          0,
 	}
 
-	bh, err := bc.EncodeBlockHeaderStr(headerBytes)
+	bh, err := bc.NewBlockHeaderFromStr(headerBytes)
 
 	assert.NoError(t, err)
 	assert.Equal(t, ebh, bh)
