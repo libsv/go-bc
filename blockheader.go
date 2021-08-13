@@ -29,8 +29,6 @@ type BlockHeader struct {
 	Bits           string
 }
 
-// TODO: make fields private and make getters and setters
-
 // String returns the Block Header encoded as hex string.
 func (bh *BlockHeader) String() (string, error) {
 	bb, err := bh.Bytes()

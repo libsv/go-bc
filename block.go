@@ -23,8 +23,6 @@ type Block struct {
 	Txs         []*bt.Tx
 }
 
-// TODO: make fields private and make getters and setters
-
 // String returns the Block Header encoded as hex string.
 func (b *Block) String() (string, error) {
 	bb, err := b.Bytes()
