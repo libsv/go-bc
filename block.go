@@ -9,12 +9,9 @@ import (
 /*
 Field 													Purpose 									 														Size (Bytes)
 ----------------------------------------------------------------------------------------------------
-Version 							Block version number 																									4
-hashPrevBlock 				256-bit hash of the previous block header 	 													32
-hashMerkleRoot 				256-bit hash based on all of the transactions in the block 	 					32
-Time 									Current block timestamp as seconds since 1970-01-01T00:00 UTC 				4
-Bits 									Current target in compact format 	 																		4
-Nonce 								32-bit number (starts at 0) 	 																				4
+block_header 					Block Header				 																									80
+txn_count 						Total number of txs in this block, including the coinbase tx 	 				VarInt
+txns 									Every tx in this block, one after another, in raw tx format 	 				-
 */
 
 // A Block in the Bitcoin blockchain.
