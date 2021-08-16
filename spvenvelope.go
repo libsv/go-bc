@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/libsv/go-bt"
+	"github.com/libsv/go-bt/v2"
 )
 
 var (
@@ -111,7 +111,7 @@ func (s *SPVClient) verifyTxAnchor(ctx context.Context, payment *SPVEnvelope) (b
 			return false, err
 		}
 
-		proofTxID = proofTx.GetTxID()
+		proofTxID = proofTx.TxID()
 	}
 
 	// If the txid of the Merkle Proof doesn't match the txid provided in the SPVEnvelope,
@@ -135,7 +135,7 @@ func (s *SPVClient) verifyUnconfirmedTx(tx *bt.Tx, payment *SPVEnvelope) (bool, 
 	}
 
 	for _, input := range tx.Inputs {
-		parent, ok := payment.Parents[input.PreviousTxID]
+		parent, ok := payment.Parents[input.PreviousTxIDStr()]
 		if !ok {
 			return false, ErrNotAllInputsSupplied
 		}
