@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/libsv/go-bt"
+	"github.com/libsv/go-bt/v2"
 )
 
 const (
@@ -216,7 +216,7 @@ func txidFromTxOrID(txOrID string) (string, error) {
 			return "", err
 		}
 
-		return tx.GetTxID(), nil
+		return tx.TxID(), nil
 	}
 
 	return "", errors.New("invalid txOrId length - must be at least 64 chars (32 bytes)")
