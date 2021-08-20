@@ -48,9 +48,8 @@ type Envelope struct {
 }
 
 func (s *spvclient) CreateEnvelope(tx *bt.Tx) (*Envelope, error) {
-	txID := tx.TxID()
 	envelope := &Envelope{
-		TxID:    txID,
+		TxID:    tx.TxID(),
 		RawTX:   tx.String(),
 		Parents: make(map[string]*Envelope),
 	}
