@@ -12,8 +12,8 @@ func WithBlockHeaderChain(bhc bc.BlockHeaderChain) ClientOpts {
 	}
 }
 
-// WithTXGetter will inject the provided TXGetter into the spv.Client
-func WithTXGetter(txg TXGetter) ClientOpts {
+// WithTxGetter will inject the provided TxGetter into the spv.Client
+func WithTxGetter(txg TxGetter) ClientOpts {
 	return func(s *spvclient) {
 		s.txg = txg
 	}

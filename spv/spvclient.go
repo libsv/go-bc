@@ -44,7 +44,7 @@ type MerkleProofVerifier interface {
 type spvclient struct {
 	// BlockHeaderChain will be set when an implementation returning a bc.BlockHeader type is provided.
 	bhc bc.BlockHeaderChain
-	txg TXGetter
+	txg TxGetter
 	mpg MerkleProofGetter
 }
 

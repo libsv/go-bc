@@ -44,7 +44,7 @@ var (
 // spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/
 type Envelope struct {
 	TxID          string               `json:"txid,omitempty"`
-	RawTX         string               `json:"rawTx,omitempty"`
+	RawTx         string               `json:"rawTx,omitempty"`
 	Proof         *bc.MerkleProof      `json:"proof,omitempty"`
 	MapiResponses []bc.MapiCallback    `json:"mapiResponses,omitempty"`
 	Parents       map[string]*Envelope `json:"parents,omitempty"`
@@ -57,7 +57,7 @@ func (s *spvclient) CreateEnvelope(tx *bt.Tx) (*Envelope, error) {
 
 	envelope := &Envelope{
 		TxID:    tx.TxID(),
-		RawTX:   tx.String(),
+		RawTx:   tx.String(),
 		Parents: make(map[string]*Envelope),
 	}
 
@@ -152,7 +152,7 @@ func (s *spvclient) verifyTxs(ctx context.Context, payment *Envelope) (bool, err
 		return s.verifyTxAnchor(ctx, payment)
 	}
 
-	tx, err := bt.NewTxFromString(payment.RawTX)
+	tx, err := bt.NewTxFromString(payment.RawTx)
 	if err != nil {
 		return false, err
 	}
@@ -198,7 +198,7 @@ func (s *spvclient) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) (bool, err
 			return false, ErrNotAllInputsSupplied
 		}
 
-		parentTx, err := bt.NewTxFromString(parent.RawTX)
+		parentTx, err := bt.NewTxFromString(parent.RawTx)
 		if err != nil {
 			return false, err
 		}

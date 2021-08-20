@@ -5,8 +5,8 @@ import (
 	"github.com/libsv/go-bt/v2"
 )
 
-// TXGetter gets a tx from a provided id
-type TXGetter interface {
+// TxGetter gets a tx from a provided id
+type TxGetter interface {
 	Tx(txID string) (*bt.Tx, error)
 }
 
