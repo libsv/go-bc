@@ -1,10 +1,11 @@
-package bc_test
+package spv_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/libsv/go-bc"
+	"github.com/libsv/go-bc/spv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +32,7 @@ func TestVerifyMerkleProof(t *testing.T) {
 	}
 	hcm := &mockBlockHeaderChain{}
 
-	spvc, _ := bc.NewSPVClient(bc.WithBlockHeaderChain(hcm))
+	spvc, _ := spv.NewClient(spv.WithBlockHeaderChain(hcm))
 
 	t.Run("JSON", func(t *testing.T) {
 		valid, isLastInTree, err := spvc.VerifyMerkleProofJSON(context.Background(), proofJSON)
