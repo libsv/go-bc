@@ -10,6 +10,9 @@ import (
 )
 
 var (
+	// ErrNoTxInputs returns if an envelope is attempted to be created from a transaction that has no inputs
+	ErrNoTxInputs = errors.New("provided tx has no inputs to build envelope from")
+
 	// ErrPaymentNotVerified returns if a transaction in the tree provided was missed during verification
 	ErrPaymentNotVerified = errors.New("a tx was missed during validation")
 
@@ -48,6 +51,10 @@ type Envelope struct {
 }
 
 func (s *spvclient) CreateEnvelope(tx *bt.Tx) (*Envelope, error) {
+	if len(tx.Inputs) == 0 {
+		return nil, ErrNoTxInputs
+	}
+
 	envelope := &Envelope{
 		TxID:    tx.TxID(),
 		RawTX:   tx.String(),
@@ -72,6 +79,8 @@ func (s *spvclient) CreateEnvelope(tx *bt.Tx) (*Envelope, error) {
 				TxID:  pTxID,
 				Proof: mp,
 			}
+
+			// Skip getting the tx data as we have everything we need for verifying the current tx.
 			continue
 		}
 
