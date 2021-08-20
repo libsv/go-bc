@@ -15,16 +15,18 @@ import (
 // The implementation of BlockHeaderChain which is supplied will depend on the client
 // you are using, some may return a HeaderJSON response others may return the blockhash.
 type Client interface {
-	EnvelopeService
+	EnvelopeHandler
 	MerkleProofVerifier
 }
 
-type EnvelopeService interface {
-	EnvelopeBuilder
+// EnvelopeHandler interfaces the handling (creation and verification) of SPV Envelopes
+type EnvelopeHandler interface {
+	EnvelopeCreator
 	EnvelopeVerifier
 }
 
-type EnvelopeBuilder interface {
+// EnvelopeCreator interfaces the creation of SPV Envelopes
+type EnvelopeCreator interface {
 	CreateEnvelope(*bt.Tx) (*Envelope, error)
 }
 
