@@ -57,6 +57,9 @@ func (s *spvclient) CreateEnvelope(tx *bt.Tx) (*Envelope, error) {
 
 	for _, input := range tx.Inputs {
 		pTxID := input.PreviousTxIDStr()
+
+		// If we already have added the tx to the parent envelope, there's no point in
+		// redoing the same work
 		if _, ok := envelope.Parents[pTxID]; ok {
 			continue
 		}
