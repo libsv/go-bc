@@ -50,3 +50,13 @@ func TestExtractMerkleRootFromBlockHeader(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, merkleRoot, "96cbb75fd2ef98e4309eebc8a54d2386333d936ded2a0f3e06c23a91bb612f70")
 }
+
+func TestEncodeAndDecodeBlockHeader(t *testing.T) {
+	// the genesis block
+	genesisHex := "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"
+	genesis, err := bc.EncodeBlockHeaderStr(genesisHex)
+	assert.NoError(t, err)
+	genesisHexRecoded, err := genesis.String()
+	assert.NoError(t, err)
+	assert.Equal(t, genesisHex, genesisHexRecoded)
+}
