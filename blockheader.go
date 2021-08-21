@@ -4,7 +4,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"math/big"
 
+	"github.com/libsv/go-bk/crypto"
 	"github.com/libsv/go-bt/v2"
 )
 
@@ -80,6 +82,27 @@ func (bh *BlockHeader) Bytes() ([]byte, error) {
 	bytes = append(bytes, n...)
 
 	return bytes, nil
+}
+
+// Valid checks whether a blockheader satisfies the proof-of-work claimed
+// in Bits. Wwe check whether its Hash256 read as a little endian number
+// is less than the Bits written in expanded form.
+func (bh *BlockHeader) Valid() bool {
+	target, err := ExpandTargetFromAsInt(bh.Bits)
+	if err != nil {
+		return false
+	}
+
+	bytes, err := bh.Bytes()
+	if err != nil {
+		return false
+	}
+
+	digest := bt.ReverseBytes(crypto.Sha256d(bytes))
+	var bn *big.Int = big.NewInt(0)
+	bn.SetBytes(digest)
+
+	return bn.Cmp(target) < 0
 }
 
 // EncodeBlockHeaderStr will encode a block header hash
