@@ -76,7 +76,7 @@ func (bh *BlockHeader) Bytes() ([]byte, error) {
 	bytes = append(bytes, b...)
 
 	n := make([]byte, 4)
-	binary.LittleEndian.PutUint32(t, bh.Nonce)
+	binary.LittleEndian.PutUint32(n, bh.Nonce)
 	bytes = append(bytes, n...)
 
 	return bytes, nil
