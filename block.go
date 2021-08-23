@@ -2,6 +2,7 @@ package bc
 
 import (
 	"encoding/hex"
+	"errors"
 
 	"github.com/libsv/go-bt"
 )
@@ -61,6 +62,9 @@ func NewBlockFromStr(blockStr string) (*Block, error) {
 //
 // See https://btcinformation.org/en/developer-reference#serialized-blocks
 func NewBlockFromBytes(b []byte) (*Block, error) {
+	if len(b) == 0 {
+		return nil, errors.New("block cannot be empty")
+	}
 
 	var offset int
 	bh, err := NewBlockHeaderFromBytes(b[:80])

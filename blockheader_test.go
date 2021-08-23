@@ -2,6 +2,7 @@ package bc_test
 
 import (
 	"encoding/hex"
+	"errors"
 	"testing"
 
 	"github.com/libsv/go-bc"
@@ -56,6 +57,41 @@ func TestBlockHeaderString(t *testing.T) {
 	}
 
 	assert.Equal(t, expectedHeader, bh.String())
+}
+
+func TestBlockHeaderStringAndBytesMatch(t *testing.T) {
+	headerStr := "0000002074a17794e7890e9124d87e122b7f67b9d707dcb6c5b9d542b22eff3d13054678e9d8afa92026c2c0873524b18cbf2479720a8471952770c847d9ec8e1e939dfc1f593460ffff7f2000000000"
+	bh, err := bc.NewBlockHeaderFromStr(headerStr)
+	assert.NoError(t, err)
+	assert.Equal(t, hex.EncodeToString(bh.Bytes()), bh.String())
+}
+
+func TestBlockHeaderInvalid(t *testing.T) {
+	t.Parallel()
+	tests := map[string]struct {
+		expectedHeader string
+		expErr         error
+	}{
+		"empty string": {
+			expectedHeader: "",
+			expErr:         errors.New("block header should be 80 bytes long"),
+		},
+		"too long": {
+			expectedHeader: "00000020fb9eacea87c1cc294a4f1633a45b9bfb21cf9878b439c61123221312312312396b8ca3a856e3a37307cd123724eaa4ade23d29feea1358458d5c110275b6cca4e2b79cd14d98e39573460ffff7f2000000000",
+			expErr:         errors.New("block header should be 80 bytes long"),
+		},
+		"too short": {
+			expectedHeader: "00000020fb9eacea87c1c3a856e3a37307cd123724eaa4ade23d29feea1358458d5c110275b6cca4e2b79cd14d98e39573460ffff7f2000000000",
+			expErr:         errors.New("block header should be 80 bytes long"),
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, err := bc.NewBlockHeaderFromStr(test.expectedHeader)
+			assert.Error(t, err)
+			assert.EqualError(t, err, test.expErr.Error())
+		})
+	}
 }
 
 func TestExtractMerkleRootFromBlockHeader(t *testing.T) {
