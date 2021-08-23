@@ -24,24 +24,24 @@ func (m *mockBlockHeaderClient) BlockHeader(ctx context.Context, blockHash strin
 }
 
 type mockTxMerkleGetter struct {
-	txGetterFunc func(string) (*bt.Tx, error)
-	mpGetterFunc func(string) (*bc.MerkleProof, error)
+	txStoreFunc func(string) (*bt.Tx, error)
+	mpStoreFunc func(string) (*bc.MerkleProof, error)
 }
 
 func (m *mockTxMerkleGetter) Tx(txID string) (*bt.Tx, error) {
-	if m.txGetterFunc == nil {
+	if m.txStoreFunc == nil {
 		return nil, errors.New("txGetterFunc in test is undefined")
 	}
 
-	return m.txGetterFunc(txID)
+	return m.txStoreFunc(txID)
 }
 
 func (m *mockTxMerkleGetter) MerkleProof(txID string) (*bc.MerkleProof, error) {
-	if m.txGetterFunc == nil {
+	if m.txStoreFunc == nil {
 		return nil, errors.New("mpGetterFunc in test is undefined")
 	}
 
-	return m.mpGetterFunc(txID)
+	return m.mpStoreFunc(txID)
 }
 
 func TestSPVEnvelope_VerifyPayment(t *testing.T) {
@@ -1744,11 +1744,11 @@ func TestSPVEnvelope_CreateEnvelope(t *testing.T) {
 			assert.NoError(t, err)
 
 			mock := &mockTxMerkleGetter{
-				txGetterFunc: test.txFunc,
-				mpGetterFunc: test.mpFunc,
+				txStoreFunc: test.txFunc,
+				mpStoreFunc: test.mpFunc,
 			}
 
-			spvc, err := NewClient(WithBlockHeaderChain(&mockBlockHeaderClient{}), WithTxGetter(mock), WithMerkleProofGetter(mock))
+			spvc, err := NewClient(WithBlockHeaderChain(&mockBlockHeaderClient{}), WithTxStore(mock), WithMerkleProofStore(mock))
 			assert.NoError(t, err)
 
 			envelope, err := spvc.CreateEnvelope(testTx)

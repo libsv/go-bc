@@ -12,15 +12,15 @@ func WithBlockHeaderChain(bhc bc.BlockHeaderChain) ClientOpts {
 	}
 }
 
-// WithTxGetter will inject the provided TxGetter into the spv.Client
-func WithTxGetter(txg TxGetter) ClientOpts {
+// WithTxStore will inject the provided TxGetter into the spv.Client
+func WithTxStore(txg TxStore) ClientOpts {
 	return func(s *spvclient) {
 		s.txg = txg
 	}
 }
 
-// WithMerkleProofGetter will inject the provided MerkleProofGetter into the spv.Client
-func WithMerkleProofGetter(mpg MerkleProofGetter) ClientOpts {
+// WithMerkleProofStore will inject the provided MerkleProofGetter into the spv.Client
+func WithMerkleProofStore(mpg MerkleProofStore) ClientOpts {
 	return func(s *spvclient) {
 		s.mpg = mpg
 	}
