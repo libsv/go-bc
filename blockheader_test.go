@@ -10,12 +10,21 @@ import (
 
 func TestNewBlockHeader(t *testing.T) {
 	ebh := &bc.BlockHeader{
-		Version:        536870912,
-		HashPrevBlock:  "784605133dff2eb242d5b9c5b6dc07d7b9677f2b127ed824910e89e79477a174",
-		HashMerkleRoot: "fc9d931e8eecd947c870279571840a727924bf8cb1243587c0c22620a9afd8e9",
-		Time:           1614043423,
-		Bits:           "207fffff",
-		Nonce:          0,
+		Version: 536870912,
+		HashPrevBlock: func() []byte {
+			t, _ := hex.DecodeString("784605133dff2eb242d5b9c5b6dc07d7b9677f2b127ed824910e89e79477a174")
+			return t
+		}(),
+		HashMerkleRoot: func() []byte {
+			t, _ := hex.DecodeString("fc9d931e8eecd947c870279571840a727924bf8cb1243587c0c22620a9afd8e9")
+			return t
+		}(),
+		Time: 1614043423,
+		Bits: func() []byte {
+			t, _ := hex.DecodeString("207fffff")
+			return t
+		}(),
+		Nonce: 0,
 	}
 
 	headerBytes := "0000002074a17794e7890e9124d87e122b7f67b9d707dcb6c5b9d542b22eff3d13054678e9d8afa92026c2c0873524b18cbf2479720a8471952770c847d9ec8e1e939dfc1f593460ffff7f2000000000"
@@ -29,17 +38,24 @@ func TestBlockHeaderString(t *testing.T) {
 	expectedHeader := "00000020fb9eacea87c1cc294a4f1633a45b9bfb21cf9878b439c6138d96b8ca3a856e3a37307cd123724eaa4ade23d29feea1358458d5c110275b6cca4e2b79cd14d98e39573460ffff7f2000000000"
 
 	bh := &bc.BlockHeader{
-		Version:        536870912,
-		HashPrevBlock:  "3a6e853acab8968d13c639b47898cf21fb9b5ba433164f4a29ccc187eaac9efb",
-		HashMerkleRoot: "8ed914cd792b4eca6c5b2710c1d5588435a1ee9fd223de4aaa4e7223d17c3037",
-		Time:           1614042937,
-		Bits:           "207fffff",
-		Nonce:          0,
+		Version: 536870912,
+		HashPrevBlock: func() []byte {
+			t, _ := hex.DecodeString("3a6e853acab8968d13c639b47898cf21fb9b5ba433164f4a29ccc187eaac9efb")
+			return t
+		}(),
+		HashMerkleRoot: func() []byte {
+			t, _ := hex.DecodeString("8ed914cd792b4eca6c5b2710c1d5588435a1ee9fd223de4aaa4e7223d17c3037")
+			return t
+		}(),
+		Time: 1614042937,
+		Bits: func() []byte {
+			t, _ := hex.DecodeString("207fffff")
+			return t
+		}(),
+		Nonce: 0,
 	}
-	header, err := bh.String()
 
-	assert.NoError(t, err)
-	assert.Equal(t, expectedHeader, header)
+	assert.Equal(t, expectedHeader, bh.String())
 }
 
 func TestExtractMerkleRootFromBlockHeader(t *testing.T) {
@@ -56,9 +72,7 @@ func TestEncodeAndDecodeBlockHeader(t *testing.T) {
 	genesisHex := "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"
 	genesis, err := bc.NewBlockHeaderFromStr(genesisHex)
 	assert.NoError(t, err)
-	genesisHexRecoded, err := genesis.String()
-	assert.NoError(t, err)
-	assert.Equal(t, genesisHex, genesisHexRecoded)
+	assert.Equal(t, genesisHex, genesis.String())
 }
 
 func TestVerifyBlockHeader(t *testing.T) {
@@ -69,8 +83,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 	genesis, err := bc.NewBlockHeaderFromBytes(header)
 	assert.NoError(t, err)
 
-	genesisHexRecoded, _ := genesis.String()
-	assert.Equal(t, genesisHex, genesisHexRecoded)
+	assert.Equal(t, genesisHex, genesis.String())
 	assert.True(t, genesis.Valid())
 
 	// change one letter

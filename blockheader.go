@@ -26,78 +26,56 @@ type BlockHeader struct {
 	Version        uint32
 	Time           uint32
 	Nonce          uint32
-	HashPrevBlock  string
-	HashMerkleRoot string
-	Bits           string
+	HashPrevBlock  []byte
+	HashMerkleRoot []byte
+	Bits           []byte
+}
+
+// HashPrevBlockStr returns the Block Header encoded as hex string.
+func (bh *BlockHeader) HashPrevBlockStr() string {
+	return hex.EncodeToString(bh.HashPrevBlock)
+}
+
+// HashMerkleRootStr returns the Block Header encoded as hex string.
+func (bh *BlockHeader) HashMerkleRootStr() string {
+	return hex.EncodeToString(bh.HashMerkleRoot)
+}
+
+// BitsStr returns the Block Header encoded as hex string.
+func (bh *BlockHeader) BitsStr() string {
+	return hex.EncodeToString(bh.Bits)
 }
 
 // String returns the Block Header encoded as hex string.
-func (bh *BlockHeader) String() (string, error) {
-	bb, err := bh.Bytes()
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bb), nil
+func (bh *BlockHeader) String() string {
+	return hex.EncodeToString(bh.Bytes())
 }
 
 // Bytes will decode a bitcoin block header struct
 // into a byte slice.
 //
 // See https://en.bitcoin.it/wiki/Block_hashing_algorithm
-func (bh *BlockHeader) Bytes() ([]byte, error) {
+func (bh *BlockHeader) Bytes() []byte {
 	bytes := []byte{}
-
-	v := make([]byte, 4)
-	binary.LittleEndian.PutUint32(v, bh.Version)
-	bytes = append(bytes, v...)
-
-	p, err := hex.DecodeString(bh.HashPrevBlock)
-	if err != nil {
-		return nil, err
-	}
-	p = bt.ReverseBytes(p)
-	bytes = append(bytes, p...)
-
-	m, err := hex.DecodeString(bh.HashMerkleRoot)
-	if err != nil {
-		return nil, err
-	}
-	m = bt.ReverseBytes(m)
-	bytes = append(bytes, m...)
-
-	t := make([]byte, 4)
-	binary.LittleEndian.PutUint32(t, bh.Time)
-	bytes = append(bytes, t...)
-
-	b, err := hex.DecodeString(bh.Bits)
-	if err != nil {
-		return nil, err
-	}
-	b = bt.ReverseBytes(b)
-	bytes = append(bytes, b...)
-
-	n := make([]byte, 4)
-	binary.LittleEndian.PutUint32(n, bh.Nonce)
-	bytes = append(bytes, n...)
-
-	return bytes, nil
+	bytes = append(bytes, UInt32ToBytes(bh.Version)...)
+	bytes = append(bytes, bt.ReverseBytes(bh.HashPrevBlock)...)
+	bytes = append(bytes, bt.ReverseBytes(bh.HashMerkleRoot)...)
+	bytes = append(bytes, UInt32ToBytes(bh.Time)...)
+	bytes = append(bytes, bt.ReverseBytes(bh.Bits)...)
+	bytes = append(bytes, UInt32ToBytes(bh.Nonce)...)
+	return bytes
 }
 
 // Valid checks whether a blockheader satisfies the proof-of-work claimed
 // in Bits. Wwe check whether its Hash256 read as a little endian number
 // is less than the Bits written in expanded form.
 func (bh *BlockHeader) Valid() bool {
-	target, err := ExpandTargetFromAsInt(bh.Bits)
+	target, err := ExpandTargetFromAsInt(hex.EncodeToString(bh.Bits))
 	if err != nil {
 		return false
 	}
 
-	bytes, err := bh.Bytes()
-	if err != nil {
-		return false
-	}
-
-	digest := bt.ReverseBytes(crypto.Sha256d(bytes))
+	digest := bt.ReverseBytes(crypto.Sha256d(bh.Bytes()))
 	var bn *big.Int = big.NewInt(0)
 	bn.SetBytes(digest)
 
@@ -132,10 +110,10 @@ func NewBlockHeaderFromBytes(headerBytes []byte) (*BlockHeader, error) {
 
 	return &BlockHeader{
 		Version:        binary.LittleEndian.Uint32(headerBytes[:4]),
-		HashPrevBlock:  hex.EncodeToString(bt.ReverseBytes(headerBytes[4:36])),
-		HashMerkleRoot: hex.EncodeToString(bt.ReverseBytes(headerBytes[36:68])),
+		HashPrevBlock:  bt.ReverseBytes(headerBytes[4:36]),
+		HashMerkleRoot: bt.ReverseBytes(headerBytes[36:68]),
 		Time:           binary.LittleEndian.Uint32(headerBytes[68:72]),
-		Bits:           hex.EncodeToString(bt.ReverseBytes(headerBytes[72:76])),
+		Bits:           bt.ReverseBytes(headerBytes[72:76]),
 		Nonce:          binary.LittleEndian.Uint32(headerBytes[76:]),
 	}, nil
 }
@@ -147,5 +125,5 @@ func ExtractMerkleRootFromBlockHeader(header string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return bh.HashMerkleRoot, nil
+	return hex.EncodeToString(bh.HashMerkleRoot), nil
 }

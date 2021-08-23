@@ -21,25 +21,17 @@ type Block struct {
 }
 
 // String returns the Block Header encoded as hex string.
-func (b *Block) String() (string, error) {
-	bb, err := b.Bytes()
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bb), nil
+func (b *Block) String() string {
+	return hex.EncodeToString(b.Bytes())
 }
 
 // Bytes will decode a bitcoin block struct into a byte slice.
 //
 // See https://btcinformation.org/en/developer-reference#serialized-blocks
-func (b *Block) Bytes() ([]byte, error) {
+func (b *Block) Bytes() []byte {
 	bytes := []byte{}
 
-	bh, err := b.BlockHeader.Bytes()
-	if err != nil {
-		return nil, err
-	}
-	bytes = append(bytes, bh...)
+	bytes = append(bytes, b.BlockHeader.Bytes()...)
 
 	txCount := uint64(len(b.Txs))
 	bytes = append(bytes, bt.VarInt(txCount)...)
@@ -48,7 +40,7 @@ func (b *Block) Bytes() ([]byte, error) {
 		bytes = append(bytes, tx.ToBytes()...)
 	}
 
-	return bytes, nil
+	return bytes
 }
 
 // NewBlockFromStr will encode a block header hash
@@ -81,13 +73,11 @@ func NewBlockFromBytes(b []byte) (*Block, error) {
 	offset += size
 
 	var txs []*bt.Tx
-
 	for i := 0; i < int(txCount); i++ {
 		tx, size, err := bt.NewTxFromStream(b[offset:])
 		if err != nil {
 			return nil, err
 		}
-
 		txs = append(txs, tx)
 		offset += size
 	}

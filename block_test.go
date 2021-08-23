@@ -38,8 +38,5 @@ func TestBlockString(t *testing.T) {
 		Txs:         txs,
 	}
 
-	block, err := b.String()
-
-	assert.NoError(t, err)
-	assert.Equal(t, expectedBlock, block)
+	assert.Equal(t, expectedBlock, b.String())
 }
