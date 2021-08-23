@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/libsv/go-bc"
-	"github.com/libsv/go-bt"
-	"github.com/libsv/go-bt/crypto"
+	"github.com/libsv/go-bk/crypto"
+	"github.com/libsv/go-bt/v2"
 )
 
 func TestGenesisHash(t *testing.T) {
