@@ -11,7 +11,7 @@ import (
 type mockBlockHeaderChain struct{}
 
 func (bhc *mockBlockHeaderChain) BlockHeader(ctx context.Context, blockHash string) (blockHeader *bc.BlockHeader, err error) {
-	return bc.EncodeBlockHeaderStr("000000208e33a53195acad0ab42ddbdbe3e4d9ca081332e5b01a62e340dbd8167d1a787b702f61bb913ac2063e0f2aed6d933d3386234da5c8eb9e30e498efd25fb7cb96fff12c60ffff7f2001000000")
+	return bc.NewBlockHeaderFromStr("000000208e33a53195acad0ab42ddbdbe3e4d9ca081332e5b01a62e340dbd8167d1a787b702f61bb913ac2063e0f2aed6d933d3386234da5c8eb9e30e498efd25fb7cb96fff12c60ffff7f2001000000")
 }
 
 func TestVerifyMerkleProof(t *testing.T) {
