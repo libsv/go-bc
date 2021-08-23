@@ -60,3 +60,22 @@ func TestEncodeAndDecodeBlockHeader(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, genesisHex, genesisHexRecoded)
 }
+
+func TestVerifyBlockHeader(t *testing.T) {
+	// the genesis block
+	genesisHex := "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"
+	header, err := hex.DecodeString(genesisHex)
+	assert.NoError(t, err)
+	genesis, err := bc.EncodeBlockHeader(header)
+	assert.NoError(t, err)
+
+	genesisHexRecoded, _ := genesis.String()
+	assert.Equal(t, genesisHex, genesisHexRecoded)
+	assert.True(t, genesis.Valid())
+
+	// change one letter
+	header[0] = 222
+	genesisInvalid, err := bc.EncodeBlockHeader(header)
+	assert.NoError(t, err)
+	assert.False(t, genesisInvalid.Valid())
+}
