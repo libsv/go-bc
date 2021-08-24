@@ -32,7 +32,7 @@ func TestVerifyMerkleProof(t *testing.T) {
 	}
 	hcm := &mockBlockHeaderChain{}
 
-	v, _ := spv.NewVerifier(hcm)
+	v, _ := spv.NewMerkleProofVerifier(hcm)
 
 	t.Run("JSON", func(t *testing.T) {
 		valid, isLastInTree, err := v.VerifyMerkleProofJSON(context.Background(), proofJSON)
