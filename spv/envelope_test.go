@@ -1022,12 +1022,12 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			s, err := spv.NewClient(spv.WithBlockHeaderChain(&mockBlockHeaderClient{
+			v, err := spv.NewVerifier(&mockBlockHeaderClient{
 				blockHeaderFunc: test.blockHeaderFunc,
-			}))
+			})
 			assert.NoError(t, err, "expected no error when creating spv client")
 
-			valid, err := s.VerifyPayment(context.Background(), test.envelope)
+			valid, err := v.VerifyPayment(context.Background(), test.envelope)
 			if test.expErr != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, err, test.expErr.Error())
@@ -1749,10 +1749,10 @@ func TestSPVEnvelope_CreateEnvelope(t *testing.T) {
 				mpStoreFunc: test.mpFunc,
 			}
 
-			spvc, err := spv.NewClient(spv.WithBlockHeaderChain(&mockBlockHeaderClient{}), spv.WithTxStore(mock), spv.WithMerkleProofStore(mock))
+			c, err := spv.NewCreator(mock, mock)
 			assert.NoError(t, err)
 
-			envelope, err := spvc.CreateEnvelope(context.TODO(), testTx)
+			envelope, err := c.CreateEnvelope(context.TODO(), testTx)
 			if test.expErr == nil {
 				assert.NoError(t, err)
 				assert.NotNil(t, envelope)
