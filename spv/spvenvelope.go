@@ -50,6 +50,7 @@ type Envelope struct {
 	Parents       map[string]*Envelope `json:"parents,omitempty"`
 }
 
+// CreateEnvelope builds and returns an spv.Envelope for the provided tx.
 func (s *spvclient) CreateEnvelope(tx *bt.Tx) (*Envelope, error) {
 	if len(tx.Inputs) == 0 {
 		return nil, ErrNoTxInputs
