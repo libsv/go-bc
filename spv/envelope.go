@@ -129,7 +129,7 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope) 
 	return valid, nil
 }
 
-func (s *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, error) {
+func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, error) {
 	// If at the beginning or middle of the tx chain and tx is unconfirmed, fail and error.
 	if !payment.IsAnchored() && (payment.Parents == nil || len(payment.Parents) == 0) {
 		return false, ErrNoConfirmedTransaction
@@ -143,7 +143,7 @@ func (s *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, erro
 			parent.TxID = parentTxID
 		}
 
-		valid, err := s.verifyTxs(ctx, parent)
+		valid, err := v.verifyTxs(ctx, parent)
 		if err != nil {
 			return false, err
 		}
@@ -155,7 +155,7 @@ func (s *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, erro
 	// If a Merkle Proof is provided, assume we are at the anchor/beginning of the tx chain.
 	// Verify and return the result.
 	if payment.IsAnchored() {
-		return s.verifyTxAnchor(ctx, payment)
+		return v.verifyTxAnchor(ctx, payment)
 	}
 
 	tx, err := bt.NewTxFromString(payment.RawTx)
@@ -164,10 +164,10 @@ func (s *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, erro
 	}
 
 	// We must verify the tx or else we can not know if any of it's child txs are valid.
-	return s.verifyUnconfirmedTx(tx, payment)
+	return v.verifyUnconfirmedTx(tx, payment)
 }
 
-func (s *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool, error) {
+func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool, error) {
 	proofTxID := payment.Proof.TxOrID
 	if len(proofTxID) != 64 {
 		proofTx, err := bt.NewTxFromString(payment.Proof.TxOrID)
@@ -184,7 +184,7 @@ func (s *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool,
 		return false, ErrTxIDMismatch
 	}
 
-	valid, _, err := s.VerifyMerkleProofJSON(ctx, payment.Proof)
+	valid, _, err := v.VerifyMerkleProofJSON(ctx, payment.Proof)
 	if err != nil {
 		return false, err
 	}
@@ -192,7 +192,7 @@ func (s *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool,
 	return valid, nil
 }
 
-func (s *verifier) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) (bool, error) {
+func (v *verifier) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) (bool, error) {
 	// If no tx inputs have been provided, fail and error
 	if len(tx.Inputs) == 0 {
 		return false, ErrNoTxInputsToVerify
@@ -224,6 +224,6 @@ func (s *verifier) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) (bool, erro
 }
 
 // IsAnchored returns true if the envelope is the anchor tx.
-func (s *Envelope) IsAnchored() bool {
-	return s.Proof != nil
+func (e *Envelope) IsAnchored() bool {
+	return e.Proof != nil
 }
