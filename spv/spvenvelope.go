@@ -72,7 +72,7 @@ func (s *spvclient) CreateEnvelope(ctx context.Context, tx *bt.Tx) (*Envelope, e
 		}
 
 		// Check the store for a Merkle Proof for the current input.
-		mp, err := s.mpg.MerkleProof(ctx, pTxID)
+		mp, err := s.mpc.MerkleProof(ctx, pTxID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get merkle proof for tx %s", pTxID)
 		}
@@ -90,7 +90,7 @@ func (s *spvclient) CreateEnvelope(ctx context.Context, tx *bt.Tx) (*Envelope, e
 		// If no merkle proof was found for the input, build a *bt.Tx from its TxID and recursively
 		// call this function building envelopes for inputs without proofs, until a parent with a
 		// Merkle Proof is found.
-		pTx, err := s.txg.Tx(ctx, pTxID)
+		pTx, err := s.txc.Tx(ctx, pTxID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get tx %s", pTxID)
 		}

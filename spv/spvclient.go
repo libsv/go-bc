@@ -9,8 +9,8 @@ import (
 type spvclient struct {
 	// BlockHeaderChain will be set when an implementation returning a bc.BlockHeader type is provided.
 	bhc bc.BlockHeaderChain
-	txg TxStore
-	mpg MerkleProofStore
+	txc TxStore
+	mpc MerkleProofStore
 }
 
 // NewClient creates a new spv.Client based on the options provided.
