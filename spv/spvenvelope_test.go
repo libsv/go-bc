@@ -55,9 +55,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp: true,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" { //nolint:goconst
-					return bc.EncodeBlockHeaderStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
+					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "bf5e05fdefc072a3113c69a6d6d0bc092e4e93b037d6785ccc795617132151e6",
@@ -106,9 +106,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			expErr: ErrNoConfirmedTransaction,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
-					return bc.EncodeBlockHeaderStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
+					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "bf5e05fdefc072a3113c69a6d6d0bc092e4e93b037d6785ccc795617132151e6",
@@ -148,9 +148,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp: true,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
-					return bc.EncodeBlockHeaderStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
+					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "bf5e05fdefc072a3113c69a6d6d0bc092e4e93b037d6785ccc795617132151e6",
@@ -198,9 +198,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp: false,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
-					return bc.EncodeBlockHeaderStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
+					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "bf5e05fdefc072a3113c69a6d6d0bc092e4e93b037d6785ccc795617132151e6",
@@ -248,7 +248,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp:    false,
 			expErr: ErrNotAllInputsSupplied,
 			blockHeaderFunc: func(context.Context, string) (*bc.BlockHeader, error) {
-				return bc.EncodeBlockHeaderStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
+				return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 			},
 			envelope: &Envelope{
 				TxID:  "e3c66e4eddaa7e7e7560cdd8a80c82126dcbb728b4a3bf48a2be95a7847feacc", // different tx with different inputs
@@ -274,9 +274,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			expErr: ErrTxIDMismatch,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
-					return bc.EncodeBlockHeaderStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
+					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "bf5e05fdefc072a3113c69a6d6d0bc092e4e93b037d6785ccc795617132151e6",
@@ -324,9 +324,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			expErr: ErrTxIDMismatch,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
-					return bc.EncodeBlockHeaderStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
+					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "bf5e05fdefc072a3113c69a6d6d0bc092e4e93b037d6785ccc795617132151e6",
@@ -374,9 +374,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			expErr: ErrNoTxInputsToVerify,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
-					return bc.EncodeBlockHeaderStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
+					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "bf5e05fdefc072a3113c69a6d6d0bc092e4e93b037d6785ccc795617132151e6",
@@ -425,9 +425,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			expErr: ErrInputRefsOutOfBoundsOutput,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
-					return bc.EncodeBlockHeaderStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
+					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "bf5e05fdefc072a3113c69a6d6d0bc092e4e93b037d6785ccc795617132151e6",
@@ -476,11 +476,11 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				switch blockHash {
 				case "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb": //nolint:goconst
-					return bc.EncodeBlockHeaderStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
+					return bc.NewBlockHeaderFromStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
 				case "730548cc946deba119fcee6ab2415bbb5fd8e0b41c9c0d5cae1ab069f905f56d": //nolint:goconst
-					return bc.EncodeBlockHeaderStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
+					return bc.NewBlockHeaderFromStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "8215a2c96d24cda0875c0a33ad1b3679967e08888e6b881b59fdf1451801b638",
@@ -566,11 +566,11 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				switch blockHash {
 				case "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb":
-					return bc.EncodeBlockHeaderStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
+					return bc.NewBlockHeaderFromStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
 				case "730548cc946deba119fcee6ab2415bbb5fd8e0b41c9c0d5cae1ab069f905f56d":
-					return bc.EncodeBlockHeaderStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
+					return bc.NewBlockHeaderFromStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "8215a2c96d24cda0875c0a33ad1b3679967e08888e6b881b59fdf1451801b638",
@@ -657,11 +657,11 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				switch blockHash {
 				case "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb":
-					return bc.EncodeBlockHeaderStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
+					return bc.NewBlockHeaderFromStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
 				case "730548cc946deba119fcee6ab2415bbb5fd8e0b41c9c0d5cae1ab069f905f56d":
-					return bc.EncodeBlockHeaderStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
+					return bc.NewBlockHeaderFromStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "8215a2c96d24cda0875c0a33ad1b3679967e08888e6b881b59fdf1451801b638",
@@ -736,11 +736,11 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				switch blockHash {
 				case "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb":
-					return bc.EncodeBlockHeaderStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
+					return bc.NewBlockHeaderFromStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
 				case "730548cc946deba119fcee6ab2415bbb5fd8e0b41c9c0d5cae1ab069f905f56d":
-					return bc.EncodeBlockHeaderStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
+					return bc.NewBlockHeaderFromStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "8215a2c96d24cda0875c0a33ad1b3679967e08888e6b881b59fdf1451801b638",
@@ -827,11 +827,11 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				switch blockHash {
 				case "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb":
-					return bc.EncodeBlockHeaderStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
+					return bc.NewBlockHeaderFromStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
 				case "730548cc946deba119fcee6ab2415bbb5fd8e0b41c9c0d5cae1ab069f905f56d":
-					return bc.EncodeBlockHeaderStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
+					return bc.NewBlockHeaderFromStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "8215a2c96d24cda0875c0a33ad1b3679967e08888e6b881b59fdf1451801b638",
@@ -910,11 +910,11 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				switch blockHash {
 				case "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb":
-					return bc.EncodeBlockHeaderStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
+					return bc.NewBlockHeaderFromStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
 				case "730548cc946deba119fcee6ab2415bbb5fd8e0b41c9c0d5cae1ab069f905f56d":
-					return bc.EncodeBlockHeaderStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
+					return bc.NewBlockHeaderFromStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
 				}
-				return bc.EncodeBlockHeaderStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "8215a2c96d24cda0875c0a33ad1b3679967e08888e6b881b59fdf1451801b638",
@@ -998,7 +998,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp:    false,
 			expErr: ErrTipTxConfirmed,
 			blockHeaderFunc: func(context.Context, string) (*bc.BlockHeader, error) {
-				return bc.EncodeBlockHeaderStr("00000020f274078cebf6b61dd94b2124d9e967f7a7b9ccf0e95f46535768e333295b1e0633c974e51079022676c9319cd1cabcbf033282934f2d4fb4846ee6521d652e51fc680161ffff7f2000000000")
+				return bc.NewBlockHeaderFromStr("00000020f274078cebf6b61dd94b2124d9e967f7a7b9ccf0e95f46535768e333295b1e0633c974e51079022676c9319cd1cabcbf033282934f2d4fb4846ee6521d652e51fc680161ffff7f2000000000")
 			},
 			envelope: &Envelope{
 				TxID:  "06894e08c0e4137d70274c538351f5cea2e82011fafb3cc0192c74447dda19fd",
