@@ -3,7 +3,10 @@ package spv
 import (
 	"context"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/libsv/go-bt/v2"
+	"github.com/libsv/go-bt/v2/bscript/interpreter"
 )
 
 // VerifyPayment verifies whether or not the txs supplied via the supplied spv.Envelope are valid
@@ -61,7 +64,7 @@ func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, erro
 	}
 
 	// We must verify the tx or else we can not know if any of it's child txs are valid.
-	return v.verifyUnconfirmedTx(tx, payment)
+	return v.verifyUnconfirmedTx(ctx, tx, payment)
 }
 
 func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool, error) {
@@ -89,32 +92,46 @@ func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool,
 	return valid, nil
 }
 
-func (v *verifier) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) (bool, error) {
+func (v *verifier) verifyUnconfirmedTx(ctx context.Context, tx *bt.Tx, payment *Envelope) (bool, error) {
 	// If no tx inputs have been provided, fail and error
 	if len(tx.Inputs) == 0 {
 		return false, ErrNoTxInputsToVerify
 	}
 
-	for _, input := range tx.Inputs {
-		parent, ok := payment.Parents[input.PreviousTxIDStr()]
-		if !ok {
-			return false, ErrNotAllInputsSupplied
-		}
+	// perform the script validations in parallel
+	errs, _ := errgroup.WithContext(ctx)
+	for i := range tx.Inputs {
+		idx := i // copy current value of i for concurrent use
+		errs.Go(func() error {
+			input := tx.InputIdx(idx)
 
-		parentTx, err := bt.NewTxFromString(parent.RawTx)
-		if err != nil {
-			return false, err
-		}
+			parent, ok := payment.Parents[input.PreviousTxIDStr()]
+			if !ok {
+				return ErrNotAllInputsSupplied
+			}
 
-		// If the input is indexing an output that is out of bounds, fail and error
-		if int(input.PreviousTxOutIndex) > len(parentTx.Outputs)-1 {
-			return false, ErrInputRefsOutOfBoundsOutput
-		}
+			parentTx, err := bt.NewTxFromString(parent.RawTx)
+			if err != nil {
+				return err
+			}
 
-		output := parentTx.Outputs[int(input.PreviousTxOutIndex)]
+			output := parentTx.OutputIdx(int(input.PreviousTxOutIndex))
+			// If the input is indexing an output that is out of bounds, fail and error
+			if output == nil {
+				return ErrInputRefsOutOfBoundsOutput
+			}
 
-		// TODO: verify script using input and previous output
-		_ = output
+			return v.eng.Execute(interpreter.ExecutionParams{
+				PreviousTxOut: output,
+				InputIdx:      idx,
+				Tx:            tx,
+				Flags:         interpreter.ScriptEnableSighashForkID | interpreter.ScriptUTXOAfterGenesis,
+			})
+		})
+	}
+
+	if err := errs.Wait(); err != nil {
+		return false, err
 	}
 
 	return true, nil

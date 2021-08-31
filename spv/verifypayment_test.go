@@ -6,6 +6,7 @@ import (
 
 	"github.com/libsv/go-bc"
 	"github.com/libsv/go-bc/spv"
+	"github.com/libsv/go-bt/v2/bscript/interpreter"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -1001,7 +1002,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			v, err := spv.NewPaymentVerifier(&mockBlockHeaderClient{
 				blockHeaderFunc: test.blockHeaderFunc,
-			})
+			}, interpreter.NewEngine())
 			assert.NoError(t, err, "expected no error when creating spv client")
 
 			valid, err := v.VerifyPayment(context.Background(), test.envelope)
