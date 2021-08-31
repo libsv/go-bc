@@ -122,14 +122,12 @@ func (v *verifier) verifyUnconfirmedTx(ctx context.Context, tx *bt.Tx, payment *
 				return errors.Wrapf(ErrInputRefsOutOfBoundsOutput, "tx %s input %d is referencing an out of bounds output", tx.TxID(), idx)
 			}
 
-			err = v.eng.Execute(interpreter.ExecutionParams{
+			if err = v.eng.Execute(interpreter.ExecutionParams{
 				PreviousTxOut: output,
 				InputIdx:      idx,
 				Tx:            tx,
 				Flags:         interpreter.ScriptEnableSighashForkID | interpreter.ScriptUTXOAfterGenesis,
-			})
-
-			if err != nil {
+			}); err != nil {
 				return errors.Wrap(ErrScriptValidationFailed, err.Error())
 			}
 
