@@ -5,8 +5,7 @@ go 1.16
 require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/libsv/go-bk v0.1.3
-	github.com/libsv/go-bt v1.0.0
-	github.com/libsv/go-bt/v2 v2.0.0-beta.2.0.20210826194054-6f4c0a952f02
+	github.com/libsv/go-bt/v2 v2.0.0-20210730150403-97fd3b293e05
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
