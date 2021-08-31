@@ -76,7 +76,7 @@ func (bh *BlockHeader) Valid() bool {
 	}
 
 	digest := bt.ReverseBytes(crypto.Sha256d(bh.Bytes()))
-	var bn *big.Int = big.NewInt(0)
+	bn := big.NewInt(0)
 	bn.SetBytes(digest)
 
 	return bn.Cmp(target) < 0
