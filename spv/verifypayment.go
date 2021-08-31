@@ -7,6 +7,7 @@ import (
 
 	"github.com/libsv/go-bt/v2"
 	"github.com/libsv/go-bt/v2/bscript/interpreter"
+	"github.com/pkg/errors"
 )
 
 // VerifyPayment verifies whether or not the txs supplied via the supplied spv.Envelope are valid
@@ -30,9 +31,14 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope) 
 }
 
 func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, error) {
+	tx, err := bt.NewTxFromString(payment.RawTx)
+	if err != nil {
+		return false, err
+	}
+
 	// If at the beginning or middle of the tx chain and tx is unconfirmed, fail and error.
 	if !payment.IsAnchored() && (payment.Parents == nil || len(payment.Parents) == 0) {
-		return false, ErrNoConfirmedTransaction
+		return false, errors.Wrapf(ErrNoConfirmedTransaction, "tx %s has no confirmed/anchored tx", tx.TxID())
 	}
 
 	// Recurse back to the anchor transactions of the transaction chain and verify forward towards
@@ -58,11 +64,6 @@ func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, erro
 		return v.verifyTxAnchor(ctx, payment)
 	}
 
-	tx, err := bt.NewTxFromString(payment.RawTx)
-	if err != nil {
-		return false, err
-	}
-
 	// We must verify the tx or else we can not know if any of it's child txs are valid.
 	return v.verifyUnconfirmedTx(ctx, tx, payment)
 }
@@ -81,7 +82,7 @@ func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool,
 	// If the txid of the Merkle Proof doesn't match the txid provided in the spv.Envelope,
 	// fail and error
 	if proofTxID != payment.TxID {
-		return false, ErrTxIDMismatch
+		return false, errors.Wrapf(ErrTxIDMismatch, "tx id %s does not match proof tx id %s", payment.TxID, proofTxID)
 	}
 
 	valid, _, err := v.VerifyMerkleProofJSON(ctx, payment.Proof)
@@ -95,7 +96,7 @@ func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool,
 func (v *verifier) verifyUnconfirmedTx(ctx context.Context, tx *bt.Tx, payment *Envelope) (bool, error) {
 	// If no tx inputs have been provided, fail and error
 	if len(tx.Inputs) == 0 {
-		return false, ErrNoTxInputsToVerify
+		return false, errors.Wrapf(ErrNoTxInputsToVerify, "tx %s has no inputs to verify", tx.TxID())
 	}
 
 	// perform the script validations in parallel
@@ -107,7 +108,7 @@ func (v *verifier) verifyUnconfirmedTx(ctx context.Context, tx *bt.Tx, payment *
 
 			parent, ok := payment.Parents[input.PreviousTxIDStr()]
 			if !ok {
-				return ErrNotAllInputsSupplied
+				return errors.Wrapf(ErrNotAllInputsSupplied, "tx %s is missing input %d in its parents' envelope", tx.TxID(), idx)
 			}
 
 			parentTx, err := bt.NewTxFromString(parent.RawTx)
@@ -118,15 +119,21 @@ func (v *verifier) verifyUnconfirmedTx(ctx context.Context, tx *bt.Tx, payment *
 			output := parentTx.OutputIdx(int(input.PreviousTxOutIndex))
 			// If the input is indexing an output that is out of bounds, fail and error
 			if output == nil {
-				return ErrInputRefsOutOfBoundsOutput
+				return errors.Wrapf(ErrInputRefsOutOfBoundsOutput, "tx %s input %d is referencing an out of bounds output", tx.TxID(), idx)
 			}
 
-			return v.eng.Execute(interpreter.ExecutionParams{
+			err = v.eng.Execute(interpreter.ExecutionParams{
 				PreviousTxOut: output,
 				InputIdx:      idx,
 				Tx:            tx,
 				Flags:         interpreter.ScriptEnableSighashForkID | interpreter.ScriptUTXOAfterGenesis,
 			})
+
+			if err != nil {
+				return errors.Wrap(ErrScriptValidationFailed, err.Error())
+			}
+
+			return nil
 		})
 	}
 
