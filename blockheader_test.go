@@ -2,6 +2,7 @@ package bc_test
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -127,4 +128,114 @@ func TestVerifyBlockHeader(t *testing.T) {
 	genesisInvalid, err := bc.NewBlockHeaderFromBytes(header)
 	assert.NoError(t, err)
 	assert.False(t, genesisInvalid.Valid())
+}
+
+func TestBlockHeader_MarshalJSON(t *testing.T) {
+	tests := map[string]struct {
+		bh      *bc.BlockHeader
+		expJSON string
+	}{
+		"can be marshalled": {
+			bh: func() *bc.BlockHeader {
+				bh, _ := bc.NewBlockHeaderFromStr("00000020332bca82fa601bcee3cc00a703988b7126079a75a03ea87654d6b544df73156ae73339a84a36cc3d1c5dc452a6b6bc2ee33c3f583cab9bcf9542b199458fea4844183661ffff7f2000000000")
+				return bh
+			}(),
+			expJSON: `{
+	"version": 536870912,
+	"time": 1630935108,
+	"nonce": 0,
+	"hashPrevBlock": "6a1573df44b5d65476a83ea0759a0726718b9803a700cce3ce1b60fa82ca2b33",
+	"merkleRoot": "48ea8f4599b14295cf9bab3c583f3ce32ebcb6a652c45d1c3dcc364aa83933e7",
+	"bits": "207fffff"
+}`,
+		},
+		"can also be marshalled": {
+			bh: func() *bc.BlockHeader {
+				bh, _ := bc.NewBlockHeaderFromStr("00000020b21e96654f34d7b10e65d63a29f3978bc9057f1584dae6b80c0292981ece6461fd6af93252fb8b5aec241195eb3e438873969e7ad2b30dbd14149ae3d7b0a4591f183661ffff7f2002000000")
+				return bh
+			}(),
+			expJSON: `{
+	"version": 536870912,
+	"time": 1630935071,
+	"nonce": 2,
+	"hashPrevBlock": "6164ce1e9892020cb8e6da84157f05c98b97f3293ad6650eb1d7344f65961eb2",
+	"merkleRoot": "59a4b0d7e39a1414bd0db3d27a9e967388433eeb951124ec5a8bfb5232f96afd",
+	"bits": "207fffff"
+}`,
+		},
+		"nil data doesn't error": {
+			bh: &bc.BlockHeader{
+				Version: 0,
+				Time:    0,
+				Nonce:   0,
+			},
+			expJSON: `{
+	"version": 0,
+	"time": 0,
+	"nonce": 0,
+	"hashPrevBlock": "",
+	"merkleRoot": "",
+	"bits": ""
+}`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			bhj, err := json.MarshalIndent(test.bh, "", "\t")
+			assert.NoError(t, err)
+
+			assert.Equal(t, test.expJSON, string(bhj))
+		})
+	}
+}
+
+func TestBlockHeader_UnmarshalJSON(t *testing.T) {
+	tests := map[string]struct {
+		bh  *bc.BlockHeader
+		err error
+	}{
+		"valid zero data can be unmarshalled": {
+			bh: &bc.BlockHeader{
+				Version:        0,
+				Nonce:          0,
+				Time:           0,
+				Bits:           []byte{},
+				HashMerkleRoot: []byte{},
+				HashPrevBlock:  []byte{},
+			},
+		},
+		"valid data can be unmarshalled": {
+			bh: &bc.BlockHeader{
+				Version:        536870912,
+				Nonce:          1630935071,
+				Time:           1630935071,
+				Bits:           []byte{0x20, 0x7f, 0xff, 0xff},
+				HashMerkleRoot: []byte{0x59, 0xa4, 0xb0, 0xd7, 0xe3, 0x9a, 0x14, 0x14, 0xbd, 0x0d, 0xb3, 0xd2, 0x7a, 0x9e, 0x96, 0x73, 0x88, 0x43, 0x3e, 0xeb, 0x95, 0x11, 0x24, 0xec, 0x5a, 0x8b, 0xfb, 0x52, 0x32, 0xf9, 0x6a, 0xfd},
+				HashPrevBlock:  []byte{0x61, 0x64, 0xce, 0x1e, 0x98, 0x92, 0x02, 0x0c, 0xb8, 0xe6, 0xda, 0x84, 0x15, 0x7f, 0x05, 0xc9, 0x8b, 0x97, 0xf3, 0x29, 0x3a, 0xd6, 0x65, 0x0e, 0xb1, 0xd7, 0x34, 0x4f, 0x65, 0x96, 0x1e, 0xb2},
+			},
+		},
+		"nil data does not error": {
+			bh: &bc.BlockHeader{
+				Version: 536870912,
+				Nonce:   1630935071,
+				Time:    1630935071,
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			b, err := json.Marshal(test.bh)
+			if test.err != nil {
+				assert.NoError(t, err)
+				assert.EqualError(t, err, test.err.Error())
+				return
+			}
+
+			var bh *bc.BlockHeader
+			assert.NoError(t, json.Unmarshal(b, &bh))
+			assert.Equal(t, test.bh.String(), bh.String())
+		})
+	}
 }
