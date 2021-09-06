@@ -79,7 +79,7 @@ func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool,
 	// If the txid of the Merkle Proof doesn't match the txid provided in the spv.Envelope,
 	// fail and error
 	if proofTxID != payment.TxID {
-		return false, ErrTxIDMismatch
+		return false, errors.Wrapf(ErrTxIDMismatch, "envelope tx id %s does not match proof %s", payment.TxID, proofTxID)
 	}
 
 	valid, _, err := v.VerifyMerkleProofJSON(ctx, payment.Proof)
@@ -93,13 +93,13 @@ func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool,
 func (v *verifier) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) (bool, error) {
 	// If no tx inputs have been provided, fail and error
 	if len(tx.Inputs) == 0 {
-		return false, ErrNoTxInputsToVerify
+		return false, errors.Wrapf(ErrNoTxInputsToVerify, "tx %s has no inputs to verify", tx.TxID())
 	}
 
 	for _, input := range tx.Inputs {
 		parent, ok := payment.Parents[input.PreviousTxIDStr()]
 		if !ok {
-			return false, ErrNotAllInputsSupplied
+			return false, errors.Wrapf(ErrNotAllInputsSupplied, "tx %s is missing input %s in its envelope", tx.TxID(), input.PreviousTxIDStr())
 		}
 
 		parentTx, err := bt.NewTxFromString(parent.RawTx)
@@ -109,7 +109,8 @@ func (v *verifier) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) (bool, erro
 
 		// If the input is indexing an output that is out of bounds, fail and error
 		if int(input.PreviousTxOutIndex) > len(parentTx.Outputs)-1 {
-			return false, ErrInputRefsOutOfBoundsOutput
+			return false, errors.Wrapf(ErrInputRefsOutOfBoundsOutput,
+				"input %s is referring out of bounds output %d", input.PreviousTxIDStr(), input.PreviousTxOutIndex)
 		}
 
 		output := parentTx.Outputs[int(input.PreviousTxOutIndex)]
