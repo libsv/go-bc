@@ -131,6 +131,8 @@ func TestVerifyBlockHeader(t *testing.T) {
 }
 
 func TestBlockHeader_MarshalJSON(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		bh      *bc.BlockHeader
 		expJSON string
@@ -184,13 +186,14 @@ func TestBlockHeader_MarshalJSON(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			bhj, err := json.MarshalIndent(test.bh, "", "\t")
 			assert.NoError(t, err)
-
 			assert.Equal(t, test.expJSON, string(bhj))
 		})
 	}
 }
 
 func TestBlockHeader_UnmarshalJSON(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		bh  *bc.BlockHeader
 		err error
