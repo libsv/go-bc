@@ -1007,7 +1007,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			valid, err := v.VerifyPayment(context.Background(), test.envelope)
 			if test.expErr != nil {
 				assert.Error(t, err)
-				assert.EqualError(t, err, test.expErr.Error())
+				assert.EqualError(t, errors.Cause(err), test.expErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
