@@ -32,7 +32,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		"valid envelope passes": {
 			exp: true,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
-				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" { //nolint:goconst
+				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
 					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
 				}
 				return bc.NewBlockHeaderFromStr("000000203f92ce8acc1f8f0aeac971a6589d9df37d55024f120f48df8dfd296a9a4200413ca2ca1e79b3a8ff441a9d89feaa39b9771a30032a30fb023894ea4618395611f2ef1361ffff7f2000000000")
@@ -453,9 +453,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp: true,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				switch blockHash {
-				case "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb": //nolint:goconst
+				case "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb":
 					return bc.NewBlockHeaderFromStr("000000209f42742eb51d06c40a42b443888eca5030ca0dbae77e34e47b145c2255608a2d43d011ecd04a8989b4cae204bf1bc5ff15d87a62b356d899ca9d0361c946d671aaf61361ffff7f2000000000")
-				case "730548cc946deba119fcee6ab2415bbb5fd8e0b41c9c0d5cae1ab069f905f56d": //nolint:goconst
+				case "730548cc946deba119fcee6ab2415bbb5fd8e0b41c9c0d5cae1ab069f905f56d":
 					return bc.NewBlockHeaderFromStr("00000020ef6289f06cd618cf6eca2c94aaed8f4fed7948be527d1776c2216338b6ee940949d8b42d929d966f8e10ec2e47af5f87a39c5b09b9bac8ff6375ac9a8612614408f71361ffff7f2002000000")
 				}
 				return bc.NewBlockHeaderFromStr("000000208aef5325a07e4ec9cca864fca51e14d050d9fb9a371be6c651549580a0e33476414a38a7ddb819a4f3011cd06b17877968100a819348edb2009a60d0e0a65294fdf61361ffff7f2000000000")
@@ -1007,7 +1007,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			valid, err := v.VerifyPayment(context.Background(), test.envelope)
 			if test.expErr != nil {
 				assert.Error(t, err)
-				assert.EqualError(t, err, test.expErr.Error())
+				assert.EqualError(t, errors.Cause(err), test.expErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
