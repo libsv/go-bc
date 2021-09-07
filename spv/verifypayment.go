@@ -31,14 +31,9 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope) 
 }
 
 func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, error) {
-	tx, err := bt.NewTxFromString(payment.RawTx)
-	if err != nil {
-		return false, err
-	}
-
 	// If at the beginning or middle of the tx chain and tx is unconfirmed, fail and error.
 	if !payment.IsAnchored() && (payment.Parents == nil || len(payment.Parents) == 0) {
-		return false, errors.Wrapf(ErrNoConfirmedTransaction, "tx %s has no confirmed/anchored tx", tx.TxID())
+		return false, errors.Wrapf(ErrNoConfirmedTransaction, "tx %s has no confirmed/anchored tx", payment.TxID)
 	}
 
 	// Recurse back to the anchor transactions of the transaction chain and verify forward towards
@@ -62,6 +57,11 @@ func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, erro
 	// Verify and return the result.
 	if payment.IsAnchored() {
 		return v.verifyTxAnchor(ctx, payment)
+	}
+
+	tx, err := bt.NewTxFromString(payment.RawTx)
+	if err != nil {
+		return false, err
 	}
 
 	// We must verify the tx or else we can not know if any of it's child txs are valid.
