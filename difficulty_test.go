@@ -1,6 +1,7 @@
 package bc_test
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"github.com/libsv/go-bc"
@@ -64,7 +65,8 @@ func TestDifficultyFromBits(t *testing.T) {
 }
 
 func testDifficulty(bits string, expected float64, t *testing.T) {
-	d, _ := bc.DifficultyFromBits(bits)
+	b, _ := hex.DecodeString(bits)
+	d, _ := bc.DifficultyFromBits(b)
 
 	if d != expected {
 		t.Errorf("Expected difficulty of '%s' to be '%v', got %v", bits, expected, d)
