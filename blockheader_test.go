@@ -231,10 +231,11 @@ func TestBlockHeader_UnmarshalJSON(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			b, err := json.Marshal(test.bh)
 			if test.err != nil {
-				assert.NoError(t, err)
+				assert.Error(t, err)
 				assert.EqualError(t, err, test.err.Error())
 				return
 			}
+			assert.NoError(t, err)
 
 			var bh *bc.BlockHeader
 			assert.NoError(t, json.Unmarshal(b, &bh))
