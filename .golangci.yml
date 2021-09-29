@@ -349,13 +349,13 @@ linters:
     - nolintlint
     - goconst
     - lll
+    - goerr113
+    - godot
   disable:
     - gocritic # use this for very opinionated linting
     - gochecknoglobals
     - whitespace
     - wsl
-    - goerr113
-    - godot
     - testpackage
     - nestif
     - nlreturn

@@ -91,7 +91,7 @@ func NoVerifyScript() VerifyOpt {
 
 // NoVerifySPV will turn off any spv validation for merkle proofs
 // and script validation. This is a helper method that is equivalent to
-// NoVerifyProofs && NoVerifyScripts.
+// VerifyProofs && VerifyScripts.
 func NoVerifySPV() VerifyOpt {
 	return func(opts *verifyOptions) {
 		opts.proofs = false
