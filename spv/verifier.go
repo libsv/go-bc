@@ -9,22 +9,22 @@ import (
 	"github.com/libsv/go-bc"
 )
 
-type verifyOptions struct{
+type verifyOptions struct {
 	// proofs validation
-	proofs bool
-	script bool
-	fees bool
+	proofs   bool
+	script   bool
+	fees     bool
 	feeQuote *bt.FeeQuote
 }
 
-func (v *verifyOptions) requiresEnvelope() bool{
+func (v *verifyOptions) requiresEnvelope() bool {
 	return v.proofs || v.script
 }
 
 // clone will copy the verifyOptions to a new struct and return it.
-func (v *verifyOptions) clone() *verifyOptions{
+func (v *verifyOptions) clone() *verifyOptions {
 	return &verifyOptions{
-		proofs: v.proofs,
+		proofs:   v.proofs,
 		fees:     v.fees,
 		script:   v.script,
 		feeQuote: v.feeQuote,
@@ -36,16 +36,16 @@ func (v *verifyOptions) clone() *verifyOptions{
 type VerifyOpt func(opts *verifyOptions)
 
 // VerifyProofs will make the verifier validate the envelope merkle proofs for each parent transaction.
-func VerifyProofs() VerifyOpt{
-	return func(opts *verifyOptions){
+func VerifyProofs() VerifyOpt {
+	return func(opts *verifyOptions) {
 		opts.proofs = true
 	}
 }
 
 // NoVerifyProofs will switch off envelope proof verification
 // and rely on mAPI/node verification when the tx is broadcast.
-func NoVerifyProofs() VerifyOpt{
-	return func(opts *verifyOptions){
+func NoVerifyProofs() VerifyOpt {
+	return func(opts *verifyOptions) {
 		opts.proofs = false
 	}
 }
@@ -58,8 +58,8 @@ func NoVerifyProofs() VerifyOpt{
 // method rather than loading fees when calling NewPaymentVerifier as fees can go out of date
 // over the lifetime of the application and you may be supplying different feeQuotes
 // to different consumers.
-func VerifyFees(fees *bt.FeeQuote) VerifyOpt{
-	return func(opts *verifyOptions){
+func VerifyFees(fees *bt.FeeQuote) VerifyOpt {
+	return func(opts *verifyOptions) {
 		opts.fees = true
 		opts.feeQuote = fees
 	}
@@ -67,24 +67,24 @@ func VerifyFees(fees *bt.FeeQuote) VerifyOpt{
 
 // NoVerifyFees will switch off transaction fee verification and rely on
 // mAPI / node verification when the transaction is broadcast.
-func NoVerifyFees() VerifyOpt{
-	return func(opts *verifyOptions){
+func NoVerifyFees() VerifyOpt {
+	return func(opts *verifyOptions) {
 		opts.fees = false
 		opts.feeQuote = nil
 	}
 }
 
 // VerifyScript will ensure the scripts provided in the transaction are valid.
-func VerifyScript() VerifyOpt{
-	return func(opts *verifyOptions){
+func VerifyScript() VerifyOpt {
+	return func(opts *verifyOptions) {
 		opts.script = true
 	}
 }
 
 // NoVerifyScript will switch off script verification and rely on
 // mAPI / node verification when the tx is broadcast.
-func NoVerifyScript() VerifyOpt{
-	return func(opts *verifyOptions){
+func NoVerifyScript() VerifyOpt {
+	return func(opts *verifyOptions) {
 		opts.script = false
 	}
 }
@@ -92,8 +92,8 @@ func NoVerifyScript() VerifyOpt{
 // NoVerifySPV will turn off any spv validation for merkle proofs
 // and script validation. This is a helper method that is equivalent to
 // NoVerifyProofs && NoVerifyScripts.
-func NoVerifySPV() VerifyOpt{
-	return func(opts *verifyOptions){
+func NoVerifySPV() VerifyOpt {
+	return func(opts *verifyOptions) {
 		opts.proofs = false
 		opts.script = false
 	}
@@ -102,8 +102,8 @@ func NoVerifySPV() VerifyOpt{
 // VerifySPV will turn on spv validation for merkle proofs
 // and script validation. This is a helper method that is equivalent to
 // NoVerifyProofs && NoVerifyScripts.
-func VerifySPV() VerifyOpt{
-	return func(opts *verifyOptions){
+func VerifySPV() VerifyOpt {
+	return func(opts *verifyOptions) {
 		opts.proofs = true
 		opts.script = true
 	}
@@ -127,7 +127,7 @@ type MerkleProofVerifier interface {
 
 type verifier struct {
 	// BlockHeaderChain will be set when an implementation returning a bc.BlockHeader type is provided.
-	bhc bc.BlockHeaderChain
+	bhc  bc.BlockHeaderChain
 	opts *verifyOptions
 }
 
@@ -143,11 +143,11 @@ func NewPaymentVerifier(bhc bc.BlockHeaderChain, opts ...VerifyOpt) (PaymentVeri
 		return nil, errors.New("at least one blockchain header implementation should be returned")
 	}
 	o := &verifyOptions{
-		proofs:   true,
-		fees:     false,
-		script:   true,
+		proofs: true,
+		fees:   false,
+		script: true,
 	}
-	for _,opt := range opts{
+	for _, opt := range opts {
 		opt(o)
 	}
 	return &verifier{bhc: bhc, opts: o}, nil
