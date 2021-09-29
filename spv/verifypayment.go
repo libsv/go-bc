@@ -134,7 +134,7 @@ func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) error 
 		return err
 	}
 	if !valid {
-		return ErrInvalidProof
+		return errors.Wrapf(ErrInvalidProof, "envelope tx id %s has invalid proof %s", payment.TxID, proofTxID)
 	}
 	return nil
 }
