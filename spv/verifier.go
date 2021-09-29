@@ -60,6 +60,7 @@ func NoVerifyProofs() VerifyOpt{
 // to different consumers.
 func VerifyFees(fees *bt.FeeQuote) VerifyOpt{
 	return func(opts *verifyOptions){
+		opts.fees = true
 		opts.feeQuote = fees
 	}
 }
@@ -69,6 +70,7 @@ func VerifyFees(fees *bt.FeeQuote) VerifyOpt{
 func NoVerifyFees() VerifyOpt{
 	return func(opts *verifyOptions){
 		opts.fees = false
+		opts.feeQuote = nil
 	}
 }
 
