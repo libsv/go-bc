@@ -3,9 +3,109 @@ package spv
 import (
 	"context"
 
-	"github.com/libsv/go-bc"
+	"github.com/libsv/go-bt/v2"
 	"github.com/pkg/errors"
+
+	"github.com/libsv/go-bc"
 )
+
+type verifyOptions struct{
+	// proofs validation
+	proofs bool
+	script bool
+	fees bool
+	feeQuote *bt.FeeQuote
+}
+
+func (v *verifyOptions) requiresEnvelope() bool{
+	return v.proofs || v.script
+}
+
+// clone will copy the verifyOptions to a new struct and return it.
+func (v *verifyOptions) clone() *verifyOptions{
+	return &verifyOptions{
+		proofs: v.proofs,
+		fees:     v.fees,
+		script:   v.script,
+		feeQuote: v.feeQuote,
+	}
+}
+
+// VerifyOpt defines a functional option that is used to modify behaviour of
+// the payment verifier.
+type VerifyOpt func(opts *verifyOptions)
+
+// VerifyProofs will make the verifier validate the envelope merkle proofs for each parent transaction.
+func VerifyProofs() VerifyOpt{
+	return func(opts *verifyOptions){
+		opts.proofs = true
+	}
+}
+
+// NoVerifyProofs will switch off envelope proof verification
+// and rely on mAPI/node verification when the tx is broadcast.
+func NoVerifyProofs() VerifyOpt{
+	return func(opts *verifyOptions){
+		opts.proofs = false
+	}
+}
+
+// VerifyFees will make the verifier check the transaction fees
+// of the supplied transaction are enough based on the feeQuote
+// provided.
+//
+// It is recommended to provide a fresh fee quote when calling the VerifyPayment
+// method rather than loading fees when calling NewPaymentVerifier as fees can go out of date
+// over the lifetime of the application and you may be supplying different feeQuotes
+// to different consumers.
+func VerifyFees(fees *bt.FeeQuote) VerifyOpt{
+	return func(opts *verifyOptions){
+		opts.feeQuote = fees
+	}
+}
+
+// NoVerifyFees will switch off transaction fee verification and rely on
+// mAPI / node verification when the transaction is broadcast.
+func NoVerifyFees() VerifyOpt{
+	return func(opts *verifyOptions){
+		opts.fees = false
+	}
+}
+
+// VerifyScript will ensure the scripts provided in the transaction are valid.
+func VerifyScript() VerifyOpt{
+	return func(opts *verifyOptions){
+		opts.script = true
+	}
+}
+
+// NoVerifyScript will switch off script verification and rely on
+// mAPI / node verification when the tx is broadcast.
+func NoVerifyScript() VerifyOpt{
+	return func(opts *verifyOptions){
+		opts.script = false
+	}
+}
+
+// NoVerifySPV will turn off any spv validation for merkle proofs
+// and script validation. This is a helper method that is equivalent to
+// NoVerifyProofs && NoVerifyScripts.
+func NoVerifySPV() VerifyOpt{
+	return func(opts *verifyOptions){
+		opts.proofs = false
+		opts.script = false
+	}
+}
+
+// VerifySPV will turn on spv validation for merkle proofs
+// and script validation. This is a helper method that is equivalent to
+// NoVerifyProofs && NoVerifyScripts.
+func VerifySPV() VerifyOpt{
+	return func(opts *verifyOptions){
+		opts.proofs = true
+		opts.script = true
+	}
+}
 
 // A PaymentVerifier is an interface used to complete Simple Payment Verification (SPV)
 // in conjunction with a Merkle Proof.
@@ -13,7 +113,7 @@ import (
 // The implementation of bc.BlockHeaderChain which is supplied will depend on the client
 // you are using, some may return a HeaderJSON response others may return the blockhash.
 type PaymentVerifier interface {
-	VerifyPayment(context.Context, *Envelope) (bool, error)
+	VerifyPayment(context.Context, *Envelope, ...VerifyOpt) (bool, error)
 	MerkleProofVerifier
 }
 
@@ -26,16 +126,29 @@ type MerkleProofVerifier interface {
 type verifier struct {
 	// BlockHeaderChain will be set when an implementation returning a bc.BlockHeader type is provided.
 	bhc bc.BlockHeaderChain
+	opts *verifyOptions
 }
 
 // NewPaymentVerifier creates a new spv.PaymentVerifer with the bc.BlockHeaderChain provided.
 // If no BlockHeaderChain implementation is provided, the setup will return an error.
-func NewPaymentVerifier(bhc bc.BlockHeaderChain) (PaymentVerifier, error) {
+//
+// opts control the global behaviour of the verifier and all options are enabled by default, they are:
+// - envelope verification (proofs checked etc)
+// - fees checked, ensuring the root tx covers enough fees
+// - script verification which checks the script is correct (not currently implemented)
+func NewPaymentVerifier(bhc bc.BlockHeaderChain, opts ...VerifyOpt) (PaymentVerifier, error) {
 	if bhc == nil {
 		return nil, errors.New("at least one blockchain header implementation should be returned")
 	}
-
-	return &verifier{bhc: bhc}, nil
+	o := &verifyOptions{
+		proofs:   true,
+		fees:     false,
+		script:   true,
+	}
+	for _,opt := range opts{
+		opt(o)
+	}
+	return &verifier{bhc: bhc, opts: o}, nil
 }
 
 // NewMerkleProofVerifier creates a new spv.MerkleProofVerifer with the bc.BlockHeaderChain provided.

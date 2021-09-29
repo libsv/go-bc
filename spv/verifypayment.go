@@ -8,28 +8,50 @@ import (
 )
 
 // VerifyPayment verifies whether or not the txs supplied via the supplied spv.Envelope are valid
-func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope) (bool, error) {
+func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, opts ...VerifyOpt) (bool, error) {
 	if initialPayment == nil {
 		return false, ErrNilInitialPayment
 	}
-
-	// The tip tx is the transaction we're trying to verify, and it should not have a supplied
-	// Merkle Proof.
-	if initialPayment.IsAnchored() {
-		return false, ErrTipTxConfirmed
+	vOpt := v.opts.clone()
+	for _, opt := range opts{
+		opt(vOpt)
 	}
 
-	valid, err := v.verifyTxs(ctx, initialPayment)
-	if err != nil {
-		return false, err
+	// verify tx fees
+	if vOpt.fees{
+		if vOpt.feeQuote == nil{
+			return false, ErrNoFeeQuoteSupplied
+		}
+		tx, err:= bt.NewTxFromString(initialPayment.RawTx)
+		if err != nil{
+			return false, err
+		}
+		ok, err := tx.IsFeePaidEnough(vOpt.feeQuote)
+		if err != nil{
+			return false, err
+		}
+		if !ok{
+			return false, ErrFeePaidNotEnough
+		}
 	}
-
-	return valid, nil
+	if vOpt.requiresEnvelope() {
+		// The tip tx is the transaction we're trying to verify, and it should not have a supplied
+		// Merkle Proof.
+		if initialPayment.IsAnchored() {
+			return false, ErrTipTxConfirmed
+		}
+		valid, err := v.verifyTxs(ctx, initialPayment,vOpt)
+		if err != nil {
+			return false, err
+		}
+		return valid, nil
+	}
+	return true, nil
 }
 
-func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, error) {
+func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope, opts *verifyOptions) (bool, error) {
 	// If at the beginning or middle of the tx chain and tx is unconfirmed, fail and error.
-	if !payment.IsAnchored() && (payment.Parents == nil || len(payment.Parents) == 0) {
+	if opts.proofs && !payment.IsAnchored() && (payment.Parents == nil || len(payment.Parents) == 0) {
 		return false, errors.Wrapf(ErrNoConfirmedTransaction, "tx %s has no confirmed/anchored tx", payment.TxID)
 	}
 
@@ -41,7 +63,7 @@ func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, erro
 			parent.TxID = parentTxID
 		}
 
-		valid, err := v.verifyTxs(ctx, parent)
+		valid, err := v.verifyTxs(ctx, parent, opts)
 		if err != nil {
 			return false, err
 		}
@@ -52,17 +74,22 @@ func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope) (bool, erro
 
 	// If a Merkle Proof is provided, assume we are at the anchor/beginning of the tx chain.
 	// Verify and return the result.
-	if payment.IsAnchored() {
-		return v.verifyTxAnchor(ctx, payment)
+	if payment.IsAnchored() || payment.Parents == nil {
+		if opts.proofs {
+			return v.verifyTxAnchor(ctx, payment)
+		}
+		return true, nil
 	}
 
 	tx, err := bt.NewTxFromString(payment.RawTx)
 	if err != nil {
 		return false, err
 	}
-
 	// We must verify the tx or else we can not know if any of it's child txs are valid.
-	return v.verifyUnconfirmedTx(tx, payment)
+	if opts.script{
+		return v.verifyUnconfirmedTx(tx, payment)
+	}
+	return true, nil
 }
 
 func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (bool, error) {
@@ -114,7 +141,6 @@ func (v *verifier) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) (bool, erro
 		}
 
 		output := parentTx.Outputs[int(input.PreviousTxOutIndex)]
-
 		// TODO: verify script using input and previous output
 		_ = output
 	}
