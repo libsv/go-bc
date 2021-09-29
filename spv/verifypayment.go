@@ -47,7 +47,7 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, 
 //
 // If there are no parents the method will fail, also, if there are no fees the method will fail.
 func (v *verifier) verifyFees(initialPayment *Envelope, tx *bt.Tx, opts *verifyOptions) error {
-	if len(initialPayment.Parents) == 0 {
+	if initialPayment.Parents == nil || len(initialPayment.Parents) == 0 {
 		return ErrCannotCalculateFeePaid
 	}
 	if opts.feeQuote == nil {
@@ -94,7 +94,7 @@ func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope, opts *verif
 
 	// If a Merkle Proof is provided, assume we are at the anchor/beginning of the tx chain.
 	// Verify and return the result.
-	if payment.IsAnchored() || payment.Parents == nil {
+	if payment.IsAnchored() || payment.Parents == nil || len(payment.Parents) == 0 {
 		if opts.proofs {
 			return v.verifyTxAnchor(ctx, payment)
 		}
