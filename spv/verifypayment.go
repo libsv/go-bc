@@ -13,18 +13,18 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, 
 		return nil, ErrNilInitialPayment
 	}
 	vOpt := v.opts.clone()
-	for _, opt := range opts{
+	for _, opt := range opts {
 		opt(vOpt)
 	}
 	// parse initial tx, fail fast if it isn't a valid tx.
-	tx, err:= bt.NewTxFromString(initialPayment.RawTx)
-	if err != nil{
+	tx, err := bt.NewTxFromString(initialPayment.RawTx)
+	if err != nil {
 		return nil, err
 	}
 
 	// verify tx fees
-	if vOpt.fees{
-		if err := v.verifyFees(initialPayment, tx, vOpt); err != nil{
+	if vOpt.fees {
+		if err := v.verifyFees(initialPayment, tx, vOpt); err != nil {
 			return nil, err
 		}
 	}
@@ -35,7 +35,7 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, 
 		if initialPayment.IsAnchored() {
 			return nil, ErrTipTxConfirmed
 		}
-		if err := v.verifyTxs(ctx, initialPayment,vOpt);err != nil {
+		if err := v.verifyTxs(ctx, initialPayment, vOpt); err != nil {
 			return nil, err
 		}
 	}
@@ -46,35 +46,35 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, 
 // the satoshis used for each input of the initialPayment tx.
 //
 // If there are no parents the method will fail, also, if there are no fees the method will fail.
-func (v *verifier) verifyFees(initialPayment *Envelope, tx *bt.Tx, opts *verifyOptions) error{
-	if len(initialPayment.Parents) == 0{
+func (v *verifier) verifyFees(initialPayment *Envelope, tx *bt.Tx, opts *verifyOptions) error {
+	if len(initialPayment.Parents) == 0 {
 		return ErrCannotCalculateFeePaid
 	}
-	if opts.feeQuote == nil{
+	if opts.feeQuote == nil {
 		return ErrNoFeeQuoteSupplied
 	}
-	for _, input := range tx.Inputs{
+	for _, input := range tx.Inputs {
 		pTx, err := bt.NewTxFromString(initialPayment.Parents[input.PreviousTxIDStr()].RawTx)
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		out := pTx.OutputIdx(int(input.PreviousTxOutIndex))
-		if out == nil{
+		if out == nil {
 			continue
 		}
 		input.PreviousTxSatoshis = out.Satoshis
 	}
 	ok, err := tx.IsFeePaidEnough(opts.feeQuote)
-	if err != nil{
+	if err != nil {
 		return err
 	}
-	if !ok{
+	if !ok {
 		return ErrFeePaidNotEnough
 	}
 	return nil
 }
 
-func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope, opts *verifyOptions) (error) {
+func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope, opts *verifyOptions) error {
 	// If at the beginning or middle of the tx chain and tx is unconfirmed, fail and error.
 	if opts.proofs && !payment.IsAnchored() && (payment.Parents == nil || len(payment.Parents) == 0) {
 		return errors.Wrapf(ErrNoConfirmedTransaction, "tx %s has no confirmed/anchored tx", payment.TxID)
@@ -87,7 +87,7 @@ func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope, opts *verif
 		if parent.TxID == "" {
 			parent.TxID = parentTxID
 		}
-		if err := v.verifyTxs(ctx, parent, opts);err != nil {
+		if err := v.verifyTxs(ctx, parent, opts); err != nil {
 			return err
 		}
 	}
@@ -106,13 +106,13 @@ func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope, opts *verif
 		return err
 	}
 	// We must verify the tx or else we can not know if any of it's child txs are valid.
-	if opts.script{
+	if opts.script {
 		return v.verifyUnconfirmedTx(tx, payment)
 	}
 	return nil
 }
 
-func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (error) {
+func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) error {
 	proofTxID := payment.Proof.TxOrID
 	if len(proofTxID) != 64 {
 		proofTx, err := bt.NewTxFromString(payment.Proof.TxOrID)
@@ -133,13 +133,13 @@ func (v *verifier) verifyTxAnchor(ctx context.Context, payment *Envelope) (error
 	if err != nil {
 		return err
 	}
-	if !valid{
+	if !valid {
 		return ErrInvalidProof
 	}
 	return nil
 }
 
-func (v *verifier) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) (error) {
+func (v *verifier) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) error {
 	// If no tx inputs have been provided, fail and error
 	if len(tx.Inputs) == 0 {
 		return errors.Wrapf(ErrNoTxInputsToVerify, "tx %s has no inputs to verify", tx.TxID())
