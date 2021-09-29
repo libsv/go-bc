@@ -12,6 +12,13 @@ import (
 // Any options passed here persist only for that call and do not override the main options. This gives flexibility
 // in that you can setup a verifier with sensible defaults and override them conditionally by providing
 // options here to enable or disable checks as required.
+//
+//  // with functional options to override verifier defaults.
+//  tx, err := VerifyPayment(ctx, env, spv.VerifyProofs(), spv.VerifyFees(fees))
+//
+//  // without functional options to use verifier defaults.
+//  tx, err := VerifyPayment(ctx, env)
+//
 func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, opts ...VerifyOpt) (*bt.Tx, error) {
 	if initialPayment == nil {
 		return nil, ErrNilInitialPayment
