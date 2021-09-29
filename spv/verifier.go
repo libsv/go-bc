@@ -119,7 +119,7 @@ type PaymentVerifier interface {
 	MerkleProofVerifier
 }
 
-// MerkleProofVerifier interfaces the verification of Merkle Proofs
+// MerkleProofVerifier interfaces the verification of Merkle Proofs.
 type MerkleProofVerifier interface {
 	VerifyMerkleProof(context.Context, []byte) (bool, bool, error)
 	VerifyMerkleProofJSON(context.Context, *bc.MerkleProof) (bool, bool, error)
@@ -137,7 +137,7 @@ type verifier struct {
 // opts control the global behaviour of the verifier and all options are enabled by default, they are:
 // - envelope verification (proofs checked etc)
 // - fees checked, ensuring the root tx covers enough fees
-// - script verification which checks the script is correct (not currently implemented)
+// - script verification which checks the script is correct (not currently implemented).
 func NewPaymentVerifier(bhc bc.BlockHeaderChain, opts ...VerifyOpt) (PaymentVerifier, error) {
 	if bhc == nil {
 		return nil, errors.New("at least one blockchain header implementation should be returned")

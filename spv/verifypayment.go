@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// VerifyPayment verifies whether or not the txs supplied via the supplied spv.Envelope are valid
+// VerifyPayment verifies whether or not the txs supplied via the supplied spv.Envelope are valid.
 func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, opts ...VerifyOpt) (*bt.Tx, error) {
 	if initialPayment == nil {
 		return nil, ErrNilInitialPayment

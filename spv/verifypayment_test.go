@@ -31,8 +31,8 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		setupOpts []spv.VerifyOpt
 		// overrideOpts are passed to the VerifyPayment func to override the global settings.
 		overrideOpts []spv.VerifyOpt
-		exp             bool
-		expErr          error
+		exp          bool
+		expErr       error
 	}{
 		"valid envelope passes": {
 			exp: true,
@@ -126,7 +126,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 					},
 				},
 			},
-		},"envelope without any proof passes if proof disabled": {
+		}, "envelope without any proof passes if proof disabled": {
 			exp:    true,
 			expErr: nil,
 			setupOpts: []spv.VerifyOpt{
@@ -171,7 +171,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 					},
 				},
 			},
-		},"envelope without any proof passes if spv disabled": {
+		}, "envelope without any proof passes if spv disabled": {
 			exp:    true,
 			expErr: nil,
 			setupOpts: []spv.VerifyOpt{
@@ -216,12 +216,12 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 					},
 				},
 			},
-		},"envelope without any proof passes if spv overridden": {
+		}, "envelope without any proof passes if spv overridden": {
 			exp:    true,
 			expErr: nil,
 			overrideOpts: []spv.VerifyOpt{
-			spv.NoVerifyProofs(),
-		},
+				spv.NoVerifyProofs(),
+			},
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
 					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
@@ -311,7 +311,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 					},
 				},
 			},
-		},"valid envelope with fee check supplied and valid fees passes": {
+		}, "valid envelope with fee check supplied and valid fees passes": {
 			exp: true,
 			overrideOpts: []spv.VerifyOpt{
 				spv.VerifyFees(bt.NewFeeQuote()),
@@ -363,12 +363,12 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 					},
 				},
 			},
-		},"valid envelope with fee check supplied and invalid fees fails": {
-			exp: false,
+		}, "valid envelope with fee check supplied and invalid fees fails": {
+			exp:    false,
 			expErr: spv.ErrFeePaidNotEnough,
 			overrideOpts: []spv.VerifyOpt{
 				spv.VerifyFees(bt.NewFeeQuote().AddQuote(bt.FeeTypeStandard, &bt.Fee{
-					FeeType:   bt.FeeTypeStandard,
+					FeeType: bt.FeeTypeStandard,
 					MiningFee: bt.FeeUnit{
 						Satoshis: 10000000,
 						Bytes:    1,
@@ -422,17 +422,17 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 					},
 				},
 			},
-		},"envelope, no parents, no spv, fee check should fail": {
-			exp: false,
+		}, "envelope, no parents, no spv, fee check should fail": {
+			exp:    false,
 			expErr: spv.ErrCannotCalculateFeePaid,
 			overrideOpts: []spv.VerifyOpt{
 				spv.VerifyFees(bt.NewFeeQuote().AddQuote(bt.FeeTypeStandard, &bt.Fee{
-					FeeType:   bt.FeeTypeStandard,
+					FeeType: bt.FeeTypeStandard,
 					MiningFee: bt.FeeUnit{
 						Satoshis: 0,
 						Bytes:    10000,
 					},
-					RelayFee:  bt.FeeUnit{},
+					RelayFee: bt.FeeUnit{},
 				})),
 				spv.NoVerifySPV(),
 			},
@@ -442,7 +442,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			},
 		},
 		"invalid merkle proof fails": {
-			exp: false,
+			exp:    false,
 			expErr: spv.ErrInvalidProof,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
@@ -810,8 +810,8 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			},
 		},
 		"invalid multiple layer tx false": {
-			exp: false,
-            expErr: spv.ErrInvalidProof,
+			exp:    false,
+			expErr: spv.ErrInvalidProof,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				switch blockHash {
 				case "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb":
@@ -1282,9 +1282,9 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			if test.exp{
+			if test.exp {
 				assert.NotNil(t, tx)
-			} else{
+			} else {
 				assert.Nil(t, tx)
 			}
 		})
