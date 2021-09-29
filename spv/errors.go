@@ -36,4 +36,11 @@ var (
 
 	// ErrFeePaidNotEnough returned when not enough fees have been paid.
 	ErrFeePaidNotEnough = errors.New("not enough fees paid")
+
+	// ErrCannotCalculateFeePaid returned when fee check is enabled but the tx has no parents.
+	ErrCannotCalculateFeePaid = errors.New("no parents supplied in envelope which means we cannot valdiate " +
+		"fees, either ensure parents are supplied or remove fee check")
+
+	// ErrInvalidProof is returned if the merkle proof validation fails.
+	ErrInvalidProof = errors.New("invalid merkle proof, payment invalid")
 )

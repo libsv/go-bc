@@ -422,9 +422,28 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 					},
 				},
 			},
+		},"envelope, no parents, no spv, fee check should fail": {
+			exp: false,
+			expErr: spv.ErrCannotCalculateFeePaid,
+			overrideOpts: []spv.VerifyOpt{
+				spv.VerifyFees(bt.NewFeeQuote().AddQuote(bt.FeeTypeStandard, &bt.Fee{
+					FeeType:   bt.FeeTypeStandard,
+					MiningFee: bt.FeeUnit{
+						Satoshis: 0,
+						Bytes:    10000,
+					},
+					RelayFee:  bt.FeeUnit{},
+				})),
+				spv.NoVerifySPV(),
+			},
+			envelope: &spv.Envelope{
+				TxID:  "bf5e05fdefc072a3113c69a6d6d0bc092e4e93b037d6785ccc795617132151e6",
+				RawTx: "0200000003a9bc457fdc6a54d99300fb137b23714d860c350a9d19ff0f571e694a419ff3a0010000006b48304502210086c83beb2b2663e4709a583d261d75be538aedcafa7766bd983e5c8db2f8b2fc02201a88b178624ab0ad1748b37c875f885930166237c88f5af78ee4e61d337f935f412103e8be830d98bb3b007a0343ee5c36daa48796ae8bb57946b1e87378ad6e8a090dfeffffff0092bb9a47e27bf64fc98f557c530c04d9ac25e2f2a8b600e92a0b1ae7c89c20010000006b483045022100f06b3db1c0a11af348401f9cebe10ae2659d6e766a9dcd9e3a04690ba10a160f02203f7fbd7dfcfc70863aface1a306fcc91bbadf6bc884c21a55ef0d32bd6b088c8412103e8be830d98bb3b007a0343ee5c36daa48796ae8bb57946b1e87378ad6e8a090dfeffffff9d0d4554fa692420a0830ca614b6c60f1bf8eaaa21afca4aa8c99fb052d9f398000000006b483045022100d920f2290548e92a6235f8b2513b7f693a64a0d3fa699f81a034f4b4608ff82f0220767d7d98025aff3c7bd5f2a66aab6a824f5990392e6489aae1e1ae3472d8dffb412103e8be830d98bb3b007a0343ee5c36daa48796ae8bb57946b1e87378ad6e8a090dfeffffff02807c814a000000001976a9143a6bf34ebfcf30e8541bbb33a7882845e5a29cb488ac76b0e60e000000001976a914bd492b67f90cb85918494767ebb23102c4f06b7088ac67000000",
+			},
 		},
 		"invalid merkle proof fails": {
 			exp: false,
+			expErr: spv.ErrInvalidProof,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				if blockHash == "4100429a6a29fd8ddf480f124f02557df39d9d58a671c9ea0a8f1fcc8ace923f" {
 					return bc.NewBlockHeaderFromStr("0000002092df08285c865746bd933a0a97bda382cbc3ad1cbf7d3c8957c24e55eaba652dfc6f46aebb62fe9004ffa1e91b0ab37d1a865454a151e6011ce50751d33b40d7e1ef1361ffff7f2001000000")
@@ -792,6 +811,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		},
 		"invalid multiple layer tx false": {
 			exp: false,
+            expErr: spv.ErrInvalidProof,
 			blockHeaderFunc: func(ctx context.Context, blockHash string) (*bc.BlockHeader, error) {
 				switch blockHash {
 				case "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb":
@@ -1255,14 +1275,18 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			}, test.setupOpts...)
 			assert.NoError(t, err, "expected no error when creating spv client")
 
-			valid, err := v.VerifyPayment(context.Background(), test.envelope, test.overrideOpts...)
+			tx, err := v.VerifyPayment(context.Background(), test.envelope, test.overrideOpts...)
 			if test.expErr != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, errors.Cause(err), test.expErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, test.exp, valid)
+			if test.exp{
+				assert.NotNil(t, tx)
+			} else{
+				assert.Nil(t, tx)
+			}
 		})
 	}
 }

@@ -415,13 +415,13 @@ func (tx *Tx) IsFeePaidEnough(fees *FeeQuote) (bool, error) {
 	}
 	totalInputSatoshis := tx.TotalInputSatoshis()
 	totalOutputSatoshis := tx.TotalOutputSatoshis()
-
+	
 	if totalInputSatoshis < totalOutputSatoshis {
 		return false, nil
 	}
 
 	actualFeePaid := totalInputSatoshis - totalOutputSatoshis
-	fmt.Println(actualFeePaid)
+
 	return actualFeePaid >= expFeesPaid.TotalFeePaid, nil
 }
 
