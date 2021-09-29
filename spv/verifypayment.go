@@ -8,6 +8,10 @@ import (
 )
 
 // VerifyPayment verifies whether or not the txs supplied via the supplied spv.Envelope are valid.
+// This method also accepts functional options which will override the options set in the verifier upon creation.
+// Any options passed here persist only for that call and do not override the main options. This gives flexibility
+// in that you can setup a verifier with sensible defaults and override them conditionally by providing
+// options here to enable or disable checks as required.
 func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, opts ...VerifyOpt) (*bt.Tx, error) {
 	if initialPayment == nil {
 		return nil, ErrNilInitialPayment
@@ -15,6 +19,9 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, 
 	vOpt := v.opts.clone()
 	for _, opt := range opts {
 		opt(vOpt)
+	}
+	if vOpt.proofs && v.bhc == nil {
+		return nil, errors.New("at least one blockchain header implementation should be set in the verifier if validating proofs")
 	}
 	// parse initial tx, fail fast if it isn't a valid tx.
 	tx, err := bt.NewTxFromString(initialPayment.RawTx)

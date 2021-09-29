@@ -139,9 +139,6 @@ type verifier struct {
 // - fees checked, ensuring the root tx covers enough fees
 // - script verification which checks the script is correct (not currently implemented).
 func NewPaymentVerifier(bhc bc.BlockHeaderChain, opts ...VerifyOpt) (PaymentVerifier, error) {
-	if bhc == nil {
-		return nil, errors.New("at least one blockchain header implementation should be returned")
-	}
 	o := &verifyOptions{
 		proofs: true,
 		fees:   false,
@@ -149,6 +146,9 @@ func NewPaymentVerifier(bhc bc.BlockHeaderChain, opts ...VerifyOpt) (PaymentVeri
 	}
 	for _, opt := range opts {
 		opt(o)
+	}
+	if o.proofs && bhc == nil {
+		return nil, errors.New("at least one blockchain header implementation should be returned")
 	}
 	return &verifier{bhc: bhc, opts: o}, nil
 }
