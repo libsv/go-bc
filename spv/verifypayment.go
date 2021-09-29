@@ -16,7 +16,7 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, 
 	for _, opt := range opts{
 		opt(vOpt)
 	}
-
+	// parse initial tx, fail fast if it isn't a valid tx.
 	tx, err:= bt.NewTxFromString(initialPayment.RawTx)
 	if err != nil{
 		return nil, err
@@ -24,31 +24,11 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, 
 
 	// verify tx fees
 	if vOpt.fees{
-		if len(initialPayment.Parents) == 0{
-			return nil, ErrCannotCalculateFeePaid
-		}
-		if vOpt.feeQuote == nil{
-			return nil, ErrNoFeeQuoteSupplied
-		}
-		for _, input := range tx.Inputs{
-			pTx, err := bt.NewTxFromString(initialPayment.Parents[input.PreviousTxIDStr()].RawTx)
-			if err != nil{
-				return nil, err
-			}
-		    out := pTx.OutputIdx(int(input.PreviousTxOutIndex))
-		    if out == nil{
-		    	continue
-			}
-			input.PreviousTxSatoshis = out.Satoshis
-		}
-		ok, err := tx.IsFeePaidEnough(vOpt.feeQuote)
-		if err != nil{
+		if err := v.verifyFees(initialPayment, tx, vOpt); err != nil{
 			return nil, err
 		}
-		if !ok{
-			return nil, ErrFeePaidNotEnough
-		}
 	}
+	// if we are validating proofs or scripts carry out the validation.
 	if vOpt.requiresEnvelope() {
 		// The tip tx is the transaction we're trying to verify, and it should not have a supplied
 		// Merkle Proof.
@@ -60,6 +40,38 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, 
 		}
 	}
 	return tx, nil
+}
+
+// verifyFees takes the initial payment and iterates the immediate parents in order to gather
+// the satoshis used for each input of the initialPayment tx.
+//
+// If there are no parents the method will fail, also, if there are no fees the method will fail.
+func (v *verifier) verifyFees(initialPayment *Envelope, tx *bt.Tx, opts *verifyOptions) error{
+	if len(initialPayment.Parents) == 0{
+		return ErrCannotCalculateFeePaid
+	}
+	if opts.feeQuote == nil{
+		return ErrNoFeeQuoteSupplied
+	}
+	for _, input := range tx.Inputs{
+		pTx, err := bt.NewTxFromString(initialPayment.Parents[input.PreviousTxIDStr()].RawTx)
+		if err != nil{
+			return err
+		}
+		out := pTx.OutputIdx(int(input.PreviousTxOutIndex))
+		if out == nil{
+			continue
+		}
+		input.PreviousTxSatoshis = out.Satoshis
+	}
+	ok, err := tx.IsFeePaidEnough(opts.feeQuote)
+	if err != nil{
+		return err
+	}
+	if !ok{
+		return ErrFeePaidNotEnough
+	}
+	return nil
 }
 
 func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope, opts *verifyOptions) (error) {

@@ -12,6 +12,7 @@ import (
 func TestPaymentVerifier_NewPaymentVerifier(t *testing.T) {
 	tests := map[string]struct {
 		bhc    bc.BlockHeaderChain
+		opts []spv.VerifyOpt
 		expErr error
 	}{
 		"successful create": {
