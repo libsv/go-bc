@@ -4,8 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/libsv/go-bc"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/libsv/go-bc"
 )
 
 func TestMerkleProofToBytes(t *testing.T) {

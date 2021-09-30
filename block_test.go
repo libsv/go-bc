@@ -5,9 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/libsv/go-bc"
 	"github.com/libsv/go-bt/v2"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/libsv/go-bc"
 )
 
 func TestNewBlock(t *testing.T) {

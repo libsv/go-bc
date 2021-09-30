@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/libsv/go-bc"
 	"github.com/libsv/go-bc/spv"
-	"github.com/stretchr/testify/assert"
 )
 
 type mockBlockHeaderChain struct{}

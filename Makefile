@@ -1,28 +1,69 @@
-# Common makefile commands & variables between projects
-include .make/common.mk
+SHELL=/bin/bash
 
-# Common Golang makefile commands & variables between projects
-include .make/go.mk
+help:
+	@egrep -h '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
-## Not defined? Use default repo name which is the application
-ifeq ($(REPO_NAME),)
-	REPO_NAME="go-bc"
-endif
+run-service:
+	@go run -race cmd/bip270-server/main.go server
 
-## Not defined? Use default repo owner
-ifeq ($(REPO_OWNER),)
-	REPO_OWNER="libsv"
-endif
+run-all-tests: run-linter run-unit-tests
 
-.PHONY: clean
+pre-commit: vendor-deps run-all-tests
 
-all: ## Runs multiple commands
-	@$(MAKE) test
+redeploy: stop-compose build-image run-compose-d
 
-clean: ## Remove previous builds and any test cache data
-	@go clean -cache -testcache -i -r
-	@test $(DISTRIBUTIONS_DIR)
-	@if [ -d $(DISTRIBUTIONS_DIR) ]; then rm -r $(DISTRIBUTIONS_DIR); fi
+run-unit-tests:
+	@go clean -testcache && go test -v ./... -race
 
-release:: ## Runs common.release then runs godocs
-	@$(MAKE) godocs
+run-pipeline-unit-tests:
+	@go clean -testcache && go test -v ./... -race -tags pipeline
+
+run-unit-tests-cover:
+	@go test ./... -race -v -coverprofile cover.out && \
+	go tool cover -html=cover.out -o cover.html && \
+	open file:///$(shell pwd)/cover.html
+
+run-linter:
+	@golangci-lint run --deadline=480s --skip-dirs=vendor --tests
+
+# make create-alias alias=some_alias
+create-alias:
+	@go run -race main.go create $(alias)
+
+install-linter:
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.35.2
+
+install-swagger-gen:
+	@go get -d github.com/swaggo/swag/cmd/swag
+
+generate-swagger:
+	@swag init --parseVendor --parseDependency --parseInternal -g ./cmd/rest-server/main.go
+
+go-doc-mac:
+	@open http://localhost:6060 && \
+	godoc -http=:6060
+
+go-doc-linux:
+	@xdg-open http://localhost:6060 && \
+	godoc -http=:6060
+
+run-compose:
+	@docker-compose -f docker-compose.yml -f docker-compose.build.yml  up
+
+run-compose-d:
+	@docker-compose -f docker-compose.yml -f docker-compose.build.yml  up -d
+
+run-compose-dev:
+	@docker-compose -f docker-compose.yml  -f docker-compose.dev.yml up
+
+build-image:
+	@docker-compose -f docker-compose.yml -f docker-compose.build.yml build
+
+run-compose-dev-d:
+	@docker-compose -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.dev.yml up -d
+
+stop-compose:
+	@docker-compose down
+
+vendor-deps:
+	@go mod tidy && go mod vendor

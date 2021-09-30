@@ -3,9 +3,10 @@ package spv_test
 import (
 	"testing"
 
-	"github.com/libsv/go-bc/spv"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/libsv/go-bc/spv"
 )
 
 func TestEnvelopeCreator_NewEnvelopeCreator(t *testing.T) {

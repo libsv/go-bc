@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/libsv/go-bc"
-	"github.com/libsv/go-bc/spv"
 	"github.com/libsv/go-bt/v2"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/libsv/go-bc"
+	"github.com/libsv/go-bc/spv"
 )
 
 type mockTxMerkleGetter struct {

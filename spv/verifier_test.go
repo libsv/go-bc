@@ -3,10 +3,11 @@ package spv_test
 import (
 	"testing"
 
-	"github.com/libsv/go-bc"
-	"github.com/libsv/go-bc/spv"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/libsv/go-bc"
+	"github.com/libsv/go-bc/spv"
 )
 
 func TestPaymentVerifier_NewPaymentVerifier(t *testing.T) {
