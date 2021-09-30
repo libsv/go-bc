@@ -6,8 +6,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/libsv/go-bc"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/libsv/go-bc"
 )
 
 func TestNewBlockHeader(t *testing.T) {

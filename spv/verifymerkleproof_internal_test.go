@@ -3,8 +3,9 @@ package spv
 import (
 	"testing"
 
-	"github.com/libsv/go-bc"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/libsv/go-bc"
 )
 
 func TestParseBinaryMerkleProof(t *testing.T) {
