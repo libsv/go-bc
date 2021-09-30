@@ -61,20 +61,20 @@ func (v *verifier) VerifyPayment(ctx context.Context, initialPayment *Envelope, 
 //
 // If there are no parents the method will fail, also, if there are no fees the method will fail.
 func (v *verifier) verifyFees(initialPayment *Envelope, tx *bt.Tx, opts *verifyOptions) error {
-	if initialPayment.Parents == nil || len(initialPayment.Parents) == 0 {
+	if initialPayment.HasParents() {
 		return ErrCannotCalculateFeePaid
 	}
 	if opts.feeQuote == nil {
 		return ErrNoFeeQuoteSupplied
 	}
 	for _, input := range tx.Inputs {
-		pTx, err := bt.NewTxFromString(initialPayment.Parents[input.PreviousTxIDStr()].RawTx)
+		parent, err := initialPayment.ParentTX(input.PreviousTxIDStr())
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "tx %s failed to get parent tx", tx.TxID())
 		}
-		out := pTx.OutputIdx(int(input.PreviousTxOutIndex))
+		out := parent.OutputIdx(int(input.PreviousTxOutIndex))
 		if out == nil {
-			continue
+			return ErrMissingOutput
 		}
 		input.PreviousTxSatoshis = out.Satoshis
 	}
@@ -90,7 +90,7 @@ func (v *verifier) verifyFees(initialPayment *Envelope, tx *bt.Tx, opts *verifyO
 
 func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope, opts *verifyOptions) error {
 	// If at the beginning or middle of the tx chain and tx is unconfirmed, fail and error.
-	if opts.proofs && !payment.IsAnchored() && (payment.Parents == nil || len(payment.Parents) == 0) {
+	if opts.proofs && !payment.IsAnchored() && payment.HasParents() {
 		return errors.Wrapf(ErrNoConfirmedTransaction, "tx %s has no confirmed/anchored tx", payment.TxID)
 	}
 
@@ -108,7 +108,7 @@ func (v *verifier) verifyTxs(ctx context.Context, payment *Envelope, opts *verif
 
 	// If a Merkle Proof is provided, assume we are at the anchor/beginning of the tx chain.
 	// Verify and return the result.
-	if payment.IsAnchored() || payment.Parents == nil || len(payment.Parents) == 0 {
+	if payment.IsAnchored() || payment.HasParents() {
 		if opts.proofs {
 			return v.verifyTxAnchor(ctx, payment)
 		}
@@ -160,23 +160,17 @@ func (v *verifier) verifyUnconfirmedTx(tx *bt.Tx, payment *Envelope) error {
 	}
 
 	for _, input := range tx.Inputs {
-		parent, ok := payment.Parents[input.PreviousTxIDStr()]
-		if !ok {
-			return errors.Wrapf(ErrNotAllInputsSupplied, "tx %s is missing input %s in its envelope", tx.TxID(), input.PreviousTxIDStr())
-		}
-
-		parentTx, err := bt.NewTxFromString(parent.RawTx)
+		parent, err := payment.ParentTX(input.PreviousTxIDStr())
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "tx %s missing parent", tx.TxID())
 		}
-
 		// If the input is indexing an output that is out of bounds, fail and error
-		if int(input.PreviousTxOutIndex) > len(parentTx.Outputs)-1 {
+		if int(input.PreviousTxOutIndex) > len(parent.Outputs)-1 {
 			return errors.Wrapf(ErrInputRefsOutOfBoundsOutput,
 				"input %s is referring out of bounds output %d", input.PreviousTxIDStr(), input.PreviousTxOutIndex)
 		}
 
-		output := parentTx.Outputs[int(input.PreviousTxOutIndex)]
+		output := parent.OutputIdx(int(input.PreviousTxOutIndex))
 		// TODO: verify script using input and previous output
 		_ = output
 	}

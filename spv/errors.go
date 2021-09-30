@@ -43,4 +43,7 @@ var (
 
 	// ErrInvalidProof is returned if the merkle proof validation fails.
 	ErrInvalidProof = errors.New("invalid merkle proof, payment invalid")
+
+	// ErrMissingOutput is returned when checking fees if an output in a parent tx is missing.
+	ErrMissingOutput = errors.New("expected output used in payment tx missing")
 )
