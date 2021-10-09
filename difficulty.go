@@ -95,6 +95,30 @@ func DifficultyToHashrate(coin string, diff uint64, targetSeconds float64) float
 	return float64(diff) * genesis / targetSeconds
 }
 
+// ValidBits ensures that the nBits number, which is a 32 byte target
+// encoded in a compact exponential form, is a valid representation.
+// This means that the result is positive but not an overflow.
+func ValidBits(bits uint32) bool {
+	var size uint32 = bits >> 24
+	var word uint32 = bits & 0x007fffff
+	var negative bool = 0 != (bits & 0x00800000)
+
+	if negative || word == 0 {
+		return false
+	}
+
+	if size <= 3 && 0 == word>>(8*(3-size)) {
+		return false
+	}
+
+	if word != 0 && ((size > 34) || (word > 0xff && size > 33) ||
+		(word > 0xffff && size > 32)) {
+		return false
+	}
+
+	return true
+}
+
 // DifficultyFromBits returns the mining difficulty from the nBits field in the block header.
 func DifficultyFromBits(bits []byte) (float64, error) {
 	ib := binary.BigEndian.Uint32(bits)
