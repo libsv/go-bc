@@ -111,8 +111,7 @@ func ValidBits(bits uint32) bool {
 		return false
 	}
 
-	if word != 0 && ((size > 34) || (word > 0xff && size > 33) ||
-		(word > 0xffff && size > 32)) {
+	if (size > 34) || (word > 0xff && size > 33) || (word > 0xffff && size > 32) {
 		return false
 	}
 

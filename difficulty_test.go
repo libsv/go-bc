@@ -72,3 +72,31 @@ func testDifficulty(bits string, expected float64, t *testing.T) {
 		t.Errorf("Expected difficulty of '%s' to be '%v', got %v", bits, expected, d)
 	}
 }
+
+func TestValidBits(t *testing.T) {
+	testValid := func(bits uint32, expected bool) {
+		if bc.ValidBits(bits) != expected {
+			t.Errorf("Expected ValidDifficulty(%x) to be %t", bits, expected)
+		}
+	}
+
+	testValid(0x00000000, false)
+	testValid(0x01000000, false)
+	testValid(0xffffffff, false)
+	testValid(0x00ffffff, false)
+	testValid(0xff000000, false)
+	testValid(0x01ff0000, false)
+	testValid(0x017f0000, true)
+	testValid(0x0100ff00, false)
+	testValid(0x0200ff00, true)
+	testValid(0x020000ff, false)
+	testValid(0x030000ff, true)
+	testValid(0x207f0000, true)
+	testValid(0x217f0000, false)
+	testValid(0x217fff00, false)
+	testValid(0x2100ff00, true)
+	testValid(0x2200ffff, false)
+	testValid(0x220000ff, true)
+	testValid(0x230000ff, false)
+
+}
