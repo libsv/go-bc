@@ -47,30 +47,27 @@ func (e *Envelope) ParentTx(txID string) (*bt.Tx, error) {
 }
 
 // Bytes takes an spvEnvelope struct and returns a pointer to the serialised bytes.
-func (e *Envelope) Bytes() *[]byte {
+func (e *Envelope) Bytes() (*[]byte, error) {
 	flake := make([]byte, 0)
 
 	// Binary format version 1
 	flake = append(flake, 1)
 
-	// currentTx
-	currentTx, err := hex.DecodeString(e.RawTx)
-	if err != nil {
-		fmt.Print(err)
+	initialTx := map[string]*Envelope{
+		e.TxID: {
+			TxID:          e.TxID,
+			RawTx:         e.RawTx,
+			Proof:         e.Proof,
+			MapiResponses: e.MapiResponses,
+			Parents:       e.Parents,
+		},
 	}
-	dataLength := bt.VarInt(uint64(len(currentTx)))
 
-	// what is the next data going to be?
-	flake = append(flake, flagTx)        // it's going to be a tx.
-	flake = append(flake, dataLength...) // it's going to be this long.
-	flake = append(flake, currentTx...)  // the tx data.
-
-	err = serialiseInputs(e.Parents, &flake)
+	err := serialiseInputs(initialTx, &flake)
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	return &flake
+	return &flake, nil
 }
 
 // serialiseInputs is a recursive input serialiser for spv Envelopes.
