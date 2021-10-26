@@ -13,7 +13,7 @@ import (
 const (
 	flagTx    = 1
 	flagProof = 2
-	// flagMapi  = 3 TODO implement parsing mapi responses.
+	flagMapi  = 3
 )
 
 // Envelope is a struct which contains all information needed for a transaction to be verified.
@@ -85,7 +85,16 @@ func serialiseInputs(parents map[string]*Envelope, flake *[]byte) error {
 		*flake = append(*flake, dataLength...) // of this length.
 		*flake = append(*flake, currentTx...)  // the data.
 		if input.MapiResponses != nil && len(input.MapiResponses) > 0 {
-			fmt.Print("implement mapi response serialisation") // TODO mapi response serialisation.
+			for _, mapiResponse := range input.MapiResponses {
+				mapiR, err := mapiResponse.Bytes()
+				if err != nil {
+					return err
+				}
+				dataLength := bt.VarInt(uint64(len(mapiR)))
+				*flake = append(*flake, flagMapi)      // next data will be a mapi response.
+				*flake = append(*flake, dataLength...) // of this length.
+				*flake = append(*flake, mapiR...)      // the data.
+			}
 		}
 		if input.Proof != nil {
 			proof, err := input.Proof.ToBytes()
