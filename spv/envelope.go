@@ -75,9 +75,7 @@ func (e *Envelope) Bytes() *[]byte {
 
 // serialiseInputs is a recursive input serialiser for spv Envelopes.
 func serialiseInputs(parents map[string]*Envelope, flake *[]byte) error {
-	for txid, input := range parents {
-		fmt.Printf("%+v\n", txid)
-
+	for _, input := range parents {
 		currentTx, err := hex.DecodeString(input.RawTx)
 		if err != nil {
 			fmt.Print(err)
@@ -98,8 +96,7 @@ func serialiseInputs(parents map[string]*Envelope, flake *[]byte) error {
 			*flake = append(*flake, flagProof)      // it's going to be a proof.
 			*flake = append(*flake, proofLength...) // of this length.
 			*flake = append(*flake, proof...)       // the data.
-		}
-		if input.HasParents() {
+		} else if input.HasParents() {
 			return serialiseInputs(input.Parents, flake)
 		}
 	}
