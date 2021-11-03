@@ -141,13 +141,10 @@ func parseCrunchyNutFlakesRecursively(b []byte, offset *uint64, eCurrent *Envelo
 		txid := tx.TxID()
 		inputs := map[string]*Envelope{}
 		for _, input := range tx.Inputs {
-			inputs[hex.EncodeToString(input.PreviousTxID())] = &Envelope{}
+			inputs[input.PreviousTxIDStr()] = &Envelope{}
 		}
 		eCurrent.TxID = txid
 		eCurrent.RawTx = tx.String()
-		howManyInputs := len(tx.Inputs)
-		fmt.Println("txid", txid, " has ", howManyInputs, " inputs")
-		fmt.Println("tx1", tx)
 		*offset += l
 		if uint64(len(b)) > *offset && b[*offset] != flagTx {
 			parseCrunchyNutFlakesRecursively(b, offset, eCurrent)
@@ -161,7 +158,6 @@ func parseCrunchyNutFlakesRecursively(b []byte, offset *uint64, eCurrent *Envelo
 		}
 	case flagProof:
 		binaryProof, err := parseBinaryMerkleProof(b[*offset : *offset+l])
-		fmt.Println(hex.EncodeToString(b[*offset : *offset+l]))
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -209,33 +205,6 @@ func flagType(flags byte) string {
 	}
 }
 
-/* From Mark Smith
-txs := map[string]*bt.Tx{}
-go func() {
-	select {
-	case tx <- txChan:
-		txs[tx.TxID()] = tx
-	case <-done:
-		break
-	}
-}()
-
-wg := sync.WaitGroup{}
-
-for i := 0; i < len(txs);i++{
-	wg.Add(1)
-	go func(){
-		defer wg.Done()
-		txChan <- deserialise(blob)
-	}
-}
-
-wg.Wait()
-done <- struct{}{}
-// iterate map and build tree
-
-*/
-
 // SpecialKBytes takes an spvEnvelope struct and returns a pointer to the serialised bytes.
 func (e *Envelope) SpecialKBytes() (*[]byte, error) {
 	flake := make([]byte, 0)
@@ -274,7 +243,7 @@ func serialiseSpecialKInputs(parents map[string]*Envelope, flake *[]byte) error 
 
 		// proof or zero
 		if input.Proof == nil {
-			*flake = append(*flake, bt.VarInt(0)...)
+			*flake = append(*flake, 0)
 		} else {
 			proof, err := input.Proof.ToBytes()
 			if err != nil {
@@ -286,17 +255,23 @@ func serialiseSpecialKInputs(parents map[string]*Envelope, flake *[]byte) error 
 		}
 
 		if input.MapiResponses == nil || len(input.MapiResponses) == 0 {
-			*flake = append(*flake, bt.VarInt(0)...)
+			*flake = append(*flake, 0)
 		} else {
+			numOfMapiResponses := bt.VarInt(uint64(len(input.MapiResponses)))
+			var mapiResponsesBinary []byte
+			mapiResponsesBinary = append(mapiResponsesBinary, numOfMapiResponses...) // this many mapi responses follow
 			for _, mapiResponse := range input.MapiResponses {
 				mapiR, err := mapiResponse.Bytes()
 				if err != nil {
 					return err
 				}
 				dataLength := bt.VarInt(uint64(len(mapiR)))
-				*flake = append(*flake, dataLength...) // of this length.
-				*flake = append(*flake, mapiR...)      // the data.
+				mapiResponsesBinary = append(mapiResponsesBinary, dataLength...) // of this length.
+				mapiResponsesBinary = append(mapiResponsesBinary, mapiR...)      // the data.
 			}
+			fullDataLength := bt.VarInt(uint64(len(mapiResponsesBinary)))
+			*flake = append(*flake, fullDataLength...)
+			*flake = append(*flake, mapiResponsesBinary...)
 		}
 
 		if input.Proof == nil && input.HasParents() {
@@ -329,124 +304,222 @@ func NewSpecialKEnvelopeFromBytes(b []byte) (*Envelope, error) {
 		flakes = append(flakes, flake)
 	}
 
-	mapiCallbackChan := make(chan bc.MapiCallback)
-	proofChan := make(chan bc.MerkleProof)
-	txChan := make(chan bt.Tx)
+	mapiCallbackChan := make(chan []bc.MapiCallback)
+	proofChan := make(chan *bc.MerkleProof)
+	txChan := make(chan *bt.Tx)
 	done := make(chan bool)
-	txs := map[string]*bt.Tx{}
-	go func() {
-		select {
-		case tx := <-txChan:
-			txs[tx.TxID()] = &tx
-		case <-done:
-			break
-		}
-	}()
+
+	txs := make(map[string]*bt.Tx)
+	proofs := make(map[string]*bc.MerkleProof)
+	mapiCallbacks := make(map[string][]bc.MapiCallback)
 
 	wg := sync.WaitGroup{}
 
+	// listen to these channels in perpetuity until we're done.
+	go func() {
+	L:
+		for {
+			select {
+			case tx := <-txChan:
+				txs[tx.TxID()] = tx
+			case proof := <-proofChan:
+				txid := proof.TxOrID
+				if txid != "" {
+					if len(txid) > 64 {
+						tr, err := bt.NewTxFromString(txid)
+						if err != nil {
+							fmt.Println(err)
+						}
+						txid = tr.TxID()
+					}
+					proofs[txid] = proof
+				}
+			case mcbs := <-mapiCallbackChan:
+				if len(mcbs) > 0 {
+					txid := (mcbs)[0].CallbackTxID
+					mapiCallbacks[txid] = mcbs
+				}
+			case <-done:
+				break L
+			}
+		}
+	}()
+
 	for idx, flake := range flakes {
+		// filter out the null values
+		if len(flake) < 2 {
+			continue
+		}
 		wg.Add(1)
-		go func() {
+		go func(flake []byte, idx int) {
 			defer wg.Done()
 			switch idx % 3 {
 			case 2:
-				mapiCallbackChan <- parseSpecialKMapi(flake)
+				mcb, err := parseSpecialKMapi(flake)
+				if err != nil {
+					fmt.Println(err)
+				}
+				mapiCallbackChan <- mcb
 			case 1:
-				proofChan <- parseSpecialKProof(flake)
+				proof, err := parseSpecialKProof(flake)
+				if err != nil {
+					fmt.Println(err)
+				}
+				proofChan <- proof
 			case 0:
-			default:
-				txChan <- parseSpecialKFlake(flake)
+				tx, err := parseSpecialKFlakeTx(flake)
+				if err != nil {
+					fmt.Println(err)
+				}
+				txid := tx.TxID()
+				if idx == 0 {
+					envelope.TxID = txid
+					envelope.RawTx = tx.String()
+					inputs := make(map[string]*Envelope)
+					for _, input := range tx.Inputs {
+						inputs[input.PreviousTxIDStr()] = &Envelope{}
+					}
+					envelope.Parents = inputs
+				}
+				txChan <- tx
 			}
-		}()
+		}(flake, idx)
 	}
 
 	wg.Wait()
 	done <- true
 
 	// construct something useful
+	// iterate through all the transactions, addiong them to the struct's Parents
+	// if they're in the struct delete them, if they're not then leave them, and go one input deep.
+	// then run through again until they're all done.
+	// // keep building struct unless all txs are in the struct.
+	for ok := true; ok; ok = len(txs) > 0 {
+		// iterate through txs
+		for txid, tx := range txs {
+			proof := proofs[txid]
+			mapiCallback := mapiCallbacks[txid]
+			_ = searchParents(&txs, &envelope, txid, tx, proof, mapiCallback)
+		}
+	}
 
 	return &envelope, nil
 }
 
+func searchParents(txs *map[string]*bt.Tx, currentEnvelope *Envelope, txid string, tx *bt.Tx, p *bc.MerkleProof, m []bc.MapiCallback) bool {
+	// is this the route transaction, and do we know it?
+	if txid == currentEnvelope.TxID {
+		currentEnvelope.RawTx = tx.String()
+		if m != nil { // don't add proof unless it's a non empty struct.
+			currentEnvelope.MapiResponses = m
+		}
+		if p != nil { // don't add proof unless it's a non empty struct.
+			currentEnvelope.Proof = p
+		}
+		delete(*txs, txid)
+		return true
+	}
+	// iterate through inputs
+	for k := range currentEnvelope.Parents {
+		// if we find the correct place, add the tx.
+		if k == txid {
+			var nextEnvelope Envelope
+			nextEnvelope.TxID = txid
+			nextEnvelope.RawTx = tx.String()
+			if m != nil { // don't add proof unless it's a non empty struct.
+				nextEnvelope.MapiResponses = m
+			}
+			if p != nil { // don't add proof unless it's a non empty struct.
+				nextEnvelope.Proof = p
+			} else {
+				inputs := map[string]*Envelope{}
+				for _, input := range tx.Inputs {
+					inputs[input.PreviousTxIDStr()] = &Envelope{}
+				}
+				nextEnvelope.Parents = inputs
+				currentEnvelope.Parents[txid] = &nextEnvelope
+			}
+			delete(*txs, txid)
+			return true
+		}
+	}
+	// if we didn't find it at this level, go one deeper into the struct to find a parent of a parent... etc.
+	if currentEnvelope.Parents != nil && len(currentEnvelope.Parents) > 0 {
+		for _, parent := range currentEnvelope.Parents {
+			// this means the context of the next iteration through will be from the parent here, which is one step deeper.
+			return searchParents(txs, parent, txid, tx, p, m)
+		}
+	}
+	return false
+}
+
 // parseSpecialKFlakesRecursively will identify the next chunk of data's type and length,
 // and pull out the stream into the appropriate struct.
-func parseSpecialKFlakeTx(b []byte) *bt.Tx {
+func parseSpecialKFlakeTx(b []byte) (*bt.Tx, error) {
+	if len(b) == 0 {
+		return nil, errors.New("tx bytes have no length")
+	}
 	tx, err := bt.NewTxFromBytes(b)
 	if err != nil {
 		fmt.Println(err)
-		return &bt.Tx{}
+		return nil, err
 	}
-	return tx
+	return tx, nil
 }
 
-func parseSpecialKFlake(b []byte) bt.Tx {
-	txid := tx.TxID()
-	inputs := map[string]*Envelope{}
-	for _, input := range tx.Inputs {
-		inputs[hex.EncodeToString(input.PreviousTxID())] = &Envelope{}
+func parseSpecialKProof(b []byte) (*bc.MerkleProof, error) {
+	if len(b) == 0 {
+		return nil, errors.New("proof bytes have no length")
 	}
-	eCurrent.TxID = txid
-	eCurrent.RawTx = tx.String()
-	howManyInputs := len(tx.Inputs)
-	fmt.Println("txid", txid, " has ", howManyInputs, " inputs")
-	fmt.Println("tx1", tx)
-	*offset += l
+	if b[0] == 0 && len(b) == 1 {
+		return nil, errors.New("proof number is 0")
+	}
+	binaryProof, err := parseBinaryMerkleProof(b)
+	if err != nil {
+		fmt.Println(err)
+		return nil, errors.New("couldn't parse the proof bytes")
+	}
+	proof := bc.MerkleProof{
+		Index:      binaryProof.index,
+		TxOrID:     binaryProof.txOrID,
+		Target:     binaryProof.target,
+		Nodes:      binaryProof.nodes,
+		TargetType: flagType(binaryProof.flags),
+		// ignoring proofType and compositeType for this version.
+	}
+	return &proof, nil
+}
 
-	// size of next blob of data (proof)
-	l, size = bt.DecodeVarInt(b[*offset:])
-	*offset += uint64(size)
-	if l != 0 {
-		binaryProof, err := parseBinaryMerkleProof(b[*offset : *offset+l])
-		fmt.Println(hex.EncodeToString(b[*offset : *offset+l]))
+func parseSpecialKMapi(b []byte) ([]bc.MapiCallback, error) {
+	if len(b) == 0 {
+		return nil, errors.New("There are no callback bytes")
+	}
+	var internalOffset uint64
+	allBinary := uint64(len(b))
+	numOfMapiResponses := b[internalOffset]
+	if numOfMapiResponses == 0 && len(b) == 1 {
+		return nil, errors.New("There are no callbacks")
+	}
+	internalOffset++
+
+	// split up the binary into flakes where each one is to be processed concurrently.
+	var responses = [][]byte{}
+	for ok := true; ok; ok = allBinary > internalOffset {
+		l, size := bt.DecodeVarInt(b[internalOffset:])
+		internalOffset += uint64(size)
+		response := b[internalOffset : internalOffset+l]
+		internalOffset += l
+		responses = append(responses, response)
+	}
+
+	mapiResponses := make([]bc.MapiCallback, 0)
+	for _, response := range responses {
+		mapiResponse, err := bc.NewMapiCallbackFromBytes(response)
 		if err != nil {
 			fmt.Println(err)
+			return nil, errors.New("couldn't parse the callback bytes")
 		}
-		proof := bc.MerkleProof{
-			Index:      binaryProof.index,
-			TxOrID:     binaryProof.txOrID,
-			Target:     binaryProof.target,
-			Nodes:      binaryProof.nodes,
-			TargetType: flagType(binaryProof.flags),
-			// ignoring proofType and compositeType for this version.
-		}
-		eCurrent.Proof = &proof
-		*offset += l
+		mapiResponses = append(mapiResponses, *mapiResponse)
 	}
-
-	// number of mapiCallbacks
-	l, size = bt.DecodeVarInt(b[*offset:])
-	*offset += uint64(size)
-	if l != 0 {
-		for i := uint64(0); i < l; i++ {
-			// size of next blob of data (mapiCallback)
-			l, size = bt.DecodeVarInt(b[*offset:])
-			*offset += uint64(size)
-			mapiResponse, err := bc.NewMapiCallbackFromBytes(b[*offset : *offset+l])
-			if err != nil {
-				fmt.Println(err)
-			}
-			if eCurrent.MapiResponses != nil {
-				eCurrent.MapiResponses = append(eCurrent.MapiResponses, *mapiResponse)
-			} else {
-				eCurrent.MapiResponses = []bc.MapiCallback{*mapiResponse}
-			}
-			*offset += l
-		}
-	}
-
-	if uint64(len(b)) > *offset && b[*offset] != flagTx {
-		parseSpecialKFlakesRecursively(b, offset, eCurrent)
-	} else {
-		eCurrent.Parents = inputs
-	}
-	for _, input := range inputs {
-		if uint64(len(b)) > *offset {
-			parseSpecialKFlakesRecursively(b, offset, input)
-		}
-	}
-
-	if uint64(len(b)) > *offset {
-		parseSpecialKFlakesRecursively(b, offset, eCurrent)
-	}
+	return mapiResponses, nil
 }
