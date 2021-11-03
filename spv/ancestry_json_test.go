@@ -251,12 +251,12 @@ func TestEnvelope_Bytes_IsValid(t *testing.T) {
 				assert.Error(t, err, "Couldn't decode hexString")
 			}
 
-			efromB, err := NewEnvelopeFromBytes(b)
+			efromB, err := NewCrunchyNutEnvelopeFromBytes(b)
 			if err != nil {
 				assert.Error(t, err, "Couldn't create envelope from bytes")
 			}
 
-			bFromE, err := e.Bytes()
+			bFromE, err := e.CrunchyNutBytes()
 			if err != nil {
 				assert.Error(t, err, "Couldn't convert envelope to bytes")
 			}
