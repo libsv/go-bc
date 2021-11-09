@@ -308,9 +308,81 @@ func TestEnvelope_Bytes_IsValid(t *testing.T) {
 	}
 }
 
-func benchmarkEnvelopeBinaryFormats(i int, b *testing.B) {
+func benchmarkCrunchyNutEnvelopeCerealize(b *testing.B, envelope *Envelope) {
 	for n := 0; n < b.N; n++ {
-		// thing we want to test.
-		fmt.Println("nothing")
+		_, err := envelope.SpecialKBytes()
+		if err != nil {
+			fmt.Print(err)
+		}
+	}
+}
+
+func benchmarkCrunchyNutEnvelopeDecerealize(b *testing.B, binary []byte) {
+	for n := 0; n < b.N; n++ {
+		_, err := NewCrunchyNutEnvelopeFromBytes(binary)
+		if err != nil {
+			fmt.Print(err)
+		}
+	}
+}
+
+func BenchmarkCerealizeCrunchyNut(b *testing.B) {
+	for _, test := range tests {
+		j := []byte(test.jsonString)
+		var e Envelope
+		err := json.Unmarshal(j, &e)
+		if err != nil {
+			assert.Error(b, err, "Couldn't decode jsonString")
+		}
+		benchmarkCrunchyNutEnvelopeCerealize(b, &e)
+	}
+}
+
+func BenchmarkDecerealizeCrunchyNut(b *testing.B) {
+	for _, test := range tests {
+		binary, err := hex.DecodeString(test.crunchyNutHexString)
+		if err != nil {
+			assert.Error(b, err, "Couldn't decode hexString")
+		}
+		benchmarkCrunchyNutEnvelopeDecerealize(b, binary)
+	}
+}
+
+func benchmarkSpecialKEnvelopeCerealize(b *testing.B, envelope *Envelope) {
+	for n := 0; n < b.N; n++ {
+		_, err := envelope.SpecialKBytes()
+		if err != nil {
+			fmt.Print(err)
+		}
+	}
+}
+
+func benchmarkSpecialKEnvelopeDecerealize(b *testing.B, binary []byte) {
+	for n := 0; n < b.N; n++ {
+		_, err := NewSpecialKEnvelopeFromBytes(binary)
+		if err != nil {
+			fmt.Print(err)
+		}
+	}
+}
+
+func BenchmarkCerealizeSpecialK(b *testing.B) {
+	for _, test := range tests {
+		j := []byte(test.jsonString)
+		var e Envelope
+		err := json.Unmarshal(j, &e)
+		if err != nil {
+			assert.Error(b, err, "Couldn't decode jsonString")
+		}
+		benchmarkSpecialKEnvelopeCerealize(b, &e)
+	}
+}
+func BenchmarkDecerealizeSpecialK(b *testing.B) {
+	for _, test := range tests {
+		binary, err := hex.DecodeString(test.specialKHexString)
+		if err != nil {
+			assert.Error(b, err, "Couldn't decode hexString")
+		}
+		benchmarkSpecialKEnvelopeDecerealize(b, binary)
 	}
 }
