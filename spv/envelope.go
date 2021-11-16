@@ -418,3 +418,84 @@ func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
 	}
 	return mapiResponses, nil
 }
+
+// NutEnvelopeFromBytes will encode an spv envelope byte slice into the Envelope structure.
+func NewEnvelopeFromBytes(b []byte) (*Envelope, error) {
+	var envelope Envelope
+	var offset uint64
+
+	// the first byte is the version number.
+	version := b[offset]
+	if version != 1 {
+		return nil, errors.New("We can only handle version 1 of the SPV Envelope Binary format")
+	}
+	offset++
+	parseFlakesRecursively(b, &offset, &envelope)
+	return &envelope, nil
+}
+
+// parseChunksRecursively will identify the next chunk of data's type and length,
+// and pull out the stream into the appropriate struct.
+func parseFlakesRecursively(b []byte, offset *uint64, eCurrent *Envelope) {
+	typeOfNextData := b[*offset]
+	*offset++
+	l, size := bt.DecodeVarInt(b[*offset:])
+	*offset += uint64(size)
+	switch typeOfNextData {
+	case flagTx:
+		tx, err := bt.NewTxFromBytes(b[*offset : *offset+l])
+		if err != nil {
+			fmt.Println(err)
+		}
+		txid := tx.TxID()
+		inputs := map[string]*Envelope{}
+		for _, input := range tx.Inputs {
+			inputs[input.PreviousTxIDStr()] = &Envelope{}
+		}
+		eCurrent.TxID = txid
+		eCurrent.RawTx = tx.String()
+		*offset += l
+		if uint64(len(b)) > *offset && b[*offset] != flagTx {
+			parseFlakesRecursively(b, offset, eCurrent)
+		} else {
+			eCurrent.Parents = inputs
+		}
+		for _, input := range inputs {
+			if uint64(len(b)) > *offset {
+				parseFlakesRecursively(b, offset, input)
+			}
+		}
+	case flagProof:
+		binaryProof, err := parseBinaryMerkleProof(b[*offset : *offset+l])
+		if err != nil {
+			fmt.Println(err)
+		}
+		proof := bc.MerkleProof{
+			Index:      binaryProof.index,
+			TxOrID:     binaryProof.txOrID,
+			Target:     binaryProof.target,
+			Nodes:      binaryProof.nodes,
+			TargetType: flagType(binaryProof.flags),
+			// ignoring proofType and compositeType for this version.
+		}
+		eCurrent.Proof = &proof
+		*offset += l
+	case flagMapi:
+		mapiResponse, err := bc.NewMapiCallbackFromBytes(b[*offset : *offset+l])
+		if err != nil {
+			fmt.Println(err)
+		}
+		if eCurrent.MapiResponses != nil {
+			eCurrent.MapiResponses = append(eCurrent.MapiResponses, *mapiResponse)
+		} else {
+			eCurrent.MapiResponses = []bc.MapiCallback{*mapiResponse}
+		}
+		*offset += l
+	default:
+		fmt.Printf("Unknown data type: %v, used for: %v", typeOfNextData, b[*offset:*offset+l])
+		*offset += l
+	}
+	if uint64(len(b)) > *offset {
+		parseFlakesRecursively(b, offset, eCurrent)
+	}
+}
