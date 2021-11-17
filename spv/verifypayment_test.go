@@ -89,7 +89,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			},
 		}, "envelope, no parents, no spv, fee check should fail": {
 			exp:      false,
-			testFile: "spv_no_parents",
+			testFile: "invalid_missing_parents",
 			expErr:   spv.ErrCannotCalculateFeePaid,
 			overrideOpts: []spv.VerifyOpt{
 				spv.VerifyFees(bt.NewFeeQuote().AddQuote(bt.FeeTypeStandard, &bt.Fee{
