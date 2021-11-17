@@ -190,7 +190,7 @@ func VerifyBinaryEnvelope(binaryData []byte) (bool, error) {
 
 			close(leaf.Parsed) // broadcast completion to all listeners
 
-			var inputsToCheck map[[256]byte]*bt.Input
+			inputsToCheck := make(map[[256]byte]*bt.Input)
 
 			// we are going to wait for parsing of all inputs, and verification of all inputs at some point.
 			leafInputsParsed := &sync.WaitGroup{}
@@ -282,6 +282,7 @@ func parseShrubbery(b []byte) Shrubbery {
 	total := uint64(len(b))
 	shrubbery := make(Shrubbery)
 	for total > offset {
+		fmt.Println(total, " - ", offset)
 		var TxID [256]byte
 		root := offset == uint64(1)
 		chunk := parseChunk(b, &offset)
@@ -306,10 +307,12 @@ func parseChunk(b []byte, offset *uint64) SpvBinaryChunk {
 	*offset++
 	l, size := bt.DecodeVarInt(b[*offset:])
 	*offset += uint64(size)
-	return SpvBinaryChunk{
+	chunk := SpvBinaryChunk{
 		ContentType: typeOfNextData,
 		Data:        b[*offset : *offset+l],
 	}
+	*offset += l
+	return chunk
 }
 
 // ParseChunksRecursively will identify the next chunk of data's type and length,

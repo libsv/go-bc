@@ -318,5 +318,22 @@ func Test_BinaryEnvelopeVerification(t *testing.T) {
 		fmt.Println(err)
 	}
 	valid, err := VerifyBinaryEnvelope(binary)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(valid, hex.EncodeToString(binary))
+	assert.NoError(t, err)
+}
+
+func Test_BinaryEnvelopeVerification2(t *testing.T) {
+	binary, err := hex.DecodeString(tests["simple"].hexString)
+	if err != nil {
+		fmt.Println(err)
+	}
+	valid, err := VerifyBinaryEnvelope(binary)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(valid, hex.EncodeToString(binary))
+	assert.NoError(t, err)
 }
