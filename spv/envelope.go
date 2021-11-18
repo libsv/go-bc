@@ -28,8 +28,8 @@ func (e *Envelope) HasParents() bool {
 	return e.Parents != nil && len(e.Parents) > 0
 }
 
-// ParentTX will return a parent if found and convert the rawTx to a bt.TX, otherwise a ErrNotAllInputsSupplied error is returned.
-func (e *Envelope) ParentTX(txID string) (*bt.Tx, error) {
+// ParentTx will return a parent if found and convert the rawTx to a bt.TX, otherwise a ErrNotAllInputsSupplied error is returned.
+func (e *Envelope) ParentTx(txID string) (*bt.Tx, error) {
 	env, ok := e.Parents[txID]
 	if !ok {
 		return nil, errors.Wrapf(ErrNotAllInputsSupplied, "expected parent tx %s is missing", txID)

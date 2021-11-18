@@ -1,14 +1,15 @@
 # github.com/davecgh/go-spew v1.1.1
+## explicit
 github.com/davecgh/go-spew/spew
 # github.com/kr/pretty v0.1.0
 ## explicit
 # github.com/libsv/go-bk v0.1.4
-## explicit
+## explicit; go 1.16
 github.com/libsv/go-bk/base58
 github.com/libsv/go-bk/bec
 github.com/libsv/go-bk/crypto
 # github.com/libsv/go-bt/v2 v2.0.0-beta.9
-## explicit
+## explicit; go 1.16
 github.com/libsv/go-bt/v2
 github.com/libsv/go-bt/v2/bscript
 github.com/libsv/go-bt/v2/sighash
@@ -16,12 +17,13 @@ github.com/libsv/go-bt/v2/sighash
 ## explicit
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
+## explicit
 github.com/pmezard/go-difflib/difflib
 # github.com/stretchr/testify v1.7.0
-## explicit
+## explicit; go 1.13
 github.com/stretchr/testify/assert
 # golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-## explicit
+## explicit; go 1.17
 golang.org/x/crypto/ripemd160
 # gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 ## explicit
