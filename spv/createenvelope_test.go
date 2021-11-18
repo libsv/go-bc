@@ -1,11 +1,11 @@
 package spv_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/libsv/go-bt/v2"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/libsv/go-bc"
 	"github.com/libsv/go-bc/spv"
+	"github.com/libsv/go-bc/testing/data"
 )
 
 type mockTxMerkleGetter struct {
@@ -809,11 +810,11 @@ func TestSPVEnvelope_CreateEnvelope(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, envelope)
 
-				f, err := os.Open("../testing/data/spv/create/" + test.expFile + ".json")
+				bb, err := data.SpvCreateData.Load(test.expFile + ".json")
 				assert.NoError(t, err)
 
 				var env spv.Envelope
-				assert.NoError(t, json.NewDecoder(f).Decode(&env))
+				assert.NoError(t, json.NewDecoder(bytes.NewReader(bb)).Decode(&env))
 				assert.Equal(t, env, *envelope)
 			} else {
 				assert.Error(t, err)

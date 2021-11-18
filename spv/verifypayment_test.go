@@ -1,11 +1,9 @@
 package spv_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
-	"os"
-	"path"
 	"testing"
 
 	"github.com/libsv/go-bt/v2"
@@ -14,6 +12,7 @@ import (
 
 	"github.com/libsv/go-bc"
 	"github.com/libsv/go-bc/spv"
+	"github.com/libsv/go-bc/testing/data"
 )
 
 type mockBlockHeaderClient struct {
@@ -177,15 +176,13 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var envelope *spv.Envelope
 			if test.testFile != "" {
-				f, err := os.Open(path.Join("../testing/data/spv/", test.testFile+".json"))
+				bb, err := data.SpvVerifyData.Load(test.testFile + ".json")
 				assert.NoError(t, err)
-				assert.NoError(t, json.NewDecoder(f).Decode(&envelope))
+				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&envelope))
 			}
 			v, err := spv.NewPaymentVerifier(&mockBlockHeaderClient{
 				blockHeaderFunc: func(_ context.Context, hash string) (*bc.BlockHeader, error) {
-					f, err := os.Open(path.Join("../testing/data/bhc/", hash))
-					assert.NoError(t, err)
-					bb, err := ioutil.ReadAll(f)
+					bb, err := data.BlockHeaderData.Load(hash)
 					assert.NoError(t, err)
 					return bc.NewBlockHeaderFromStr(string(bb[:160]))
 				},
