@@ -207,11 +207,3 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		})
 	}
 }
-
-func blockHeader(t *testing.T, hash string) (*bc.BlockHeader, error) {
-	f, err := os.Open(path.Join("../testing/data/bhc/", hash))
-	assert.NoError(t, err)
-	bb, err := ioutil.ReadAll(f)
-	assert.NoError(t, err)
-	return bc.NewBlockHeaderFromStr(string(bb[:160]))
-}
