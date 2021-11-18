@@ -1,0 +1,271 @@
+package spv
+
+import (
+	"encoding/hex"
+	"fmt"
+	"sync"
+
+	"github.com/libsv/go-bk/crypto"
+	"github.com/libsv/go-bt/v2"
+	"github.com/libsv/go-bt/v2/bscript"
+	"github.com/pkg/errors"
+
+	"github.com/libsv/go-bc"
+)
+
+const (
+	flagTx    = byte(1)
+	flagProof = byte(2)
+	flagMapi  = byte(3)
+)
+
+// TxContext is a payment and its ancestors
+type TxContext struct {
+	PaymentTx *PaymentTx
+	Ancestors map[[256]byte]*Ancestor
+}
+
+// Ancestor is an internal struct for validating transactions with their ancestors.
+type Ancestor struct {
+	RawTx         []byte
+	Tx            *bt.Tx
+	RawProof      []byte
+	Proof         *bc.MerkleProof
+	RawMapi       []byte
+	MapiResponses []*bc.MapiCallback
+	Parsed        chan bool
+	Verified      chan bool
+}
+
+type PaymentTx struct {
+	RawTx  []byte
+	Tx     *bt.Tx
+	Parsed chan bool
+}
+
+// BinaryChunk is a clear way to pass around chunks while keeping their type.
+type BinaryChunk struct {
+	ContentType byte
+	Data        []byte
+}
+
+func NewTxContextFromBytes(b []byte) TxContext {
+	offset := uint64(1)
+	total := uint64(len(b))
+	txContext := &TxContext{}
+
+	for total > offset {
+		var TxID [256]byte
+		root := offset == uint64(1)
+		chunk := parseChunk(b, &offset)
+		if root {
+			txContext.PaymentTx.RawTx = chunk.Data
+		}
+		switch chunk.ContentType {
+		case flagTx:
+			hash := crypto.Sha256d(chunk.Data)
+			copy(TxID[:], bt.ReverseBytes(hash)) // fixed size array from slice.
+			txContext.Ancestors[TxID] = &Ancestor{RawTx: chunk.Data}
+		case flagProof:
+			txContext.Ancestors[TxID].RawProof = chunk.Data
+		case flagMapi:
+			txContext.Ancestors[TxID].RawMapi = chunk.Data
+		default:
+			continue
+		}
+	}
+	return *txContext
+}
+
+func parseChunk(b []byte, offset *uint64) BinaryChunk {
+	typeOfNextData := b[*offset]
+	*offset++
+	l, size := bt.DecodeVarInt(b[*offset:])
+	*offset += uint64(size)
+	chunk := BinaryChunk{
+		ContentType: typeOfNextData,
+		Data:        b[*offset : *offset+l],
+	}
+	*offset += l
+	return chunk
+}
+
+func flagProofType(flags byte) string {
+	switch flags & targetTypeFlags {
+	// if bits 1 and 2 of flags are NOT set, target should contain a block hash (32 bytes).
+	// if bit 2 of flags is set, target should contain a merkle root (32 bytes).
+	case 0, 4:
+		return "blockhash"
+	// if bit 1 of flags is set, target should contain a block header (80 bytes).
+	case 2:
+		return "header"
+	default:
+		return ""
+	}
+}
+
+func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
+	if len(b) == 0 {
+		return nil, errors.New("There are no callback bytes")
+	}
+	var internalOffset uint64
+	allBinary := uint64(len(b))
+	numOfMapiResponses := b[internalOffset]
+	if numOfMapiResponses == 0 && len(b) == 1 {
+		return nil, errors.New("There are no callbacks")
+	}
+	internalOffset++
+
+	// split up the binary into flakes where each one is to be processed concurrently.
+	var responses = [][]byte{}
+	for ok := true; ok; ok = allBinary > internalOffset {
+		l, size := bt.DecodeVarInt(b[internalOffset:])
+		internalOffset += uint64(size)
+		response := b[internalOffset : internalOffset+l]
+		internalOffset += l
+		responses = append(responses, response)
+	}
+
+	mapiResponses := make([]*bc.MapiCallback, 0)
+	for _, response := range responses {
+		mapiResponse, err := bc.NewMapiCallbackFromBytes(response)
+		if err != nil {
+			fmt.Println(err)
+			return nil, errors.New("couldn't parse the callback bytes")
+		}
+		mapiResponses = append(mapiResponses, mapiResponse)
+	}
+	return mapiResponses, nil
+}
+
+// VerifyTxContextBinary will verify a slice of bytes which is a binary spv envelope.
+func VerifyTxContextBinary(binaryData []byte) (bool, error) {
+	async := &sync.WaitGroup{}
+	async.Add(1)
+	if binaryData[0] != 1 { // the first byte is the version number.
+		return false, errors.New("We can only handle version 1 of the SPV Envelope Binary format")
+	}
+	txContext := NewTxContextFromBytes(binaryData)
+
+	// we're going to parse and verify every ancestor in the history concurrently.
+	for txid, ancestor := range txContext.Ancestors {
+		go parseAndVerify(txid, ancestor, &txContext)
+	}
+
+	async.Wait()
+
+	return true, nil
+}
+
+func parseAndVerify(txid [256]byte, ancestor *Ancestor, txContext *TxContext) {
+	fmt.Printf("%v: %+v\n\n", txid, ancestor)
+
+	// parse the data for the transaction
+	tx, err := bt.NewTxFromBytes(ancestor.RawTx)
+	if err != nil {
+		fmt.Println(hex.EncodeToString(bt.ReverseBytes(txid[:])), err)
+	}
+	ancestor.Tx = tx
+
+	// parse the proof
+	if ancestor.RawProof != nil {
+		binaryProof, err := parseBinaryMerkleProof(ancestor.RawProof)
+		if err != nil {
+			fmt.Print(err)
+		}
+		ancestor.Proof = &bc.MerkleProof{
+			Index:      binaryProof.index,
+			TxOrID:     binaryProof.txOrID,
+			Target:     binaryProof.target,
+			Nodes:      binaryProof.nodes,
+			TargetType: flagProofType(binaryProof.flags),
+			// ignoring proofType and compositeType for this version.
+		}
+	}
+
+	if ancestor.RawMapi != nil {
+		mapiResponses, err := parseMapiCallbacks(ancestor.RawMapi)
+		if err != nil {
+			fmt.Println(err)
+		}
+		ancestor.MapiResponses = mapiResponses
+	}
+
+	close(ancestor.Parsed) // broadcast completion to all listeners
+
+	inputsToCheck := make(map[[256]byte]*bt.Input)
+
+	// we are going to wait for parsing of all inputs, and verification of all inputs at some point.
+	ancestorInputsParsed := &sync.WaitGroup{}
+	ancestorInputsVerified := &sync.WaitGroup{}
+
+	// we will go through all the parents to this ancestor in the shrubbery.
+	for _, input := range tx.Inputs {
+		ancestorInputsParsed.Add(1)
+		ancestorInputsVerified.Add(1)
+		var inputID [256]byte
+		copy(inputID[:], input.PreviousTxID())
+		inputsToCheck[inputID] = input
+
+		// we need to listen for each input to be parsed before verifying input output pairs.
+		go func(inputID [256]byte) {
+		inputParsed:
+			for {
+				select {
+				case _, ok := <-txContext.Ancestors[inputID].Parsed:
+					if !ok {
+						defer ancestorInputsParsed.Done()
+						break inputParsed
+					}
+				}
+			}
+		}(inputID)
+
+		// we also need to listen for the input transaction to be verified via some proof.
+		go func(inputID [256]byte) {
+		inputVerified:
+			for {
+				select {
+				case _, ok := <-txContext.Ancestors[inputID].Verified:
+					if !ok {
+						defer ancestorInputsVerified.Done()
+						break inputVerified
+					}
+				}
+			}
+		}(inputID)
+	}
+
+	// wait here until all inputs have been parsed.
+	ancestorInputsParsed.Wait()
+
+	verifications := 0
+	for inputID, input := range inputsToCheck {
+		lockingScript := txContext.Ancestors[inputID].Tx.Outputs[input.PreviousTxOutIndex].LockingScript
+		unlockingScript := input.UnlockingScript
+		if verifyInputOutputPair(tx, lockingScript, unlockingScript) {
+			verifications++
+		} else {
+			fmt.Println("verifyInputOutputPair failed for: ", inputID)
+		}
+	}
+	scriptsVerified := verifications == len(inputsToCheck)
+
+	// if proof, then verify it and mark self as Verified.
+	proofVerified := true
+	// if mapi, then verify it and mark self as Verified.
+	mapiVerified := true
+
+	// wait for the input leaves to parse, then check validity of the script pair.
+	ancestorInputsVerified.Wait()
+
+	// if verification passed on all of these.
+	if scriptsVerified && proofVerified && mapiVerified {
+		close(ancestor.Verified) // broadcast verified to all listeners
+	}
+}
+
+func verifyInputOutputPair(tx *bt.Tx, lock *bscript.Script, unlock *bscript.Script) bool {
+	// TODO script interpreter?
+	return true
+}
