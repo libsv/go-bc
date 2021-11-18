@@ -49,18 +49,25 @@ type BinaryChunk struct {
 	Data        []byte
 }
 
+// NewTxContextFromBytes creates a new struct from the bytes of a txContext
 func NewTxContextFromBytes(b []byte) TxContext {
 	offset := uint64(1)
 	total := uint64(len(b))
-	txContext := &TxContext{}
+
+	l, size := bt.DecodeVarInt(b[offset:])
+	offset += uint64(size)
+	txContext := &TxContext{
+		PaymentTx: &PaymentTx{
+			RawTx: b[offset : offset+l],
+		},
+		Ancestors: make(map[[256]byte]*Ancestor),
+	}
+	offset += l
+
+	var TxID [256]byte
 
 	for total > offset {
-		var TxID [256]byte
-		root := offset == uint64(1)
 		chunk := parseChunk(b, &offset)
-		if root {
-			txContext.PaymentTx.RawTx = chunk.Data
-		}
 		switch chunk.ContentType {
 		case flagTx:
 			hash := crypto.Sha256d(chunk.Data)
