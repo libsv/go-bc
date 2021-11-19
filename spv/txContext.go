@@ -37,10 +37,10 @@ type Ancestor struct {
 	Verified      chan bool
 }
 
+// PaymentTx is the root or current payment to be verified.
 type PaymentTx struct {
-	RawTx  []byte
-	Tx     *bt.Tx
-	Parsed chan bool
+	RawTx []byte
+	Tx    *bt.Tx
 }
 
 // BinaryChunk is a clear way to pass around chunks while keeping their type.
@@ -151,26 +151,99 @@ func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
 
 // VerifyTxContextBinary will verify a slice of bytes which is a binary spv envelope.
 func VerifyTxContextBinary(binaryData []byte) (bool, error) {
-	async := &sync.WaitGroup{}
-	async.Add(1)
+	inputsVerified := &sync.WaitGroup{}
 	if binaryData[0] != 1 { // the first byte is the version number.
 		return false, errors.New("We can only handle version 1 of the SPV Envelope Binary format")
 	}
 	txContext := NewTxContextFromBytes(binaryData)
 
-	// we're going to parse and verify every ancestor in the history concurrently.
+	// deal with the paymentTx first
+	paymentTx, err := bt.NewTxFromBytes(txContext.PaymentTx.RawTx)
+	if err != nil {
+		return false, err
+	}
+
+	verified := false
+	go checkEveryInput(paymentTx, &txContext, inputsVerified, &verified)
+
+	// then all its ancestors concurrently.
 	for txid, ancestor := range txContext.Ancestors {
 		go parseAndVerify(txid, ancestor, &txContext)
 	}
 
-	async.Wait()
+	fmt.Println("waiting for verification")
+
+	inputsVerified.Wait()
+
+	fmt.Println("all done", verified)
+
+	fmt.Print("\n\n============================================\n\n")
+	fmt.Printf("%+v", txContext)
+	fmt.Print("\n\n============================================\n\n")
 
 	return true, nil
 }
 
-func parseAndVerify(txid [32]byte, ancestor *Ancestor, txContext *TxContext) {
-	fmt.Printf("%v: %+v\n\n", txid, ancestor)
+func checkEveryInput(tx *bt.Tx, txContext *TxContext, inputsVerified *sync.WaitGroup, result *bool) {
+	inputsToCheck := make(map[[32]byte]*bt.Input)
+	inputsParsed := &sync.WaitGroup{}
+	for _, input := range tx.Inputs {
+		inputsParsed.Add(1)
+		inputsVerified.Add(1)
+		var inputID [32]byte
+		copy(inputID[:], input.PreviousTxID())
+		inputsToCheck[inputID] = input
 
+		parseListenChan := txContext.Ancestors[inputID].Parsed
+		verifiedListenChan := txContext.Ancestors[inputID].Verified
+
+		// we need to listen for each input to be parsed before verifying input output pairs.
+		go func(parseListenChan <-chan bool) {
+		parsed:
+			for {
+				select {
+				case _, ok := <-parseListenChan:
+					if !ok {
+						defer inputsParsed.Done()
+						fmt.Println("parsed")
+						break parsed
+					}
+				}
+			}
+		}(parseListenChan)
+
+		// we also need to listen for the input transaction to be verified via some proof.
+		go func(verifiedListenChan <-chan bool) {
+		verified:
+			for {
+				select {
+				case _, ok := <-verifiedListenChan:
+					if !ok {
+						defer inputsVerified.Done()
+						fmt.Println("verified")
+						break verified
+					}
+				}
+			}
+		}(verifiedListenChan)
+	}
+	// wait here until all inputs have been parsed.
+	inputsParsed.Wait()
+
+	verifications := 0
+	for inputID, input := range inputsToCheck {
+		lockingScript := txContext.Ancestors[inputID].Tx.Outputs[input.PreviousTxOutIndex].LockingScript
+		unlockingScript := input.UnlockingScript
+		if verifyInputOutputPair(tx, lockingScript, unlockingScript) {
+			verifications++
+		} else {
+			fmt.Println("verifyInputOutputPair failed for: ", inputID)
+		}
+	}
+	*result = verifications == len(inputsToCheck)
+}
+
+func parseAndVerify(txid [32]byte, ancestor *Ancestor, txContext *TxContext) {
 	// parse the data for the transaction
 	tx, err := bt.NewTxFromBytes(ancestor.RawTx)
 	if err != nil {
@@ -204,10 +277,7 @@ func parseAndVerify(txid [32]byte, ancestor *Ancestor, txContext *TxContext) {
 
 	close(ancestor.Parsed) // broadcast completion to all listeners
 
-	inputsToCheck := make(map[[32]byte]*bt.Input)
-
 	// we are going to wait for parsing of all inputs, and verification of all inputs at some point.
-	ancestorInputsParsed := &sync.WaitGroup{}
 	ancestorInputsVerified := &sync.WaitGroup{}
 
 	// default to checked
@@ -215,61 +285,7 @@ func parseAndVerify(txid [32]byte, ancestor *Ancestor, txContext *TxContext) {
 
 	// we will go through all the parents to this ancestor in the shrubbery.
 	if ancestor.Proof == nil {
-		for _, input := range tx.Inputs {
-			ancestorInputsParsed.Add(1)
-			ancestorInputsVerified.Add(1)
-			var inputID [32]byte
-			copy(inputID[:], input.PreviousTxID())
-			inputsToCheck[inputID] = input
-
-			fmt.Printf("|------[%v]-------\n\n%+v\n\n\n\n------------------|", hex.EncodeToString(inputID[:]), txContext.Ancestors[inputID])
-
-			parseListenChan := txContext.Ancestors[inputID].Parsed
-			verifiedListenChan := txContext.Ancestors[inputID].Verified
-
-			// we need to listen for each input to be parsed before verifying input output pairs.
-			go func(parseListenChan <-chan bool) {
-			inputParsed:
-				for {
-					select {
-					case _, ok := <-parseListenChan:
-						if !ok {
-							defer ancestorInputsParsed.Done()
-							break inputParsed
-						}
-					}
-				}
-			}(parseListenChan)
-
-			// we also need to listen for the input transaction to be verified via some proof.
-			go func(verifiedListenChan <-chan bool) {
-			inputVerified:
-				for {
-					select {
-					case _, ok := <-verifiedListenChan:
-						if !ok {
-							defer ancestorInputsVerified.Done()
-							break inputVerified
-						}
-					}
-				}
-			}(verifiedListenChan)
-		}
-
-		// wait here until all inputs have been parsed.
-		ancestorInputsParsed.Wait()
-
-		verifications := 0
-		for inputID, input := range inputsToCheck {
-			lockingScript := txContext.Ancestors[inputID].Tx.Outputs[input.PreviousTxOutIndex].LockingScript
-			unlockingScript := input.UnlockingScript
-			if verifyInputOutputPair(tx, lockingScript, unlockingScript) {
-				verifications++
-			} else {
-				fmt.Println("verifyInputOutputPair failed for: ", inputID)
-			}
-		}
-		scriptsVerified = verifications == len(inputsToCheck)
+		checkEveryInput(ancestor.Tx, txContext, ancestorInputsVerified, &scriptsVerified)
 	}
 
 	// if proof, then verify it and mark self as Verified.
