@@ -3,14 +3,13 @@ package spv
 import (
 	"encoding/hex"
 
-	"github.com/libsv/go-bt/v2"
-
 	"github.com/libsv/go-bc"
+	"github.com/libsv/go-bt/v2"
 )
 
-// TxContextJSON spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/
-type TxContextJSON struct {
-	PaymentTx string `json:"paymentTx, omitempty"`
+// AncestryJSON is a spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/ eventually.
+type AncestryJSON struct {
+	PaymentTx string `json:"paymentTx,omitempty"`
 	Ancestors []struct {
 		RawTx         string            `json:"hex,omitempty"`
 		Proof         *bc.MerkleProof   `json:"proof,omitempty"`
@@ -18,8 +17,8 @@ type TxContextJSON struct {
 	} `json:"ancestors,omitempty"`
 }
 
-// Bytes takes an TxContextJSON and returns the serialised bytes.
-func (j *TxContextJSON) Bytes() ([]byte, error) {
+// Bytes takes an AncestryJSON and returns the serialised bytes.
+func (j *AncestryJSON) Bytes() ([]byte, error) {
 	binaryTxContext := make([]byte, 0)
 
 	// Binary format version 1.
