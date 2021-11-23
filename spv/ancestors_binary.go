@@ -43,7 +43,7 @@ type extendedInput struct {
 }
 
 // NewAncestryFromBytes creates a new struct from the bytes of a txContext.
-func NewAncestryFromBytes(b []byte) *Ancestry {
+func NewAncestryFromBytes(b []byte) (*Ancestry, error) {
 	offset := uint64(1)
 	total := uint64(len(b))
 
@@ -51,7 +51,7 @@ func NewAncestryFromBytes(b []byte) *Ancestry {
 	offset += uint64(size)
 	paymentTx, err := bt.NewTxFromBytes(b[offset : offset+l])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	ancestry := &Ancestry{
 		PaymentTx: paymentTx,
@@ -61,6 +61,15 @@ func NewAncestryFromBytes(b []byte) *Ancestry {
 
 	var TxID [32]byte
 
+	if total == offset {
+		return nil, ErrCannotCalculateFeePaid
+	}
+
+	// You're not allowed to just have payment tx with a proof.
+	if b[offset] != 1 {
+		return nil, ErrTipTxConfirmed
+	}
+
 	for total > offset {
 		chunk := parseChunk(b, &offset)
 		switch chunk.ContentType {
@@ -69,7 +78,10 @@ func NewAncestryFromBytes(b []byte) *Ancestry {
 			copy(TxID[:], bt.ReverseBytes(hash)) // fixed size array from slice.
 			tx, err := bt.NewTxFromBytes(chunk.Data)
 			if err != nil {
-				panic(err)
+				return nil, err
+			}
+			if len(tx.Inputs) == 0 {
+				return nil, ErrNoTxInputsToVerify
 			}
 			ancestry.Ancestors[TxID] = &Ancestor{
 				Tx: tx,
@@ -79,14 +91,14 @@ func NewAncestryFromBytes(b []byte) *Ancestry {
 		case flagMapi:
 			callBacks, err := parseMapiCallbacks(chunk.Data)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			ancestry.Ancestors[TxID].MapiResponses = callBacks
 		default:
 			continue
 		}
 	}
-	return ancestry
+	return ancestry, nil
 }
 
 func parseChunk(b []byte, offset *uint64) binaryChunk {
@@ -149,8 +161,11 @@ func VerifyAncestryBinary(binaryData []byte, mpv MerkleProofVerifier, opts ...Ve
 	if binaryData[0] != 1 { // the first byte is the version number.
 		return false, errors.New("We can only handle version 1 of the SPV Envelope Binary format")
 	}
-	ancestry := NewAncestryFromBytes(binaryData)
-	err := VerifyAncestors(ancestry, mpv, o)
+	ancestry, err := NewAncestryFromBytes(binaryData)
+	if err != nil {
+		return false, err
+	}
+	err = VerifyAncestors(ancestry, mpv, o)
 	if err != nil {
 		return false, err
 	}
@@ -168,22 +183,35 @@ func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOp
 	}
 	leaves[paymentTxID] = paymentLeaf
 	for ancestorID, ancestor := range leaves {
-		// if we have a proof, check it.
-		if ancestor.Proof != nil && opts.proofs {
-			// check proof.
-			validProof, _, err := mpv.VerifyMerkleProof(context.Background(), ancestor.Proof)
-			if err != nil || !validProof {
-				return ErrInvalidProof
+		inputsToCheck := make(map[[32]byte]*extendedInput)
+		if len(ancestor.Tx.Inputs) == 0 {
+			return ErrNoTxInputsToVerify
+		}
+		for idx, input := range ancestor.Tx.Inputs {
+			var inputID [32]byte
+			copy(inputID[:], input.PreviousTxID())
+			inputsToCheck[inputID] = &extendedInput{
+				input: input,
+				vin:   idx,
 			}
 		}
-		inputsToCheck := make(map[[32]byte]*extendedInput)
-		if opts.script || opts.fees {
-			for idx, input := range ancestor.Tx.Inputs {
-				var inputID [32]byte
-				copy(inputID[:], input.PreviousTxID())
-				inputsToCheck[inputID] = &extendedInput{
-					input: input,
-					vin:   idx,
+		// if we have a proof, check it.
+		if opts.proofs {
+			if ancestor.Proof == nil {
+				for inputID, _ := range inputsToCheck {
+					// check if we have that ancestor, if not validation fail.
+					if ancestry.Ancestors[inputID] == nil {
+						return ErrProofOrInputMissing
+					}
+				}
+			} else {
+				// check proof.
+				txid, validProof, _, err := mpv.VerifyMerkleProof(context.Background(), ancestor.Proof)
+				if txid != "" && txid != ancestor.Tx.TxID() {
+					return ErrTxIDMismatch
+				}
+				if err != nil || !validProof {
+					return ErrInvalidProof
 				}
 			}
 		}
@@ -197,6 +225,9 @@ func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOp
 						return ErrProofOrInputMissing
 					}
 					continue
+				}
+				if len(ancestry.Ancestors[inputID].Tx.Outputs) <= int(input.PreviousTxOutIndex) {
+					return ErrInputRefsOutOfBoundsOutput
 				}
 				lockingScript := ancestry.Ancestors[inputID].Tx.Outputs[input.PreviousTxOutIndex].LockingScript
 				unlockingScript := input.UnlockingScript

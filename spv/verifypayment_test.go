@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -37,7 +36,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		overrideOpts []spv.VerifyOpt
 		exp          bool
 		expErr       error
-		expSerialErr error
+		expErrBinary error
 	}{
 		"valid envelope passes": {
 			exp:      true,
@@ -47,7 +46,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp:          false,
 			testFile:     "invalid_missing_merkle_proof",
 			expErr:       spv.ErrNoConfirmedTransaction,
-			expSerialErr: spv.ErrProofOrInputMissing,
+			expErrBinary: spv.ErrProofOrInputMissing,
 		},
 		"envelope without any proof passes if proof disabled": {
 			exp:      true,
@@ -70,10 +69,6 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				spv.NoVerifyProofs(),
 			},
 		},
-		"valid envelope with merkle proof supplied as hex passes": {
-			exp:      true,
-			testFile: "valid_merkle_proof_hex",
-		},
 		"valid envelope with fee check supplied and valid fees passes": {
 			exp:      true,
 			testFile: "valid",
@@ -85,7 +80,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp:          false,
 			testFile:     "valid",
 			expErr:       spv.ErrFeePaidNotEnough,
-			expSerialErr: spv.ErrFeePaidNotEnough,
+			expErrBinary: spv.ErrFeePaidNotEnough,
 			overrideOpts: []spv.VerifyOpt{
 				spv.VerifyFees(bt.NewFeeQuote().AddQuote(bt.FeeTypeStandard, &bt.Fee{
 					FeeType: bt.FeeTypeStandard,
@@ -96,11 +91,96 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				})),
 			},
 		},
+		"invalid merkle proof fails": {
+			exp:          false,
+			testFile:     "invalid_merkle_proof",
+			expErr:       spv.ErrInvalidProof,
+			expErrBinary: spv.ErrInvalidProof,
+		},
+		"wrong tx supplied as input in envelope errs": {
+			exp:          false,
+			expErr:       spv.ErrNotAllInputsSupplied,
+			expErrBinary: spv.ErrProofOrInputMissing,
+			testFile:     "invalid_wrong_parent",
+		},
+		"tx with input missing from envelope parents errors": {
+			exp:          false,
+			testFile:     "invalid_deep_parent_missing",
+			expErr:       spv.ErrNotAllInputsSupplied,
+			expErrBinary: spv.ErrProofOrInputMissing,
+		},
+		"valid envelope with merkle proof supplied as hex passes": {
+			exp:      true,
+			testFile: "valid_merkle_proof_hex",
+		},
+		"wrong merkle proof supplied via hex with otherwise correct input errors": {
+			exp:          false,
+			testFile:     "invalid_wrong_merkle_proof_hex",
+			expErr:       spv.ErrTxIDMismatch,
+			expErrBinary: spv.ErrTxIDMismatch,
+		},
+		"wrong merkle proof supplied with otherwise correct input errors": {
+			exp:          false,
+			testFile:     "invalid_wrong_merkle_proof",
+			expErr:       spv.ErrTxIDMismatch,
+			expErrBinary: spv.ErrTxIDMismatch,
+		},
+		"valid multiple layer tx passes": {
+			exp:      true,
+			testFile: "valid_deep",
+		},
+		"single missing merkle proof in layered and branching tx errors": {
+			exp:          false,
+			testFile:     "invalid_deep_missing_merkle_proof",
+			expErr:       spv.ErrNoConfirmedTransaction,
+			expErrBinary: spv.ErrProofOrInputMissing,
+		},
+		"envelope with tx no inputs errs": {
+			exp:          false,
+			testFile:     "invalid_tx_missing_inputs",
+			expErr:       spv.ErrNoTxInputsToVerify,
+			expErrBinary: spv.ErrNoTxInputsToVerify,
+		},
+		"tx with input indexing out of bounds output errors": {
+			exp:          false,
+			testFile:     "invalid_tx_indexing_oob",
+			expErr:       spv.ErrInputRefsOutOfBoundsOutput,
+			expErrBinary: spv.ErrInputRefsOutOfBoundsOutput,
+		},
+		"wrong merkle proof suppled with otherwise correct layered input errors": {
+			exp:          false,
+			testFile:     "invalid_deep_wrong_merkle_proof",
+			expErr:       spv.ErrTxIDMismatch,
+			expErrBinary: spv.ErrTxIDMismatch,
+		},
+		"invalid multiple layer tx false": {
+			exp:          false,
+			testFile:     "invalid_deep_merkle_proof_index",
+			expErr:       spv.ErrInvalidProof,
+			expErrBinary: spv.ErrInvalidProof,
+		},
+		"tx with no inputs in multiple layer tx fails": {
+			exp:          false,
+			testFile:     "invalid_deep_tx_missing_inputs",
+			expErr:       spv.ErrNoTxInputsToVerify,
+			expErrBinary: spv.ErrNoTxInputsToVerify,
+		},
+		"envelope with confirmed root errs": {
+			exp:          false,
+			testFile:     "invalid_confirmed_root",
+			expErr:       spv.ErrTipTxConfirmed,
+			expErrBinary: spv.ErrTipTxConfirmed,
+		},
+		"nil initial payment errors": {
+			exp:          false,
+			expErr:       spv.ErrNilInitialPayment,
+			expErrBinary: spv.ErrNilInitialPayment,
+		},
 		"envelope, no parents, no spv, fee check should fail": {
 			exp:          false,
 			testFile:     "invalid_missing_parents",
 			expErr:       spv.ErrCannotCalculateFeePaid,
-			expSerialErr: spv.ErrCannotCalculateFeePaid,
+			expErrBinary: spv.ErrCannotCalculateFeePaid,
 			overrideOpts: []spv.VerifyOpt{
 				spv.VerifyFees(bt.NewFeeQuote().AddQuote(bt.FeeTypeStandard, &bt.Fee{
 					FeeType: bt.FeeTypeStandard,
@@ -113,87 +193,6 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				spv.NoVerifySPV(),
 			},
 		},
-		"invalid merkle proof fails": {
-			exp:          false,
-			testFile:     "invalid_merkle_proof",
-			expErr:       spv.ErrInvalidProof,
-			expSerialErr: spv.ErrInvalidProof,
-		},
-		"wrong tx supplied as input in envelope errs": {
-			exp:          false,
-			expErr:       spv.ErrNotAllInputsSupplied,
-			expSerialErr: spv.ErrProofOrInputMissing,
-			testFile:     "invalid_wrong_parent",
-		},
-		"wrong merkle proof supplied with otherwise correct input errors": {
-			exp:          false,
-			testFile:     "invalid_wrong_merkle_proof",
-			expErr:       spv.ErrTxIDMismatch,
-			expSerialErr: spv.ErrInvalidProof,
-		},
-		"wrong merkle proof supplied via hex with otherwise correct input errors": {
-			exp:          false,
-			testFile:     "invalid_wrong_merkle_proof_hex",
-			expErr:       spv.ErrTxIDMismatch,
-			expSerialErr: spv.ErrInvalidProof,
-		},
-		// "envelope with tx no inputs errs": {
-		// 	exp:          false,
-		// 	testFile:     "invalid_tx_missing_inputs",
-		// 	expErr:       spv.ErrNoTxInputsToVerify,
-		// 	expSerialErr: spv.ErrNoTxInputsToVerify,
-		// },
-		// "tx with input indexing out of bounds output errors": {
-		// 	exp:          false,
-		// 	testFile:     "invalid_tx_indexing_oob",
-		// 	expErr:       spv.ErrInputRefsOutOfBoundsOutput,
-		// 	expSerialErr: spv.ErrInputRefsOutOfBoundsOutput,
-		// },
-		// "valid multiple layer tx passes": {
-		// 	exp:      true,
-		// 	testFile: "valid_deep",
-		// },
-		// "invalid multiple layer tx false": {
-		// 	exp:          false,
-		// 	testFile:     "invalid_deep_merkle_proof_index",
-		// 	expErr:       spv.ErrInvalidProof,
-		// 	expSerialErr: spv.ErrProofOrInputMissing,
-		// },
-		"tx with input missing from envelope parents errors": {
-			exp:          false,
-			testFile:     "invalid_deep_parent_missing",
-			expErr:       spv.ErrNotAllInputsSupplied,
-			expSerialErr: spv.ErrProofOrInputMissing,
-		},
-		// "wrong merkle proof suppled with otherwise correct layered input errors": {
-		// 	exp:          false,
-		// 	testFile:     "invalid_deep_wrong_merkle_proof",
-		// 	expErr:       spv.ErrTxIDMismatch,
-		// 	expSerialErr: spv.ErrProofOrInputMissing,
-		// },
-		// "single missing merkle proof in layered and branching tx errors": {
-		// 	exp:          false,
-		// 	testFile:     "invalid_deep_missing_merkle_proof",
-		// 	expErr:       spv.ErrNoConfirmedTransaction,
-		// 	expSerialErr: spv.ErrProofOrInputMissing,
-		// },
-		// "tx with no inputs in multiple layer tx fails": {
-		// 	exp:          false,
-		// 	testFile:     "invalid_deep_tx_missing_inputs",
-		// 	expErr:       spv.ErrNoTxInputsToVerify,
-		// 	expSerialErr: spv.ErrNoTxInputsToVerify,
-		// },
-		// "envelope with confirmed root errs": {
-		// 	exp:          false,
-		// 	testFile:     "invalid_confirmed_root",
-		// 	expErr:       spv.ErrTipTxConfirmed,
-		// 	expSerialErr: spv.ErrTipTxConfirmed,
-		// },
-		// "nil initial payment errors": {
-		// 	exp:          false,
-		// 	expErr:       spv.ErrNilInitialPayment,
-		// 	expSerialErr: spv.ErrNilInitialPayment,
-		// },
 	}
 
 	mch := &mockBlockHeaderClient{
@@ -209,23 +208,18 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			testData := struct {
-				Envelope *spv.Envelope `json:"data"`
+				Envelope    *spv.Envelope `json:"data"`
+				Description string        `json:"description"`
 			}{}
 			if test.testFile != "" {
 				bb, err := data.SpvVerifyData.Load(test.testFile + ".json")
 				assert.NoError(t, err)
 				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&testData))
+			}
 
-				binary, err := envelope.Bytes()
-				if err != nil {
-					fmt.Println("seralisation didn't work. properly")
-				}
-
-				hex.EncodeToString(binary)
-				fmt.Printf("%v binary:\n%v\n\n--------------------------------------\n\n\n", test.testFile, hex.EncodeToString(binary))
-
-				//os.WriteFile(test.testFile+".txt", binary, os.FileMode("w"))
-
+			if test.testFile == "" {
+				assert.EqualError(t, errors.Cause(spv.ErrNilInitialPayment), test.expErr.Error())
+				return
 			}
 
 			v, err := spv.NewPaymentVerifier(mch, test.setupOpts...)
@@ -244,25 +238,22 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				assert.Nil(t, tx)
 			}
 
-			binary, err := envelope.Bytes()
+			binary, err := testData.Envelope.Bytes()
 			assert.NoError(t, err, "expected no error when creating binary from json")
 
 			mpv, err := spv.NewMerkleProofVerifier(mch)
 			assert.NoError(t, err, "expected no error when creating binary from json")
 
-			// ---------------- THE NEW FUNCTION ----------------
-			fmt.Print("|===\t", name, "\t")
 			opts := append(test.setupOpts, test.overrideOpts...)
 			valid, err := spv.VerifyAncestryBinary(binary, mpv, opts...)
-			if test.expErr != nil {
+			if test.expErrBinary != nil {
 				assert.Error(t, err)
-				assert.EqualError(t, errors.Cause(err), test.expSerialErr.Error())
+				assert.EqualError(t, errors.Cause(err), test.expErrBinary.Error())
 				assert.False(t, valid)
 			} else {
 				assert.NoError(t, err)
 				assert.True(t, valid)
 			}
-			fmt.Println("✅ PASS")
 		})
 	}
 

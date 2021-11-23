@@ -52,7 +52,7 @@
                 "txid": "bae2c76a2368af5e514da7dd794ab3f60ccea53d8181ca83e2cb9ab44666c96f",
                 "rawTx": "0200000001159b1c81cbbc5de005cb5a8f86cafb6b9c0b8b1473cfac99c2d0488029aa2a25000000004847304402202935d7a85c928eb4a3b4a08a6e4713d3b2142c0e16a171322bd7612c7ff8e8f002201b08f62484217b669cc9c25b8172647e5d56b2a54edd67427608ff2ecd00cf6b41feffffff02408c380c010000001976a91463fe2b8cb4ef7a8b01cc3388ce26ef74b8a5c42588ac0065cd1d000000001976a914a0416fb58b878bfaede66f83bb0e8c9fe0b0619c88ac65000000",
                 "proof": {
-                  "index": 1,
+                  "index": 2,
                   "txOrId": "bae2c76a2368af5e514da7dd794ab3f60ccea53d8181ca83e2cb9ab44666c96f",
                   "target": "4f35d06cd4d00dcba92ade34b4c507c2939d3d1393f490a370c5f4239050dbcb",
                   "nodes": [

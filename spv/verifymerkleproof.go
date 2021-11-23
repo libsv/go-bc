@@ -22,21 +22,21 @@ const (
 )
 
 // VerifyMerkleProof verifies a Merkle Proof in standard byte format.
-func (v *verifier) VerifyMerkleProof(ctx context.Context, proof []byte) (valid, isLastInTree bool, err error) {
+func (v *verifier) VerifyMerkleProof(ctx context.Context, proof []byte) (string, bool, bool, error) {
 
 	mpb, err := parseBinaryMerkleProof(proof)
 	if err != nil {
-		return false, false, err
+		return "", false, false, err
 	}
 
 	err = validateTxOrID(mpb.flags, mpb.txOrID)
 	if err != nil {
-		return false, false, err
+		return "", false, false, err
 	}
 
 	txid, err := txidFromTxOrID(mpb.txOrID)
 	if err != nil {
-		return false, false, err
+		return "", false, false, err
 	}
 
 	var merkleRoot string
@@ -46,7 +46,7 @@ func (v *verifier) VerifyMerkleProof(ctx context.Context, proof []byte) (valid, 
 		// The `target` field contains a block hash
 		blockHeader, err := v.bhc.BlockHeader(ctx, mpb.target)
 		if err != nil {
-			return false, false, err
+			return txid, false, false, err
 		}
 
 		merkleRoot = blockHeader.HashMerkleRootStr()
@@ -62,30 +62,32 @@ func (v *verifier) VerifyMerkleProof(ctx context.Context, proof []byte) (valid, 
 		var err error
 		merkleRoot, err = bc.ExtractMerkleRootFromBlockHeader(mpb.target)
 		if err != nil {
-			return false, false, err
+			return txid, false, false, err
 		}
 
 	default:
-		return false, false, errors.New("invalid flags")
+		return txid, false, false, errors.New("invalid flags")
 	}
 
 	if mpb.flags&proofTypeFlag == 1 {
-		return false, false, errors.New("only merkle branch supported in this version") // merkle tree proof type not supported
+		return txid, false, false, errors.New("only merkle branch supported in this version") // merkle tree proof type not supported
 	}
 
 	if mpb.flags&compositeFlag == 1 {
-		return false, false, errors.New("only single proof supported in this version") // composite proof type not supported
+		return txid, false, false, errors.New("only single proof supported in this version") // composite proof type not supported
 	}
 
 	if txid == "" {
-		return false, false, errors.New("txid missing")
+		return txid, false, false, errors.New("txid missing")
 	}
 
 	if merkleRoot == "" {
-		return false, false, errors.New("merkleRoot missing")
+		return txid, false, false, errors.New("merkleRoot missing")
 	}
 
-	return verifyProof(txid, merkleRoot, mpb.index, mpb.nodes)
+	valid, isLastInTree, err := verifyProof(txid, merkleRoot, mpb.index, mpb.nodes)
+
+	return txid, valid, isLastInTree, err
 }
 
 // VerifyMerkleProofJSON verifies a Merkle Proof in standard JSON format.
@@ -283,6 +285,10 @@ func parseBinaryMerkleProof(proof []byte) (*merkleProofBinary, error) {
 
 	nodeCount, size := bt.DecodeVarInt(proof[offset:])
 	offset += size
+
+	if mpb.index > nodeCount {
+		return nil, ErrInvalidProof
+	}
 
 	for i := 0; i < int(nodeCount); i++ {
 		t := proof[offset]
