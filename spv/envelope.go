@@ -101,7 +101,10 @@ func serialiseInputs(parents map[string]*Envelope, flake *[]byte, root bool) err
 			*flake = append(*flake, proofLength...) // of this length.
 			*flake = append(*flake, proof...)       // the data.
 		} else if input.HasParents() {
-			return serialiseInputs(input.Parents, flake, false)
+			err = serialiseInputs(input.Parents, flake, false)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

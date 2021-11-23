@@ -46,4 +46,7 @@ var (
 
 	// ErrMissingOutput is returned when checking fees if an output in a parent tx is missing.
 	ErrMissingOutput = errors.New("expected output used in payment tx missing")
+
+	// ErrProofOrInputMissing returns if a path from tip to beginning/anchor is broken.
+	ErrProofOrInputMissing = errors.New("break in the ancestry missing either a parent transaction or a proof")
 )

@@ -31,10 +31,15 @@ type Ancestor struct {
 	MapiResponses []*bc.MapiCallback
 }
 
-// BinaryChunk is a clear way to pass around chunks while keeping their type.
-type BinaryChunk struct {
+// binaryChunk is a clear way to pass around chunks while keeping their type.
+type binaryChunk struct {
 	ContentType byte
 	Data        []byte
+}
+
+type extendedInput struct {
+	input *bt.Input
+	vin   int
 }
 
 // NewAncestryFromBytes creates a new struct from the bytes of a txContext.
@@ -84,12 +89,12 @@ func NewAncestryFromBytes(b []byte) *Ancestry {
 	return ancestry
 }
 
-func parseChunk(b []byte, offset *uint64) BinaryChunk {
+func parseChunk(b []byte, offset *uint64) binaryChunk {
 	typeOfNextData := b[*offset]
 	*offset++
 	l, size := bt.DecodeVarInt(b[*offset:])
 	*offset += uint64(size)
-	chunk := BinaryChunk{
+	chunk := binaryChunk{
 		ContentType: typeOfNextData,
 		Data:        b[*offset : *offset+l],
 	}
@@ -152,11 +157,6 @@ func VerifyAncestryBinary(binaryData []byte, mpv MerkleProofVerifier, opts ...Ve
 	return true, nil
 }
 
-type extendedInput struct {
-	input *bt.Input
-	vin   int
-}
-
 // VerifyAncestors will run through the map of Ancestors and check each input of each transaction to verify it.
 // Only if there is no Proof attached.
 func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOptions) error {
@@ -194,7 +194,7 @@ func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOp
 				// check if we have that ancestor, if not validation fail.
 				if ancestry.Ancestors[inputID] == nil {
 					if ancestor.Proof == nil && opts.proofs {
-						return ErrNoConfirmedTransaction
+						return ErrProofOrInputMissing
 					}
 					continue
 				}
