@@ -92,7 +92,7 @@ func serialiseInputs(parents map[string]*Envelope, flake *[]byte, root bool) err
 			}
 		}
 		if input.Proof != nil {
-			proof, err := input.Proof.ToBytes()
+			proof, err := input.Proof.Bytes()
 			if err != nil {
 				return errors.Wrap(err, "Failed to serialise this input's proof struct")
 			}

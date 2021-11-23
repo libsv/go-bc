@@ -9,7 +9,7 @@ import (
 	"github.com/libsv/go-bc"
 )
 
-func TestMerkleProofToBytes(t *testing.T) {
+func TestMerkleProofBytes(t *testing.T) {
 	t.Parallel()
 
 	proofTests := map[string]struct {
@@ -51,7 +51,7 @@ func TestMerkleProofToBytes(t *testing.T) {
 
 			expected, _ := hex.DecodeString(test.expected)
 
-			proof, err := test.merkleProofJSON.ToBytes()
+			proof, err := test.merkleProofJSON.Bytes()
 
 			assert.NoError(t, err)
 			assert.Equal(t, expected, proof)

@@ -44,7 +44,7 @@ func (j *AncestryJSON) Bytes() ([]byte, error) {
 		binaryTxContext = append(binaryTxContext, length...)
 		binaryTxContext = append(binaryTxContext, rawTx...)
 		if ancestor.Proof != nil {
-			rawProof, err := ancestor.Proof.ToBytes()
+			rawProof, err := ancestor.Proof.Bytes()
 			if err != nil {
 				return nil, err
 			}

@@ -22,7 +22,7 @@ func TestParseBinaryMerkleProof(t *testing.T) {
 		},
 	}
 
-	proof, _ := proofJSON.ToBytes()
+	proof, _ := proofJSON.Bytes()
 
 	mpb, err := parseBinaryMerkleProof(proof)
 

@@ -70,10 +70,10 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				spv.NoVerifyProofs(),
 			},
 		},
-		// "valid envelope with merkle proof supplied as hex passes": {
-		// 	exp:      true,
-		// 	testFile: "valid_merkle_proof_hex",
-		// },
+		"valid envelope with merkle proof supplied as hex passes": {
+			exp:      true,
+			testFile: "valid_merkle_proof_hex",
+		},
 		"valid envelope with fee check supplied and valid fees passes": {
 			exp:      true,
 			testFile: "valid",

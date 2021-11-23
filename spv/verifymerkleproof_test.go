@@ -44,7 +44,7 @@ func TestVerifyMerkleProof(t *testing.T) {
 	})
 
 	t.Run("Bytes", func(t *testing.T) {
-		proof, _ := proofJSON.ToBytes()
+		proof, _ := proofJSON.Bytes()
 		valid, isLastInTree, err := v.VerifyMerkleProof(context.Background(), proof)
 
 		assert.NoError(t, err)

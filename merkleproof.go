@@ -18,7 +18,7 @@ type MerkleProof struct {
 	Composite  bool     `json:"composite,omitempty"`
 }
 
-// ToBytes converts the JSON Merkle Proof
+// Bytes converts the JSON Merkle Proof
 // into byte encoding.
 //
 // Check the following encoding:
@@ -30,7 +30,7 @@ type MerkleProof struct {
 // target: 			byte[32 or 80], //determined by flag bits 1 and 2
 // nodeCount: 	varint,
 // nodes: 			node[]
-func (mp *MerkleProof) ToBytes() ([]byte, error) {
+func (mp *MerkleProof) Bytes() ([]byte, error) {
 	index := bt.VarInt(mp.Index)
 
 	txOrID, err := hex.DecodeString(mp.TxOrID)
