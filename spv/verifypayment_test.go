@@ -258,3 +258,61 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 	}
 
 }
+func TestVerifyAncestryBinary(t *testing.T) {
+	tests := map[string]struct {
+		testFile string
+		// setupOpts are passed to the NewVerifier func.
+		setupOpts []spv.VerifyOpt
+		// overrideOpts are passed to the VerifyPayment func to override the global settings.
+		overrideOpts []spv.VerifyOpt
+		exp          bool
+		expErr       error
+		expErrBinary error
+	}{
+		"three txs all using eachothers outputs": {
+			exp:      true,
+			testFile: "valid_3_nested",
+		},
+		"1000 txs all using eachothers outputs": {
+			exp:      true,
+			testFile: "valid_1000_nested",
+		},
+	}
+
+	mch := &mockBlockHeaderClient{
+		blockHeaderFunc: func(_ context.Context, hash string) (*bc.BlockHeader, error) {
+			bb, err := data.BlockHeaderData.Load(hash)
+			if err != nil {
+				return nil, err
+			}
+			return bc.NewBlockHeaderFromStr(string(bb[:160]))
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if test.testFile != "" {
+				hexBinary, err := data.SpvBinaryData.Load(test.testFile + ".hex")
+				assert.NoError(t, err)
+
+				hexString := string(hexBinary)
+				binary, err := hex.DecodeString(hexString)
+				assert.NoError(t, err, "expected no error when creating binary from hex")
+
+				mpv, err := spv.NewMerkleProofVerifier(mch)
+				assert.NoError(t, err, "expected no error when creating merkleproof validator")
+
+				opts := append(test.setupOpts, test.overrideOpts...)
+				valid, err := spv.VerifyAncestryBinary(binary, mpv, opts...)
+				if test.expErr != nil {
+					assert.Error(t, err)
+					assert.EqualError(t, errors.Cause(err), test.expErr.Error())
+					assert.False(t, valid)
+				} else {
+					assert.NoError(t, err)
+					assert.True(t, valid)
+				}
+			}
+		})
+	}
+}
