@@ -11,7 +11,7 @@ import (
 )
 
 func Test_BinaryEnvelopeVerification(t *testing.T) {
-	h, err := data.SpvVerifyData.Load("valid_txContext_hex.txt")
+	h, err := data.SpvCreateBinaryData.Load("valid_txContext_hex.txt")
 	if err != nil {
 		fmt.Println(err)
 	}

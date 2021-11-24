@@ -27,12 +27,12 @@ type TxContext struct {
 
 // Ancestor is an internal struct for validating transactions with their ancestors.
 type Ancestor struct {
-	RawTx         []byte
 	Tx            *bt.Tx
-	RawProof      []byte
 	Proof         *bc.MerkleProof
-	RawMapi       []byte
 	MapiResponses []*bc.MapiCallback
+	RawTx         []byte
+	RawProof      []byte
+	RawMapi       []byte
 	Parsed        chan bool
 	Verified      chan bool
 }
@@ -171,15 +171,7 @@ func VerifyTxContextBinary(binaryData []byte) (bool, error) {
 		go parseAndVerify(txid, ancestor, &txContext)
 	}
 
-	fmt.Println("waiting for verification")
-
 	inputsVerified.Wait()
-
-	fmt.Println("all done", verified)
-
-	fmt.Print("\n\n============================================\n\n")
-	fmt.Printf("%+v", txContext)
-	fmt.Print("\n\n============================================\n\n")
 
 	return true, nil
 }
@@ -205,7 +197,6 @@ func checkEveryInput(tx *bt.Tx, txContext *TxContext, inputsVerified *sync.WaitG
 				case _, ok := <-parseListenChan:
 					if !ok {
 						defer inputsParsed.Done()
-						fmt.Println("parsed")
 						break parsed
 					}
 				}
@@ -220,7 +211,6 @@ func checkEveryInput(tx *bt.Tx, txContext *TxContext, inputsVerified *sync.WaitG
 				case _, ok := <-verifiedListenChan:
 					if !ok {
 						defer inputsVerified.Done()
-						fmt.Println("verified")
 						break verified
 					}
 				}

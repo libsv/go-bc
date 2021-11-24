@@ -3,7 +3,9 @@ package spv_test
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/libsv/go-bt/v2"
@@ -181,7 +183,19 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				bb, err := data.SpvVerifyData.Load(test.testFile + ".json")
 				assert.NoError(t, err)
 				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&testData))
+
+				binary, err := envelope.Bytes()
+				if err != nil {
+					fmt.Println("seralisation didn't work. properly")
+				}
+
+				hex.EncodeToString(binary)
+				fmt.Printf("%v binary:\n%v\n\n--------------------------------------\n\n\n", test.testFile, hex.EncodeToString(binary))
+
+				//os.WriteFile(test.testFile+".txt", binary, os.FileMode("w"))
+
 			}
+
 			v, err := spv.NewPaymentVerifier(&mockBlockHeaderClient{
 				blockHeaderFunc: func(_ context.Context, hash string) (*bc.BlockHeader, error) {
 					bb, err := data.BlockHeaderData.Load(hash)
@@ -205,4 +219,28 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run(name, func(t *testing.T) {
+		var envelope *spv.Envelope
+		if test.testFile != "" {
+			bb, err := data.SpvVerifyData.Load(test.testFile + ".json")
+			assert.NoError(t, err)
+			assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&envelope))
+
+			binary, err := envelope.Bytes()
+
+			valid, err := spv.VerifyTxContextBinary(binary)
+			if test.expErr != nil {
+				assert.Error(t, err)
+				assert.EqualError(t, errors.Cause(err), test.expErr.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+			if test.exp {
+				assert.NotNil(t, tx)
+			} else {
+				assert.Nil(t, tx)
+			}
+		}
+	})
 }
