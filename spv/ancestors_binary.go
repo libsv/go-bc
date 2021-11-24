@@ -198,7 +198,7 @@ func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOp
 		// if we have a proof, check it.
 		if opts.proofs {
 			if ancestor.Proof == nil {
-				for inputID, _ := range inputsToCheck {
+				for inputID := range inputsToCheck {
 					// check if we have that ancestor, if not validation fail.
 					if ancestry.Ancestors[inputID] == nil {
 						return ErrProofOrInputMissing
