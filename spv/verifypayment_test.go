@@ -174,11 +174,13 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			var envelope *spv.Envelope
+			testData := struct {
+				Envelope *spv.Envelope `json:"data"`
+			}{}
 			if test.testFile != "" {
 				bb, err := data.SpvVerifyData.Load(test.testFile + ".json")
 				assert.NoError(t, err)
-				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&envelope))
+				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&testData))
 			}
 			v, err := spv.NewPaymentVerifier(&mockBlockHeaderClient{
 				blockHeaderFunc: func(_ context.Context, hash string) (*bc.BlockHeader, error) {
@@ -189,7 +191,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			}, test.setupOpts...)
 			assert.NoError(t, err, "expected no error when creating spv client")
 
-			tx, err := v.VerifyPayment(context.Background(), envelope, test.overrideOpts...)
+			tx, err := v.VerifyPayment(context.Background(), testData.Envelope, test.overrideOpts...)
 			if test.expErr != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, errors.Cause(err), test.expErr.Error())
