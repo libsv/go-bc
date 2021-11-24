@@ -15,7 +15,7 @@ type TestDataDir struct {
 var spvCreateData embed.FS
 
 //go:embed spv/binary/*
-var spvCreateBinaryData embed.FS
+var spvBinaryData embed.FS
 
 //go:embed spv/verify/*
 var spvVerifyData embed.FS
@@ -29,10 +29,10 @@ var SpvCreateData = TestDataDir{
 	fs:     spvCreateData,
 }
 
-// SpvCreateBinaryData data for creating spv envelopes.
-var SpvCreateBinaryData = TestDataDir{
+// SpvBinaryData data for creating spv envelopes.
+var SpvBinaryData = TestDataDir{
 	prefix: "spv/binary",
-	fs:     spvCreateBinaryData,
+	fs:     spvBinaryData,
 }
 
 // SpvVerifyData data for verifying spv envelopes.

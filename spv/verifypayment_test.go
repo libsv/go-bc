@@ -3,6 +3,7 @@ package spv_test
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"testing"
 
