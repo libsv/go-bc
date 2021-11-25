@@ -9,59 +9,50 @@ import (
 
 // AncestryJSON is a spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/ eventually.
 type AncestryJSON struct {
-	PaymentTx string `json:"paymentTx,omitempty"`
-	Depth     uint64 `json:"depth,omitempty"`
-	Ancestors []struct {
-		RawTx         string            `json:"hex,omitempty"`
-		Proof         *bc.MerkleProof   `json:"proof,omitempty"`
-		MapiResponses []bc.MapiCallback `json:"mapiResponses,omitempty"`
-	} `json:"ancestors,omitempty"`
+	PaymentTx string         `json:"paymentTx,omitempty"`
+	Depth     uint64         `json:"depth,omitempty"`
+	Ancestors []AncestorJSON `json:"ancestors,omitempty"`
 }
 
+// AncestorJSON is one of the serial objects within the overall list of ancestors.
+type AncestorJSON struct {
+	RawTx         string             `json:"hex,omitempty"`
+	Proof         *bc.MerkleProof    `json:"proof,omitempty"`
+	MapiResponses []*bc.MapiCallback `json:"mapiResponses,omitempty"`
+}
+
+// AncestoryJSONFromBytes is a way to create the JSON format for Ancestry from the binary format.
 func AncestoryJSONFromBytes(b []byte) (*AncestryJSON, error) {
 	ancestry, err := NewAncestryFromBytes(b)
 	if err != nil {
 		return nil, err
 	}
-	ancestors := make([]struct{
-		RawTx         string
-		Proof         *bc.MerkleProof
-		MapiResponses []bc.MapiCallback
-	})
-	for ancestorID, ancestor := range ancestry.Ancestors {
+	ancestors := make([]AncestorJSON, 0)
+	for _, ancestor := range ancestry.Ancestors {
 		rawTx := ancestor.Tx.String()
-		proof := &bc.MerkleProof{}
-		mpb, err := parseBinaryMerkleProof(ancestor.Proof)
-		if err != nil {
-			return nil, err
+		a := AncestorJSON{
+			RawTx:         rawTx,
+			MapiResponses: ancestor.MapiResponses,
 		}
-		if mpb.flags | targetTypeFlags == 0 {
-			"header"
-		}
-		mp := &bc.MerkleProof{
-			Index:      mpb.index,
-			TxOrID:     mpb.txOrID,
-			Target:     mpb.target,
-			Nodes:      mpb.nodes,
-			TargetType: target,
-			ProofType:  "",
-			Composite:  false,
-		}
-		a := struct{
-			RawTx         string
-			Proof         *bc.MerkleProof
-			MapiResponses []bc.MapiCallback
-		}{ 
-			RawTx: rawTx, 
-			Proof: &bc.MerkleProof{}, 
-			MapiResponses: ancestor.MapiResponses
+		if ancestor.Proof != nil {
+			mpb, err := parseBinaryMerkleProof(ancestor.Proof)
+			if err != nil {
+				return nil, err
+			}
+			a.Proof = &bc.MerkleProof{
+				Index:     mpb.index,
+				TxOrID:    mpb.txOrID,
+				Target:    mpb.target,
+				Nodes:     mpb.nodes,
+				ProofType: flagProofType(mpb.flags),
+			}
 		}
 		ancestors = append(ancestors, a)
 	}
 	j := &AncestryJSON{
 		PaymentTx: ancestry.PaymentTx.String(),
 		Depth:     0,
-		Ancestors: ,
+		Ancestors: ancestors,
 	}
 	return j, nil
 }
@@ -119,4 +110,18 @@ func (j *AncestryJSON) Bytes() ([]byte, error) {
 	}
 
 	return binaryTxContext, nil
+}
+
+func flagProofType(flags byte) string {
+	switch flags & targetTypeFlags {
+	// if bits 1 and 2 of flags are NOT set, target should contain a block hash (32 bytes).
+	// if bit 2 of flags is set, target should contain a merkle root (32 bytes).
+	case 0, 4:
+		return "blockhash"
+	// if bit 1 of flags is set, target should contain a block header (80 bytes).
+	case 2:
+		return "header"
+	default:
+		return ""
+	}
 }
