@@ -21,8 +21,8 @@ type AncestorJSON struct {
 	MapiResponses []*bc.MapiCallback `json:"mapiResponses,omitempty"`
 }
 
-// AncestoryJSONFromBytes is a way to create the JSON format for Ancestry from the binary format.
-func AncestoryJSONFromBytes(b []byte) (*AncestryJSON, error) {
+// NewAncestoryJSONFromBytes is a way to create the JSON format for Ancestry from the binary format.
+func NewAncestoryJSONFromBytes(b []byte) (*AncestryJSON, error) {
 	ancestry, err := NewAncestryFromBytes(b)
 	if err != nil {
 		return nil, err

@@ -43,7 +43,7 @@ func TestAncestryBinaryToJSON(t *testing.T) {
 				binary, err := hex.DecodeString(hexString)
 				assert.NoError(t, err, "expected no error when creating binary from hex")
 
-				j, err := spv.AncestoryJSONFromBytes(binary)
+				j, err := spv.NewAncestoryJSONFromBytes(binary)
 				assert.NoError(t, err, "expected no error when transforming to json struct")
 
 				jsonBytes, err := json.Marshal(j)
