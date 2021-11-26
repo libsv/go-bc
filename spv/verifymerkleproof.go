@@ -21,22 +21,32 @@ const (
 	targetTypeFlags = targetTypeFlag1 | targetTypeFlag2
 )
 
-// VerifyMerkleProof verifies a Merkle Proof in standard byte format.
-func (v *verifier) VerifyMerkleProof(ctx context.Context, proof []byte) (string, bool, bool, error) {
+// MerkleProofValidation is a wrapper for the response of a validation operation.
+type MerkleProofValidation struct {
+	TxID         string
+	Valid        bool
+	IsLastInTree bool
+}
 
+// VerifyMerkleProof verifies a Merkle Proof in standard byte format.
+func (v *verifier) VerifyMerkleProof(ctx context.Context, proof []byte) (*MerkleProofValidation, error) {
 	mpb, err := parseBinaryMerkleProof(proof)
 	if err != nil {
-		return "", false, false, err
+		return nil, err
 	}
 
 	err = validateTxOrID(mpb.flags, mpb.txOrID)
 	if err != nil {
-		return "", false, false, err
+		return nil, err
 	}
 
 	txid, err := txidFromTxOrID(mpb.txOrID)
 	if err != nil {
-		return "", false, false, err
+		return nil, err
+	}
+
+	response := &MerkleProofValidation{
+		TxID: txid,
 	}
 
 	var merkleRoot string
@@ -46,7 +56,7 @@ func (v *verifier) VerifyMerkleProof(ctx context.Context, proof []byte) (string,
 		// The `target` field contains a block hash
 		blockHeader, err := v.bhc.BlockHeader(ctx, mpb.target)
 		if err != nil {
-			return txid, false, false, err
+			return response, err
 		}
 
 		merkleRoot = blockHeader.HashMerkleRootStr()
@@ -62,32 +72,33 @@ func (v *verifier) VerifyMerkleProof(ctx context.Context, proof []byte) (string,
 		var err error
 		merkleRoot, err = bc.ExtractMerkleRootFromBlockHeader(mpb.target)
 		if err != nil {
-			return txid, false, false, err
+			return response, err
 		}
 
 	default:
-		return txid, false, false, errors.New("invalid flags")
+		return response, ErrInvalidMerkleFlags
 	}
 
 	if mpb.flags&proofTypeFlag == 1 {
-		return txid, false, false, errors.New("only merkle branch supported in this version") // merkle tree proof type not supported
+		return response, ErrInvalidMerkleFlags
 	}
 
 	if mpb.flags&compositeFlag == 1 {
-		return txid, false, false, errors.New("only single proof supported in this version") // composite proof type not supported
+		return response, ErrInvalidMerkleFlags // composite proof type not supported
 	}
 
 	if txid == "" {
-		return txid, false, false, errors.New("txid missing")
+		return response, ErrMissingTxidInProof
 	}
 
 	if merkleRoot == "" {
-		return txid, false, false, errors.New("merkleRoot missing")
+		return response, ErrMissingRootInProof
 	}
 
 	valid, isLastInTree, err := verifyProof(txid, merkleRoot, mpb.index, mpb.nodes)
-
-	return txid, valid, isLastInTree, err
+	response.Valid = valid
+	response.IsLastInTree = isLastInTree
+	return response, err
 }
 
 // VerifyMerkleProofJSON verifies a Merkle Proof in standard JSON format.

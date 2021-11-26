@@ -2,12 +2,10 @@ package spv
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/libsv/go-bk/crypto"
 	"github.com/libsv/go-bt/v2"
 	"github.com/libsv/go-bt/v2/bscript"
-	"github.com/pkg/errors"
 
 	"github.com/libsv/go-bc"
 )
@@ -31,7 +29,7 @@ type Ancestor struct {
 	MapiResponses []*bc.MapiCallback
 }
 
-// binaryChunk is a clear way to pass around chunks while keeping their type.
+// binaryChunk is a clear way to pass around chunks while keeping their type explicit.
 type binaryChunk struct {
 	ContentType byte
 	Data        []byte
@@ -116,19 +114,18 @@ func parseChunk(b []byte, offset *uint64) binaryChunk {
 
 func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
 	if len(b) == 0 {
-		return nil, errors.New("There are no callback bytes")
+		return nil, ErrTriedToParseZeroBytes
 	}
 	var internalOffset uint64
 	allBinary := uint64(len(b))
 	numOfMapiResponses := b[internalOffset]
 	if numOfMapiResponses == 0 && len(b) == 1 {
-		return nil, errors.New("There are no callbacks")
+		return nil, ErrTriedToParseZeroBytes
 	}
 	internalOffset++
 
-	// split up the binary into flakes where each one is to be processed concurrently.
 	var responses = [][]byte{}
-	for ok := true; ok; ok = allBinary > internalOffset {
+	for allBinary > internalOffset {
 		l, size := bt.DecodeVarInt(b[internalOffset:])
 		internalOffset += uint64(size)
 		response := b[internalOffset : internalOffset+l]
@@ -140,8 +137,7 @@ func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
 	for _, response := range responses {
 		mapiResponse, err := bc.NewMapiCallbackFromBytes(response)
 		if err != nil {
-			fmt.Println(err)
-			return nil, errors.New("couldn't parse the callback bytes")
+			return nil, err
 		}
 		mapiResponses = append(mapiResponses, mapiResponse)
 	}
@@ -159,7 +155,7 @@ func VerifyAncestryBinary(binaryData []byte, mpv MerkleProofVerifier, opts ...Ve
 		opt(o)
 	}
 	if binaryData[0] != 1 { // the first byte is the version number.
-		return false, errors.New("We can only handle version 1 of the SPV Envelope Binary format")
+		return false, ErrUnsupporredVersion
 	}
 	ancestry, err := NewAncestryFromBytes(binaryData)
 	if err != nil {
@@ -175,14 +171,13 @@ func VerifyAncestryBinary(binaryData []byte, mpv MerkleProofVerifier, opts ...Ve
 // VerifyAncestors will run through the map of Ancestors and check each input of each transaction to verify it.
 // Only if there is no Proof attached.
 func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOptions) error {
-	leaves := ancestry.Ancestors
+	ancestors := ancestry.Ancestors
 	var paymentTxID [32]byte
 	copy(paymentTxID[:], ancestry.PaymentTx.TxIDBytes())
-	paymentLeaf := &Ancestor{
+	ancestors[paymentTxID] = &Ancestor{
 		Tx: ancestry.PaymentTx,
 	}
-	leaves[paymentTxID] = paymentLeaf
-	for ancestorID, ancestor := range leaves {
+	for _, ancestor := range ancestors {
 		inputsToCheck := make(map[[32]byte]*extendedInput)
 		if len(ancestor.Tx.Inputs) == 0 {
 			return ErrNoTxInputsToVerify
@@ -206,11 +201,11 @@ func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOp
 				}
 			} else {
 				// check proof.
-				txid, validProof, _, err := mpv.VerifyMerkleProof(context.Background(), ancestor.Proof)
-				if txid != "" && txid != ancestor.Tx.TxID() {
+				response, err := mpv.VerifyMerkleProof(context.Background(), ancestor.Proof)
+				if response.TxID != "" && response.TxID != ancestor.Tx.TxID() {
 					return ErrTxIDMismatch
 				}
-				if err != nil || !validProof {
+				if err != nil || !response.Valid {
 					return ErrInvalidProof
 				}
 			}
@@ -232,7 +227,6 @@ func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOp
 				lockingScript := ancestry.Ancestors[inputID].Tx.Outputs[input.PreviousTxOutIndex].LockingScript
 				unlockingScript := input.UnlockingScript
 				if !verifyInputOutputPair(ancestor.Tx, lockingScript, unlockingScript) {
-					fmt.Println("verifyInputOutputPair failed for: ", ancestorID, " - input: ", inputID)
 					return ErrPaymentNotVerified
 				}
 			}

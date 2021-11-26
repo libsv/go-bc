@@ -49,4 +49,19 @@ var (
 
 	// ErrProofOrInputMissing returns if a path from tip to beginning/anchor is broken.
 	ErrProofOrInputMissing = errors.New("break in the ancestry missing either a parent transaction or a proof")
+
+	// ErrTriedToParseZeroBytes returns weh we attempt to parse a slice of bytes of zero length.
+	ErrTriedToParseZeroBytes = errors.New("there are no callback bytes to parse")
+
+	// ErrUnsupporredVersion returns if another version of the binary format is being used - since we cannot guarantee we know how to parse it.
+	ErrUnsupporredVersion = errors.New("we only support version 1 of the Ancestor Binary format")
+
+	// ErrInvalidMerkleFlags returns if a merkle proof being verified uses something other than the one currently supported.
+	ErrInvalidMerkleFlags = errors.New("invalid flags used in merkle proof")
+
+	// ErrMissingTxidInProof returns if there's a missing txid in the proof.
+	ErrMissingTxidInProof = errors.New("missing txid in proof")
+
+	// ErrMissingRootInProof returns if there's a missing root in the proof.
+	ErrMissingRootInProof = errors.New("missing root in proof")
 )

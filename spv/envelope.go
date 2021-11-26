@@ -18,8 +18,6 @@ type Envelope struct {
 	Proof         *bc.MerkleProof
 	MapiResponses []bc.MapiCallback
 	Parents       map[string]*Envelope
-	Transactions  map[string]*Envelope
-	Verified      bool
 }
 
 // IsAnchored returns true if the envelope is the anchor tx.
