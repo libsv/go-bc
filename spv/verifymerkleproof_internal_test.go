@@ -10,7 +10,7 @@ import (
 
 func TestParseBinaryMerkleProof(t *testing.T) {
 	var proofJSON = &bc.MerkleProof{
-		Index:  12,
+		Index:  2,
 		TxOrID: "ffeff11c25cde7c06d407490d81ef4d0db64aad6ab3d14393530701561a465ef",
 		Target: "75edb0a69eb195cdd81e310553aa4d25e18450e08f168532a2c2e9cf447bf169",
 		Nodes: []string{
