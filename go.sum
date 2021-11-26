@@ -10,10 +10,10 @@ github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORN
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
-github.com/libsv/go-bk v0.1.4 h1:bTxlerGeibh8RRmyhFK03wSAEp6EAJxGR4vXuRT0LCE=
-github.com/libsv/go-bk v0.1.4/go.mod h1:xbDkeFFpP0uyFaPLnP6TwaLpAsHaslZ0LftTdWlB6HI=
-github.com/libsv/go-bt/v2 v2.0.0-beta.12 h1:xjCt06cUW5a8o1Qyk7pGSkvThMLTy2HzPrJFmsQIPBc=
-github.com/libsv/go-bt/v2 v2.0.0-beta.12/go.mod h1:Ict9mJuFxjzNszELtCTtAHH5tQtQd2fnXUKG1n1ldP0=
+github.com/libsv/go-bk v0.1.5 h1:fqbWy8nwVM/ayM8Nxe+lM7fN0FaUMMD1w5MCpwit7XQ=
+github.com/libsv/go-bk v0.1.5/go.mod h1:xbDkeFFpP0uyFaPLnP6TwaLpAsHaslZ0LftTdWlB6HI=
+github.com/libsv/go-bt/v2 v2.0.0-beta.13 h1:kedGtn9OX6k+OpZF21Wh7EKnce782nYn2NuYVloWr4U=
+github.com/libsv/go-bt/v2 v2.0.0-beta.13/go.mod h1:u5g3GmVLffBV8sWvMqHR3JekC51OR9XYvmQp1h/XoiQ=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

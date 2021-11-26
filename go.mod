@@ -3,8 +3,8 @@ module github.com/libsv/go-bc
 go 1.17
 
 require (
-	github.com/libsv/go-bk v0.1.4
-	github.com/libsv/go-bt/v2 v2.0.0-beta.12
+	github.com/libsv/go-bk v0.1.5
+	github.com/libsv/go-bt/v2 v2.0.0-beta.13
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
 )
