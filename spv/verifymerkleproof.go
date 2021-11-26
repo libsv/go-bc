@@ -291,7 +291,7 @@ func parseBinaryMerkleProof(proof []byte) (*merkleProofBinary, error) {
 		offset += 80
 
 	default:
-		return nil, errors.New("invalid flags")
+		return nil, ErrInvalidMerkleFlags
 	}
 
 	nodeCount, size := bt.DecodeVarInt(proof[offset:])
