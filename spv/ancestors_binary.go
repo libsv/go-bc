@@ -69,7 +69,8 @@ func NewAncestryFromBytes(b []byte) (*Ancestry, error) {
 	}
 
 	for total > offset {
-		chunk := parseChunk(b, &offset)
+		chunk, size := parseChunk(b, offset)
+		offset += size
 		switch chunk.ContentType {
 		case flagTx:
 			hash := crypto.Sha256d(chunk.Data)
@@ -99,17 +100,18 @@ func NewAncestryFromBytes(b []byte) (*Ancestry, error) {
 	return ancestry, nil
 }
 
-func parseChunk(b []byte, offset *uint64) binaryChunk {
-	typeOfNextData := b[*offset]
-	*offset++
-	l, size := bt.DecodeVarInt(b[*offset:])
-	*offset += uint64(size)
+func parseChunk(b []byte, start uint64) (binaryChunk, uint64) {
+	offset := start
+	typeOfNextData := b[offset]
+	offset++
+	l, size := bt.DecodeVarInt(b[offset:])
+	offset += uint64(size)
 	chunk := binaryChunk{
 		ContentType: typeOfNextData,
-		Data:        b[*offset : *offset+l],
+		Data:        b[offset : offset+l],
 	}
-	*offset += l
-	return chunk
+	offset += l
+	return chunk, offset - start
 }
 
 func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
