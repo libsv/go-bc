@@ -204,6 +204,9 @@ func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOp
 			} else {
 				// check proof.
 				response, err := mpv.VerifyMerkleProof(context.Background(), ancestor.Proof)
+				if response == nil {
+					return ErrInvalidProof
+				}
 				if response.TxID != "" && response.TxID != ancestor.Tx.TxID() {
 					return ErrTxIDMismatch
 				}

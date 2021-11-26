@@ -92,12 +92,6 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				})),
 			},
 		},
-		"invalid merkle proof fails": {
-			exp:          false,
-			testFile:     "invalid_merkle_proof",
-			expErr:       spv.ErrInvalidProof,
-			expErrBinary: spv.ErrInvalidProof,
-		},
 		"wrong tx supplied as input in envelope errs": {
 			exp:          false,
 			expErr:       spv.ErrNotAllInputsSupplied,
@@ -114,28 +108,6 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp:      true,
 			testFile: "valid_merkle_proof_hex",
 		},
-		"wrong merkle proof supplied via hex with otherwise correct input errors": {
-			exp:          false,
-			testFile:     "invalid_wrong_merkle_proof_hex",
-			expErr:       spv.ErrTxIDMismatch,
-			expErrBinary: spv.ErrTxIDMismatch,
-		},
-		"wrong merkle proof supplied with otherwise correct input errors": {
-			exp:          false,
-			testFile:     "invalid_wrong_merkle_proof",
-			expErr:       spv.ErrTxIDMismatch,
-			expErrBinary: spv.ErrTxIDMismatch,
-		},
-		"valid multiple layer tx passes": {
-			exp:      true,
-			testFile: "valid_deep",
-		},
-		"single missing merkle proof in layered and branching tx errors": {
-			exp:          false,
-			testFile:     "invalid_deep_missing_merkle_proof",
-			expErr:       spv.ErrNoConfirmedTransaction,
-			expErrBinary: spv.ErrProofOrInputMissing,
-		},
 		"envelope with tx no inputs errs": {
 			exp:          false,
 			testFile:     "invalid_tx_missing_inputs",
@@ -147,18 +119,6 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			testFile:     "invalid_tx_indexing_oob",
 			expErr:       spv.ErrInputRefsOutOfBoundsOutput,
 			expErrBinary: spv.ErrInputRefsOutOfBoundsOutput,
-		},
-		"wrong merkle proof suppled with otherwise correct layered input errors": {
-			exp:          false,
-			testFile:     "invalid_deep_wrong_merkle_proof",
-			expErr:       spv.ErrTxIDMismatch,
-			expErrBinary: spv.ErrTxIDMismatch,
-		},
-		"invalid multiple layer tx false": {
-			exp:          false,
-			testFile:     "invalid_deep_merkle_proof_index",
-			expErr:       spv.ErrInvalidProof,
-			expErrBinary: spv.ErrInvalidProof,
 		},
 		"tx with no inputs in multiple layer tx fails": {
 			exp:          false,
@@ -193,6 +153,46 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				})),
 				spv.NoVerifySPV(),
 			},
+		},
+		"invalid merkle proof fails": {
+			exp:          false,
+			testFile:     "invalid_merkle_proof",
+			expErr:       spv.ErrInvalidProof,
+			expErrBinary: spv.ErrInvalidProof,
+		},
+		"wrong merkle proof supplied via hex with otherwise correct input errors": {
+			exp:          false,
+			testFile:     "invalid_wrong_merkle_proof_hex",
+			expErr:       spv.ErrTxIDMismatch,
+			expErrBinary: spv.ErrTxIDMismatch,
+		},
+		"wrong merkle proof supplied with otherwise correct input errors": {
+			exp:          false,
+			testFile:     "invalid_wrong_merkle_proof",
+			expErr:       spv.ErrTxIDMismatch,
+			expErrBinary: spv.ErrTxIDMismatch,
+		},
+		"valid multiple layer tx passes": {
+			exp:      true,
+			testFile: "valid_deep",
+		},
+		"single missing merkle proof in layered and branching tx errors": {
+			exp:          false,
+			testFile:     "invalid_deep_missing_merkle_proof",
+			expErr:       spv.ErrNoConfirmedTransaction,
+			expErrBinary: spv.ErrProofOrInputMissing,
+		},
+		"wrong merkle proof suppled with otherwise correct layered input errors": {
+			exp:          false,
+			testFile:     "invalid_deep_wrong_merkle_proof",
+			expErr:       spv.ErrTxIDMismatch,
+			expErrBinary: spv.ErrTxIDMismatch,
+		},
+		"invalid multiple layer tx false": {
+			exp:          false,
+			testFile:     "invalid_deep_merkle_proof_index",
+			expErr:       spv.ErrInvalidProof,
+			expErrBinary: spv.ErrInvalidProof,
 		},
 	}
 
