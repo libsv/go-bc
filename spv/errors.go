@@ -64,4 +64,7 @@ var (
 
 	// ErrMissingRootInProof returns if there's a missing root in the proof.
 	ErrMissingRootInProof = errors.New("missing root in proof")
+
+	// ErrInvalidNodes returns if there is a * on the left hand side within the node array.
+	ErrInvalidNodes = errors.New("invalid nodes")
 )

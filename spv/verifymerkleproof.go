@@ -169,7 +169,7 @@ func verifyProof(c, merkleRoot string, index uint64, nodes []string) (bool, bool
 		// the last element of an uneven merkle tree layer
 		if p == "*" {
 			if !cIsLeft { // this shouldn't happen...
-				return false, false, errors.New("invalid nodes")
+				return false, false, ErrInvalidNodes
 			}
 			p = c
 		}
@@ -297,7 +297,7 @@ func parseBinaryMerkleProof(proof []byte) (*merkleProofBinary, error) {
 	nodeCount, size := bt.DecodeVarInt(proof[offset:])
 	offset += size
 
-	if mpb.index > nodeCount {
+	if mpb.index >= 1<<nodeCount {
 		return nil, ErrInvalidProof
 	}
 
