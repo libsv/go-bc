@@ -96,9 +96,12 @@ func (v *verifier) VerifyMerkleProof(ctx context.Context, proof []byte) (*Merkle
 	}
 
 	valid, isLastInTree, err := verifyProof(txid, merkleRoot, mpb.index, mpb.nodes)
-	response.Valid = valid
-	response.IsLastInTree = isLastInTree
-	return response, err
+
+	return &MerkleProofValidation{
+		TxID:         txid,
+		Valid:        valid,
+		IsLastInTree: isLastInTree,
+	}, err
 }
 
 // VerifyMerkleProofJSON verifies a Merkle Proof in standard JSON format.

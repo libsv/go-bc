@@ -56,14 +56,14 @@ func (e *Envelope) Bytes() ([]byte, error) {
 		},
 	}
 
-	err := serialiseInputs(initialTx, &flake, true)
+	err := serializeParents(initialTx, &flake, true)
 	if err != nil {
 		fmt.Println(err)
 	}
 	return flake, nil
 }
 
-func serialiseInputs(parents map[string]*Envelope, flake *[]byte, root bool) error {
+func serializeParents(parents map[string]*Envelope, flake *[]byte, root bool) error {
 	for _, input := range parents {
 		currentTx, err := hex.DecodeString(input.RawTx)
 		if err != nil {
@@ -99,7 +99,7 @@ func serialiseInputs(parents map[string]*Envelope, flake *[]byte, root bool) err
 			*flake = append(*flake, proofLength...) // of this length.
 			*flake = append(*flake, proof...)       // the data.
 		} else if input.HasParents() {
-			err = serialiseInputs(input.Parents, flake, false)
+			err = serializeParents(input.Parents, flake, false)
 			if err != nil {
 				return err
 			}

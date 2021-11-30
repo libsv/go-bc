@@ -1,6 +1,7 @@
 package spv_test
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -50,6 +51,44 @@ func TestAncestryBinaryToJSON(t *testing.T) {
 				assert.NoError(t, err, "expected no error when transforming to json bytes")
 				fmt.Println(string(jsonBytes))
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestAncestryJSONToBinary(t *testing.T) {
+	tests := map[string]struct {
+		testFile string
+		// setupOpts are passed to the NewVerifier func.
+		setupOpts []spv.VerifyOpt
+		// overrideOpts are passed to the VerifyPayment func to override the global settings.
+		overrideOpts []spv.VerifyOpt
+		exp          bool
+		expErr       error
+		expErrBinary error
+	}{
+		"three txs all using eachothers outputs": {
+			exp:      true,
+			testFile: "3_serial",
+		},
+		"1000 txs all using eachothers outputs": {
+			exp:      true,
+			testFile: "1000_serial",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if test.testFile != "" {
+				ancestry := spv.AncestryJSON{}
+				if test.testFile != "" {
+					jBinary, err := data.SpvSerialJSONData.Load(test.testFile + ".json")
+					assert.NoError(t, err)
+					assert.NoError(t, json.NewDecoder(bytes.NewBuffer(jBinary)).Decode(&ancestry))
+				}
+
+				_, err := ancestry.Bytes()
+				assert.NoError(t, err, "expected no error when converting ancestry to bytes")
 			}
 		})
 	}

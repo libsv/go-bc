@@ -50,8 +50,8 @@ var (
 	// ErrProofOrInputMissing returns if a path from tip to beginning/anchor is broken.
 	ErrProofOrInputMissing = errors.New("break in the ancestry missing either a parent transaction or a proof")
 
-	// ErrTriedToParseZeroBytes returns weh we attempt to parse a slice of bytes of zero length.
-	ErrTriedToParseZeroBytes = errors.New("there are no callback bytes to parse")
+	// ErrTriedToParseZeroBytes returns when we attempt to parse a slice of bytes of zero length which should be a mapi response.
+	ErrTriedToParseZeroBytes = errors.New("there are no mapi response bytes to parse")
 
 	// ErrUnsupporredVersion returns if another version of the binary format is being used - since we cannot guarantee we know how to parse it.
 	ErrUnsupporredVersion = errors.New("we only support version 1 of the Ancestor Binary format")

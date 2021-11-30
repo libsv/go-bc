@@ -17,6 +17,9 @@ var spvCreateData embed.FS
 //go:embed spv/binary/*
 var spvBinaryData embed.FS
 
+//go:embed spv/json/*
+var spvSerialJSONData embed.FS
+
 //go:embed spv/verify/*
 var spvVerifyData embed.FS
 
@@ -33,6 +36,12 @@ var SpvCreateData = TestDataDir{
 var SpvBinaryData = TestDataDir{
 	prefix: "spv/binary",
 	fs:     spvBinaryData,
+}
+
+// SpvSerialJSONData data for creating spv envelopes.
+var SpvSerialJSONData = TestDataDir{
+	prefix: "spv/json",
+	fs:     spvSerialJSONData,
 }
 
 // SpvVerifyData data for verifying spv envelopes.
