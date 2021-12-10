@@ -293,21 +293,21 @@ func TestVerifyAncestryBinary(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			if test.testFile != "" {
-				testData := struct {
-					paymentTx string `json:"paymentTx"`
-					ancestry  string `json:"ancestry"`
+				testDataJSON := struct {
+					PaymentTx string `json:"paymentTx"`
+					Ancestry  string `json:"ancestors"`
 				}{}
-				bb, err := data.SpvVerifyData.Load(test.testFile + ".json")
+				bb, err := data.SpvBinaryData.Load(test.testFile + ".json")
 				assert.NoError(t, err)
-				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&testData))
+				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&testDataJSON))
 
 				v, err := spv.NewPaymentVerifier(mch, test.setupOpts...)
 				assert.NoError(t, err, "expected no error when creating spv client")
 
-				paymentBytes, err := hex.DecodeString(string(testData.paymentTx))
+				paymentBytes, err := hex.DecodeString(string(testDataJSON.PaymentTx))
 				assert.NoError(t, err, "expected no error when creating binary from payemnt hex")
 
-				ancestryBytes, err := hex.DecodeString(string(testData.ancestry))
+				ancestryBytes, err := hex.DecodeString(string(testDataJSON.Ancestry))
 				assert.NoError(t, err, "expected no error when creating binary from ancestry hex")
 
 				opts := append(test.setupOpts, test.overrideOpts...)
