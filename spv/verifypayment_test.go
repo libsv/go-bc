@@ -304,10 +304,10 @@ func TestVerifyAncestryBinary(t *testing.T) {
 				v, err := spv.NewPaymentVerifier(mch, test.setupOpts...)
 				assert.NoError(t, err, "expected no error when creating spv client")
 
-				paymentBytes, err := hex.DecodeString(string(testDataJSON.PaymentTx))
+				paymentBytes, err := hex.DecodeString(testDataJSON.PaymentTx)
 				assert.NoError(t, err, "expected no error when creating binary from payemnt hex")
 
-				ancestryBytes, err := hex.DecodeString(string(testDataJSON.Ancestry))
+				ancestryBytes, err := hex.DecodeString(testDataJSON.Ancestry)
 				assert.NoError(t, err, "expected no error when creating binary from ancestry hex")
 
 				opts := append(test.setupOpts, test.overrideOpts...)
