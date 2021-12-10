@@ -130,7 +130,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			exp:          false,
 			testFile:     "invalid_confirmed_root",
 			expErr:       spv.ErrTipTxConfirmed,
-			expErrBinary: spv.ErrTipTxConfirmed,
+			expErrBinary: spv.ErrCannotCalculateFeePaid,
 		},
 		"nil initial payment errors": {
 			exp:          false,
@@ -239,21 +239,21 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				assert.Nil(t, tx)
 			}
 
-			binary, err := testData.Envelope.Bytes()
+			ancestryBytes, err := testData.Envelope.Bytes()
 			assert.NoError(t, err, "expected no error when creating binary from json")
 
-			mpv, err := spv.NewMerkleProofVerifier(mch)
-			assert.NoError(t, err, "expected no error when creating binary from json")
+			paymentBytes, err := hex.DecodeString(testData.Envelope.RawTx)
+			assert.NoError(t, err, "decoding hex rawtx failed")
 
 			opts := append(test.setupOpts, test.overrideOpts...)
-			valid, err := spv.VerifyAncestryBinary(binary, mpv, opts...)
+			tx, err = v.VerifyPaymentWithAncestry(context.Background(), paymentBytes, ancestryBytes, opts...)
 			if test.expErrBinary != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, errors.Cause(err), test.expErrBinary.Error())
-				assert.False(t, valid)
+				assert.Nil(t, tx)
 			} else {
 				assert.NoError(t, err)
-				assert.True(t, valid)
+				assert.NotNil(t, tx)
 			}
 		})
 	}
@@ -293,25 +293,32 @@ func TestVerifyAncestryBinary(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			if test.testFile != "" {
-				hexBinary, err := data.SpvBinaryData.Load(test.testFile + ".hex")
+				testData := struct {
+					paymentTx string `json:"paymentTx"`
+					ancestry  string `json:"ancestry"`
+				}{}
+				bb, err := data.SpvVerifyData.Load(test.testFile + ".json")
 				assert.NoError(t, err)
+				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&testData))
 
-				hexString := string(hexBinary)
-				binary, err := hex.DecodeString(hexString)
-				assert.NoError(t, err, "expected no error when creating binary from hex")
+				v, err := spv.NewPaymentVerifier(mch, test.setupOpts...)
+				assert.NoError(t, err, "expected no error when creating spv client")
 
-				mpv, err := spv.NewMerkleProofVerifier(mch)
-				assert.NoError(t, err, "expected no error when creating merkleproof validator")
+				paymentBytes, err := hex.DecodeString(string(testData.paymentTx))
+				assert.NoError(t, err, "expected no error when creating binary from payemnt hex")
+
+				ancestryBytes, err := hex.DecodeString(string(testData.ancestry))
+				assert.NoError(t, err, "expected no error when creating binary from ancestry hex")
 
 				opts := append(test.setupOpts, test.overrideOpts...)
-				valid, err := spv.VerifyAncestryBinary(binary, mpv, opts...)
+				tx, err := v.VerifyPaymentWithAncestry(context.Background(), paymentBytes, ancestryBytes, opts...)
 				if test.expErr != nil {
 					assert.Error(t, err)
 					assert.EqualError(t, errors.Cause(err), test.expErr.Error())
-					assert.False(t, valid)
+					assert.Nil(t, tx)
 				} else {
 					assert.NoError(t, err)
-					assert.True(t, valid)
+					assert.NotNil(t, tx)
 				}
 			}
 		})

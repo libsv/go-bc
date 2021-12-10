@@ -116,6 +116,7 @@ func VerifySPV() VerifyOpt {
 // you are using, some may return a HeaderJSON response others may return the blockhash.
 type PaymentVerifier interface {
 	VerifyPayment(context.Context, *Envelope, ...VerifyOpt) (*bt.Tx, error)
+	VerifyPaymentWithAncestry(context.Context, []byte, []byte, ...VerifyOpt) (*bt.Tx, error)
 	MerkleProofVerifier
 }
 

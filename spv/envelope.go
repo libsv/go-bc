@@ -2,7 +2,6 @@ package spv
 
 import (
 	"encoding/hex"
-	"fmt"
 
 	"github.com/libsv/go-bt/v2"
 	"github.com/pkg/errors"
@@ -42,37 +41,22 @@ func (e *Envelope) ParentTx(txID string) (*bt.Tx, error) {
 // Bytes takes an spvEnvelope struct and returns the serialised binary format.
 func (e *Envelope) Bytes() ([]byte, error) {
 	flake := make([]byte, 0)
-
-	// Binary format version 1
-	flake = append(flake, 1)
-
-	initialTx := map[string]*Envelope{
-		e.TxID: {
-			TxID:          e.TxID,
-			RawTx:         e.RawTx,
-			Proof:         e.Proof,
-			MapiResponses: e.MapiResponses,
-			Parents:       e.Parents,
-		},
-	}
-
-	err := serializeParents(initialTx, &flake, true)
+	flake = append(flake, 1) // Binary format version 1
+	err := serialiseInputs(e.Parents, &flake)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 	return flake, nil
 }
 
-func serializeParents(parents map[string]*Envelope, flake *[]byte, root bool) error {
+func serialiseInputs(parents map[string]*Envelope, flake *[]byte) error {
 	for _, input := range parents {
 		currentTx, err := hex.DecodeString(input.RawTx)
 		if err != nil {
-			fmt.Print(err)
+			return err
 		}
 		dataLength := bt.VarInt(uint64(len(currentTx)))
-		if !root {
-			*flake = append(*flake, flagTx) // first data will always be a rawTx.
-		}
+		*flake = append(*flake, flagTx)        // first data will always be a rawTx.
 		*flake = append(*flake, dataLength...) // of this length.
 		*flake = append(*flake, currentTx...)  // the data.
 		if input.MapiResponses != nil && len(input.MapiResponses) > 0 {
@@ -99,7 +83,7 @@ func serializeParents(parents map[string]*Envelope, flake *[]byte, root bool) er
 			*flake = append(*flake, proofLength...) // of this length.
 			*flake = append(*flake, proof...)       // the data.
 		} else if input.HasParents() {
-			err = serializeParents(input.Parents, flake, false)
+			err = serialiseInputs(input.Parents, flake)
 			if err != nil {
 				return err
 			}
