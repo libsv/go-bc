@@ -141,7 +141,7 @@ func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
 
 // VerifyAncestors will run through the map of Ancestors and check each input of each transaction to verify it.
 // Only if there is no Proof attached.
-func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOptions) error {
+func VerifyAncestors(ctx context.Context, ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOptions) error {
 	ancestors := ancestry.Ancestors
 	var paymentTxID [32]byte
 	copy(paymentTxID[:], ancestry.PaymentTx.TxIDBytes())
@@ -172,7 +172,7 @@ func VerifyAncestors(ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOp
 				}
 			} else {
 				// check proof.
-				response, err := mpv.VerifyMerkleProof(context.Background(), ancestor.Proof)
+				response, err := mpv.VerifyMerkleProof(ctx, ancestor.Proof)
 				if response == nil {
 					return ErrInvalidProof
 				}

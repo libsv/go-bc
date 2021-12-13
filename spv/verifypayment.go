@@ -198,7 +198,7 @@ func (v *verifier) VerifyPaymentWithAncestry(ctx context.Context, pTx []byte, an
 		return nil, err
 	}
 	ancestry.PaymentTx = paymentTx
-	err = VerifyAncestors(ancestry, v, o)
+	err = VerifyAncestors(ctx, ancestry, v, o)
 	if err != nil {
 		return nil, err
 	}
