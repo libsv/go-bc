@@ -73,20 +73,20 @@ func serializeParents(parents map[string]*Envelope, flake *[]byte, root bool) er
 		if !root {
 			*flake = append(*flake, flagTx) // first data will always be a rawTx.
 		}
-		*flake = append(*flake, dataLength...) // of this length.
-		*flake = append(*flake, currentTx...)  // the data.
+		*flake = append(*flake, dataLength.Bytes()...) // of this length.
+		*flake = append(*flake, currentTx...)          // the data.
 		if input.MapiResponses != nil && len(input.MapiResponses) > 0 {
 			*flake = append(*flake, flagMapi) // next data will be a mapi response.
 			numMapis := bt.VarInt(uint64(len(input.MapiResponses)))
-			*flake = append(*flake, numMapis...) // number of mapi reponses which follow
+			*flake = append(*flake, numMapis.Bytes()...) // number of mapi reponses which follow
 			for _, mapiResponse := range input.MapiResponses {
 				mapiR, err := mapiResponse.Bytes()
 				if err != nil {
 					return err
 				}
 				dataLength := bt.VarInt(uint64(len(mapiR)))
-				*flake = append(*flake, dataLength...) // of this length.
-				*flake = append(*flake, mapiR...)      // the data.
+				*flake = append(*flake, dataLength.Bytes()...) // of this length.
+				*flake = append(*flake, mapiR...)              // the data.
 			}
 		}
 		if input.Proof != nil {
@@ -95,9 +95,9 @@ func serializeParents(parents map[string]*Envelope, flake *[]byte, root bool) er
 				return errors.Wrap(err, "Failed to serialise this input's proof struct")
 			}
 			proofLength := bt.VarInt(uint64(len(proof)))
-			*flake = append(*flake, flagProof)      // it's going to be a proof.
-			*flake = append(*flake, proofLength...) // of this length.
-			*flake = append(*flake, proof...)       // the data.
+			*flake = append(*flake, flagProof)              // it's going to be a proof.
+			*flake = append(*flake, proofLength.Bytes()...) // of this length.
+			*flake = append(*flake, proof...)               // the data.
 		} else if input.HasParents() {
 			err = serializeParents(input.Parents, flake, false)
 			if err != nil {

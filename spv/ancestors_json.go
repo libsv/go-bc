@@ -70,7 +70,7 @@ func (j *AncestryJSON) Bytes() ([]byte, error) {
 		return nil, err
 	}
 	length := bt.VarInt(uint64(len(paymentTx)))
-	binaryTxContext = append(binaryTxContext, length...)
+	binaryTxContext = append(binaryTxContext, length.Bytes()...)
 	binaryTxContext = append(binaryTxContext, paymentTx...)
 
 	// follow with the list of ancestors, including their proof or mapi responses if present.
@@ -81,7 +81,7 @@ func (j *AncestryJSON) Bytes() ([]byte, error) {
 		}
 		length := bt.VarInt(uint64(len(rawTx)))
 		binaryTxContext = append(binaryTxContext, flagTx)
-		binaryTxContext = append(binaryTxContext, length...)
+		binaryTxContext = append(binaryTxContext, length.Bytes()...)
 		binaryTxContext = append(binaryTxContext, rawTx...)
 		if ancestor.Proof != nil {
 			rawProof, err := ancestor.Proof.Bytes()
@@ -90,20 +90,20 @@ func (j *AncestryJSON) Bytes() ([]byte, error) {
 			}
 			length := bt.VarInt(uint64(len(rawProof)))
 			binaryTxContext = append(binaryTxContext, flagProof)
-			binaryTxContext = append(binaryTxContext, length...)
+			binaryTxContext = append(binaryTxContext, length.Bytes()...)
 			binaryTxContext = append(binaryTxContext, rawProof...)
 		}
 		if ancestor.MapiResponses != nil && len(ancestor.MapiResponses) > 0 {
 			binaryTxContext = append(binaryTxContext, flagMapi)
 			numOfMapiResponses := bt.VarInt(uint64(len(ancestor.MapiResponses)))
-			binaryTxContext = append(binaryTxContext, numOfMapiResponses...)
+			binaryTxContext = append(binaryTxContext, numOfMapiResponses.Bytes()...)
 			for _, mapiResponse := range ancestor.MapiResponses {
 				mapiR, err := mapiResponse.Bytes()
 				if err != nil {
 					return nil, err
 				}
 				dataLength := bt.VarInt(uint64(len(mapiR)))
-				binaryTxContext = append(binaryTxContext, dataLength...)
+				binaryTxContext = append(binaryTxContext, dataLength.Bytes()...)
 				binaryTxContext = append(binaryTxContext, mapiR...)
 			}
 		}

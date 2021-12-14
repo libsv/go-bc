@@ -71,7 +71,7 @@ func (mp *MerkleProof) Bytes() ([]byte, error) {
 		// set bit at index 0
 		flags |= 1 << 0
 
-		txLength = bt.VarInt(uint64(len(txOrID)))
+		txLength = bt.VarInt(uint64(len(txOrID))).Bytes()
 	}
 
 	if mp.TargetType == "header" {
@@ -86,7 +86,7 @@ func (mp *MerkleProof) Bytes() ([]byte, error) {
 
 	bytes := []byte{}
 	bytes = append(bytes, flags)
-	bytes = append(bytes, index...)
+	bytes = append(bytes, index.Bytes()...)
 	bytes = append(bytes, txLength...)
 	bytes = append(bytes, txOrID...)
 	bytes = append(bytes, target...)

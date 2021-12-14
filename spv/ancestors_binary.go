@@ -45,9 +45,9 @@ func NewAncestryFromBytes(b []byte) (*Ancestry, error) {
 	offset := uint64(1)
 	total := uint64(len(b))
 
-	l, size := bt.DecodeVarInt(b[offset:])
+	l, size := bt.NewVarIntFromBytes(b[offset:])
 	offset += uint64(size)
-	paymentTx, err := bt.NewTxFromBytes(b[offset : offset+l])
+	paymentTx, err := bt.NewTxFromBytes(b[offset : offset+uint64(l)])
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func NewAncestryFromBytes(b []byte) (*Ancestry, error) {
 		PaymentTx: paymentTx,
 		Ancestors: make(map[[32]byte]*Ancestor),
 	}
-	offset += l
+	offset += uint64(l)
 
 	var TxID [32]byte
 
@@ -104,13 +104,13 @@ func parseChunk(b []byte, start uint64) (binaryChunk, uint64) {
 	offset := start
 	typeOfNextData := b[offset]
 	offset++
-	l, size := bt.DecodeVarInt(b[offset:])
+	l, size := bt.NewVarIntFromBytes(b[offset:])
 	offset += uint64(size)
 	chunk := binaryChunk{
 		ContentType: typeOfNextData,
-		Data:        b[offset : offset+l],
+		Data:        b[offset : offset+uint64(l)],
 	}
-	offset += l
+	offset += uint64(l)
 	return chunk, offset - start
 }
 
@@ -128,10 +128,10 @@ func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
 
 	var responses = [][]byte{}
 	for allBinary > internalOffset {
-		l, size := bt.DecodeVarInt(b[internalOffset:])
+		l, size := bt.NewVarIntFromBytes(b[internalOffset:])
 		internalOffset += uint64(size)
-		response := b[internalOffset : internalOffset+l]
-		internalOffset += l
+		response := b[internalOffset : internalOffset+uint64(l)]
+		internalOffset += uint64(l)
 		responses = append(responses, response)
 	}
 
