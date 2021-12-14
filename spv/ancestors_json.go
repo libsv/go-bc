@@ -9,8 +9,6 @@ import (
 
 // AncestryJSON is a spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/ eventually.
 type AncestryJSON struct {
-	PaymentTx string         `json:"paymentTx,omitempty"`
-	Depth     uint64         `json:"depth,omitempty"`
 	Ancestors []AncestorJSON `json:"ancestors,omitempty"`
 }
 
@@ -50,8 +48,6 @@ func NewAncestoryJSONFromBytes(b []byte) (*AncestryJSON, error) {
 		ancestors = append(ancestors, a)
 	}
 	j := &AncestryJSON{
-		PaymentTx: ancestry.PaymentTx.String(),
-		Depth:     0,
 		Ancestors: ancestors,
 	}
 	return j, nil
@@ -63,15 +59,6 @@ func (j *AncestryJSON) Bytes() ([]byte, error) {
 
 	// Binary format version 1.
 	binaryTxContext = append(binaryTxContext, 1)
-
-	// first tx is the payment.
-	paymentTx, err := hex.DecodeString(j.PaymentTx)
-	if err != nil {
-		return nil, err
-	}
-	length := bt.VarInt(uint64(len(paymentTx)))
-	binaryTxContext = append(binaryTxContext, length.Bytes()...)
-	binaryTxContext = append(binaryTxContext, paymentTx...)
 
 	// follow with the list of ancestors, including their proof or mapi responses if present.
 	for _, ancestor := range j.Ancestors {
