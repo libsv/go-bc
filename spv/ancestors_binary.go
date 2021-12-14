@@ -3,7 +3,6 @@ package spv
 import (
 	"context"
 
-	"github.com/libsv/go-bk/crypto"
 	"github.com/libsv/go-bt/v2"
 	"github.com/libsv/go-bt/v2/bscript"
 
