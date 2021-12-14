@@ -41,20 +41,14 @@ type extendedInput struct {
 
 // NewAncestryFromBytes creates a new struct from the bytes of a txContext.
 func NewAncestryFromBytes(b []byte) (*Ancestry, error) {
+	if b[0] != 1 { // the first byte is the version number.
+		return nil, ErrUnsupporredVersion
+	}
 	offset := uint64(1)
 	total := uint64(len(b))
-
-	l, size := bt.NewVarIntFromBytes(b[offset:])
-	offset += uint64(size)
-	paymentTx, err := bt.NewTxFromBytes(b[offset : offset+uint64(l)])
-	if err != nil {
-		return nil, err
-	}
 	ancestry := &Ancestry{
-		PaymentTx: paymentTx,
 		Ancestors: make(map[[32]byte]*Ancestor),
 	}
-	offset += uint64(l)
 
 	var TxID [32]byte
 
@@ -62,7 +56,7 @@ func NewAncestryFromBytes(b []byte) (*Ancestry, error) {
 		return nil, ErrCannotCalculateFeePaid
 	}
 
-	// You're not allowed to just have payment tx with a proof.
+	// first Data must be a Tx
 	if b[offset] != 1 {
 		return nil, ErrTipTxConfirmed
 	}
@@ -143,30 +137,6 @@ func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
 		mapiResponses = append(mapiResponses, mapiResponse)
 	}
 	return mapiResponses, nil
-}
-
-// VerifyAncestryBinary will verify a slice of bytes which is a binary spv envelope.
-func VerifyAncestryBinary(binaryData []byte, mpv MerkleProofVerifier, opts ...VerifyOpt) (bool, error) {
-	o := &verifyOptions{
-		proofs: true,
-		script: true,
-		fees:   false,
-	}
-	for _, opt := range opts {
-		opt(o)
-	}
-	if binaryData[0] != 1 { // the first byte is the version number.
-		return false, ErrUnsupporredVersion
-	}
-	ancestry, err := NewAncestryFromBytes(binaryData)
-	if err != nil {
-		return false, err
-	}
-	err = VerifyAncestors(ancestry, mpv, o)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
 }
 
 // VerifyAncestors will run through the map of Ancestors and check each input of each transaction to verify it.
