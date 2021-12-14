@@ -251,17 +251,18 @@ type merkleProofBinary struct {
 func parseBinaryMerkleProof(proof []byte) (*merkleProofBinary, error) {
 	mpb := &merkleProofBinary{}
 
-	var offset, size int
+	var offset int
 
 	// flags is first byte
 	mpb.flags = proof[offset]
 	offset++
 
 	// index is the next varint after the 1st byte
-	mpb.index, size = bt.DecodeVarInt(proof[offset:])
+	index, size := bt.NewVarIntFromBytes(proof[offset:])
+	mpb.index = uint64(index)
 	offset += size
 
-	var txLength uint64
+	var txLength bt.VarInt
 	// if bit 1 of flags is NOT set, txOrId should contain txid (= 32 bytes)
 	if mpb.flags&1 == 0 {
 		txLength = 32
@@ -270,7 +271,7 @@ func parseBinaryMerkleProof(proof []byte) (*merkleProofBinary, error) {
 	// if bit 1 of flags is set, txOrId should contain tx hex (> 32 bytes)
 	if mpb.flags&1 == 1 {
 		// txLength is the next varint after the 1st byte + index size
-		txLength, size = bt.DecodeVarInt(proof[offset:])
+		txLength, size = bt.NewVarIntFromBytes(proof[offset:])
 		offset += size
 		if txLength <= 32 {
 			return nil, errors.New("invalid tx length (should be greater than 32 bytes)")
@@ -297,7 +298,7 @@ func parseBinaryMerkleProof(proof []byte) (*merkleProofBinary, error) {
 		return nil, ErrInvalidMerkleFlags
 	}
 
-	nodeCount, size := bt.DecodeVarInt(proof[offset:])
+	nodeCount, size := bt.NewVarIntFromBytes(proof[offset:])
 	offset += size
 
 	if mpb.index >= 1<<nodeCount {

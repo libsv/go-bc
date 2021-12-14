@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,10 +46,8 @@ func TestAncestryBinaryToJSON(t *testing.T) {
 				j, err := spv.NewAncestoryJSONFromBytes(binary)
 				assert.NoError(t, err, "expected no error when transforming to json struct")
 
-				jsonBytes, err := json.Marshal(j)
+				_, err = json.Marshal(j)
 				assert.NoError(t, err, "expected no error when transforming to json bytes")
-				fmt.Println(string(jsonBytes))
-				assert.NoError(t, err)
 			}
 		})
 	}
