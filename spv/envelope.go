@@ -57,20 +57,22 @@ func serialiseInputs(parents map[string]*Envelope) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		binary = append(binary, flagTx)       // first data will always be a rawTx.
-		binary = append(binary, currentTx...) // the data.
+		dataLength := bt.VarInt(uint64(len(currentTx)))
+		binary = append(binary, flagTx)                // first data will always be a rawTx.
+		binary = append(binary, dataLength.Bytes()...) // of this length.
+		binary = append(binary, currentTx...)          // the data.
 		if input.MapiResponses != nil && len(input.MapiResponses) > 0 {
 			binary = append(binary, flagMapi) // next data will be a mapi response.
 			numMapis := bt.VarInt(uint64(len(input.MapiResponses)))
-binary = append(binary, numMapis.Bytes()...) // number of mapi reponses which follow
+			binary = append(binary, numMapis.Bytes()...) // number of mapi reponses which follow
 			for _, mapiResponse := range input.MapiResponses {
 				mapiR, err := mapiResponse.Bytes()
 				if err != nil {
 					return nil, err
 				}
 				dataLength := bt.VarInt(uint64(len(mapiR)))
-binary = append(binary, dataLength.Bytes()...) // of this length.
-				binary = append(binary, mapiR...)      // the data.
+				binary = append(binary, dataLength.Bytes()...) // of this length.
+				binary = append(binary, mapiR...)              // the data.
 			}
 		}
 		if input.Proof != nil {
@@ -79,9 +81,9 @@ binary = append(binary, dataLength.Bytes()...) // of this length.
 				return nil, errors.Wrap(err, "Failed to serialise this input's proof struct")
 			}
 			proofLength := bt.VarInt(uint64(len(proof)))
-			binary = append(binary, flagProof)      // it's going to be a proof.
-binary = append(binary, proofLength.Bytes()...) // of this length.
-			binary = append(binary, proof...)       // the data.
+			binary = append(binary, flagProof)              // it's going to be a proof.
+			binary = append(binary, proofLength.Bytes()...) // of this length.
+			binary = append(binary, proof...)               // the data.
 		} else if input.HasParents() {
 			parentsBinary, err := serialiseInputs(input.Parents)
 			if err != nil {
