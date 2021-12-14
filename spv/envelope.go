@@ -40,54 +40,55 @@ func (e *Envelope) ParentTx(txID string) (*bt.Tx, error) {
 
 // Bytes takes an spvEnvelope struct and returns the serialised binary format.
 func (e *Envelope) Bytes() ([]byte, error) {
-	flake := make([]byte, 0)
-	flake = append(flake, 1) // Binary format version 1
-	err := serialiseInputs(e.Parents, &flake)
+	ancestryBinary := make([]byte, 0)
+	ancestryBinary = append(ancestryBinary, 1) // Binary format version 1
+	binary, err := serialiseInputs(e.Parents)
 	if err != nil {
 		return nil, err
 	}
-	return flake, nil
+	ancestryBinary = append(ancestryBinary, binary...)
+	return ancestryBinary, nil
 }
 
-func serialiseInputs(parents map[string]*Envelope, flake *[]byte) error {
+func serialiseInputs(parents map[string]*Envelope) ([]byte, error) {
+	binary := make([]byte, 0)
 	for _, input := range parents {
 		currentTx, err := hex.DecodeString(input.RawTx)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		dataLength := bt.VarInt(uint64(len(currentTx)))
-        *flake = append(*flake, flagTx) // first data will always be a rawTx.
-		*flake = append(*flake, dataLength.Bytes()...) // of this length.
-		*flake = append(*flake, currentTx...)          // the data.
+		binary = append(binary, flagTx)       // first data will always be a rawTx.
+		binary = append(binary, currentTx...) // the data.
 		if input.MapiResponses != nil && len(input.MapiResponses) > 0 {
-			*flake = append(*flake, flagMapi) // next data will be a mapi response.
+			binary = append(binary, flagMapi) // next data will be a mapi response.
 			numMapis := bt.VarInt(uint64(len(input.MapiResponses)))
-			*flake = append(*flake, numMapis.Bytes()...) // number of mapi reponses which follow
+binary = append(binary, numMapis.Bytes()...) // number of mapi reponses which follow
 			for _, mapiResponse := range input.MapiResponses {
 				mapiR, err := mapiResponse.Bytes()
 				if err != nil {
-					return err
+					return nil, err
 				}
 				dataLength := bt.VarInt(uint64(len(mapiR)))
-				*flake = append(*flake, dataLength.Bytes()...) // of this length.
-				*flake = append(*flake, mapiR...)              // the data.
+binary = append(binary, dataLength.Bytes()...) // of this length.
+				binary = append(binary, mapiR...)      // the data.
 			}
 		}
 		if input.Proof != nil {
 			proof, err := input.Proof.Bytes()
 			if err != nil {
-				return errors.Wrap(err, "Failed to serialise this input's proof struct")
+				return nil, errors.Wrap(err, "Failed to serialise this input's proof struct")
 			}
 			proofLength := bt.VarInt(uint64(len(proof)))
-			*flake = append(*flake, flagProof)              // it's going to be a proof.
-			*flake = append(*flake, proofLength.Bytes()...) // of this length.
-			*flake = append(*flake, proof...)               // the data.
+			binary = append(binary, flagProof)      // it's going to be a proof.
+binary = append(binary, proofLength.Bytes()...) // of this length.
+			binary = append(binary, proof...)       // the data.
 		} else if input.HasParents() {
-			err = serialiseInputs(input.Parents, flake)
+			parentsBinary, err := serialiseInputs(input.Parents)
 			if err != nil {
-				return err
+				return nil, err
 			}
+			binary = append(binary, parentsBinary...)
 		}
 	}
-	return nil
+	return binary, nil
 }

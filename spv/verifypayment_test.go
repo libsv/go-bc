@@ -226,19 +226,6 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			v, err := spv.NewPaymentVerifier(mch, test.setupOpts...)
 			assert.NoError(t, err, "expected no error when creating spv client")
 
-			tx, err := v.VerifyPayment(context.Background(), testData.Envelope, test.overrideOpts...)
-			if test.expErr != nil {
-				assert.Error(t, err)
-				assert.EqualError(t, errors.Cause(err), test.expErr.Error())
-			} else {
-				assert.NoError(t, err)
-			}
-			if test.exp {
-				assert.NotNil(t, tx)
-			} else {
-				assert.Nil(t, tx)
-			}
-
 			ancestryBytes, err := testData.Envelope.Bytes()
 			assert.NoError(t, err, "expected no error when creating binary from json")
 
@@ -246,7 +233,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			assert.NoError(t, err, "decoding hex rawtx failed")
 
 			opts := append(test.setupOpts, test.overrideOpts...)
-			tx, err = v.VerifyPaymentWithAncestry(context.Background(), paymentBytes, ancestryBytes, opts...)
+			tx, err := v.VerifyPaymentWithAncestry(context.Background(), paymentBytes, ancestryBytes, opts...)
 			if test.expErrBinary != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, errors.Cause(err), test.expErrBinary.Error())

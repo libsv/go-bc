@@ -7,10 +7,8 @@ import (
 	"github.com/libsv/go-bt/v2"
 )
 
-// AncestryJSON is a spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/ eventually.
-type AncestryJSON struct {
-	Ancestors []AncestorJSON `json:"ancestors,omitempty"`
-}
+// AncestorsJSON spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/ eventually.
+type AncestorsJSON []AncestorJSON
 
 // AncestorJSON is one of the serial objects within the overall list of ancestors.
 type AncestorJSON struct {
@@ -20,7 +18,7 @@ type AncestorJSON struct {
 }
 
 // NewAncestoryJSONFromBytes is a way to create the JSON format for Ancestry from the binary format.
-func NewAncestoryJSONFromBytes(b []byte) (*AncestryJSON, error) {
+func NewAncestoryJSONFromBytes(b []byte) (AncestorsJSON, error) {
 	ancestry, err := NewAncestryFromBytes(b)
 	if err != nil {
 		return nil, err
@@ -47,21 +45,18 @@ func NewAncestoryJSONFromBytes(b []byte) (*AncestryJSON, error) {
 		}
 		ancestors = append(ancestors, a)
 	}
-	j := &AncestryJSON{
-		Ancestors: ancestors,
-	}
-	return j, nil
+	return ancestors, nil
 }
 
-// Bytes takes an AncestryJSON and returns the serialised bytes.
-func (j *AncestryJSON) Bytes() ([]byte, error) {
+// Bytes takes an AncestorsJSON and returns the serialised bytes.
+func (a AncestorsJSON) Bytes() ([]byte, error) {
 	binaryTxContext := make([]byte, 0)
 
 	// Binary format version 1.
 	binaryTxContext = append(binaryTxContext, 1)
 
 	// follow with the list of ancestors, including their proof or mapi responses if present.
-	for _, ancestor := range j.Ancestors {
+	for _, ancestor := range a {
 		rawTx, err := hex.DecodeString(ancestor.RawTx)
 		if err != nil {
 			return nil, err
