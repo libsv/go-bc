@@ -84,17 +84,14 @@ func TestAncestryJSONToBinary(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			if test.testFile != "" {
-				testFile := &struct {
-					PaymentTx string
-					Ancestors spv.AncestorsJSON `json:"ancestors"`
-				}{}
+				testFile := &spv.AncestorsJSON{}
 				if test.testFile != "" {
 					jBinary, err := data.SpvSerialJSONData.Load(test.testFile + ".json")
 					assert.NoError(t, err)
 					assert.NoError(t, json.NewDecoder(bytes.NewBuffer(jBinary)).Decode(&testFile))
 				}
 
-				_, err := testFile.Ancestors.Bytes()
+				_, err := testFile.Bytes()
 				assert.NoError(t, err, "expected no error when converting ancestry to bytes")
 			}
 		})

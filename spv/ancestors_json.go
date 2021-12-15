@@ -8,17 +8,19 @@ import (
 )
 
 // AncestorsJSON spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/ eventually.
-type AncestorsJSON []AncestorJSON
+type AncestorsJSON struct {
+	Ancestors []AncestorJSON `json:"ancestors"`
+}
 
 // AncestorJSON is one of the serial objects within the overall list of ancestors.
 type AncestorJSON struct {
-	RawTx         string             `json:"hex,omitempty"`
+	RawTx         string             `json:"rawtx,omitempty"`
 	Proof         *bc.MerkleProof    `json:"proof,omitempty"`
 	MapiResponses []*bc.MapiCallback `json:"mapiResponses,omitempty"`
 }
 
 // NewAncestoryJSONFromBytes is a way to create the JSON format for Ancestry from the binary format.
-func NewAncestoryJSONFromBytes(b []byte) (AncestorsJSON, error) {
+func NewAncestoryJSONFromBytes(b []byte) (*AncestorsJSON, error) {
 	ancestry, err := NewAncestryFromBytes(b)
 	if err != nil {
 		return nil, err
@@ -45,18 +47,20 @@ func NewAncestoryJSONFromBytes(b []byte) (AncestorsJSON, error) {
 		}
 		ancestors = append(ancestors, a)
 	}
-	return ancestors, nil
+	return &AncestorsJSON{
+		Ancestors: ancestors,
+	}, nil
 }
 
 // Bytes takes an AncestorsJSON and returns the serialised bytes.
-func (a AncestorsJSON) Bytes() ([]byte, error) {
+func (j AncestorsJSON) Bytes() ([]byte, error) {
 	binaryTxContext := make([]byte, 0)
 
 	// Binary format version 1.
 	binaryTxContext = append(binaryTxContext, 1)
 
 	// follow with the list of ancestors, including their proof or mapi responses if present.
-	for _, ancestor := range a {
+	for _, ancestor := range j.Ancestors {
 		rawTx, err := hex.DecodeString(ancestor.RawTx)
 		if err != nil {
 			return nil, err
