@@ -12,6 +12,11 @@ import (
 	"github.com/libsv/go-bc/testing/data"
 )
 
+type TestData struct {
+	PaymentTx string `json:"paymentTx,omitempty"`
+	Ancestors string `json:"ancestors,omitempty"`
+}
+
 func TestAncestryBinaryToJSON(t *testing.T) {
 	tests := map[string]struct {
 		testFile string
@@ -36,11 +41,12 @@ func TestAncestryBinaryToJSON(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			if test.testFile != "" {
-				hexBinary, err := data.SpvBinaryData.Load(test.testFile + ".hex")
+				testData := &TestData{}
+				jBinary, err := data.SpvBinaryData.Load(test.testFile + ".json")
 				assert.NoError(t, err)
+				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(jBinary)).Decode(&testData))
 
-				hexString := string(hexBinary)
-				binary, err := hex.DecodeString(hexString)
+				binary, err := hex.DecodeString(testData.Ancestors)
 				assert.NoError(t, err, "expected no error when creating binary from hex")
 
 				j, err := spv.NewAncestoryJSONFromBytes(binary)
@@ -48,6 +54,7 @@ func TestAncestryBinaryToJSON(t *testing.T) {
 
 				_, err = json.Marshal(j)
 				assert.NoError(t, err, "expected no error when transforming to json bytes")
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -77,14 +84,14 @@ func TestAncestryJSONToBinary(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			if test.testFile != "" {
-				ancestry := spv.AncestryJSON{}
+				testFile := &spv.AncestorsJSON{}
 				if test.testFile != "" {
 					jBinary, err := data.SpvSerialJSONData.Load(test.testFile + ".json")
 					assert.NoError(t, err)
-					assert.NoError(t, json.NewDecoder(bytes.NewBuffer(jBinary)).Decode(&ancestry))
+					assert.NoError(t, json.NewDecoder(bytes.NewBuffer(jBinary)).Decode(&testFile))
 				}
 
-				_, err := ancestry.Bytes()
+				_, err := testFile.Bytes()
 				assert.NoError(t, err, "expected no error when converting ancestry to bytes")
 			}
 		})
