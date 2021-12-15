@@ -17,6 +17,16 @@ type verifyOptions struct {
 	feeQuote *bt.FeeQuote
 }
 
+// clone will copy the verifyOptions to a new struct and return it.
+func (v *verifyOptions) clone() *verifyOptions {
+	return &verifyOptions{
+		proofs:   v.proofs,
+		fees:     v.fees,
+		script:   v.script,
+		feeQuote: v.feeQuote,
+	}
+}
+
 // VerifyOpt defines a functional option that is used to modify behaviour of
 // the payment verifier.
 type VerifyOpt func(opts *verifyOptions)
@@ -101,7 +111,7 @@ func VerifySPV() VerifyOpt {
 // The implementation of bc.BlockHeaderChain which is supplied will depend on the client
 // you are using, some may return a HeaderJSON response others may return the blockhash.
 type PaymentVerifier interface {
-	VerifyPaymentWithAncestry(ctx context.Context, pTx []byte, ancestors []byte, opts ...VerifyOpt) (*bt.Tx, error)
+	VerifyPayment(ctx context.Context, pTx *bt.Tx, ancestors []byte, opts ...VerifyOpt) (*bt.Tx, error)
 	MerkleProofVerifier
 }
 

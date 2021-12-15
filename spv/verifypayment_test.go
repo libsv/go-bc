@@ -233,7 +233,11 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			assert.NoError(t, err, "decoding hex rawtx failed")
 
 			opts := append(test.setupOpts, test.overrideOpts...)
-			tx, err := v.VerifyPaymentWithAncestry(context.Background(), paymentBytes, ancestryBytes, opts...)
+			paymentTx, err := bt.NewTxFromBytes(paymentBytes)
+			if err != nil {
+				assert.NoError(t, err)
+			}
+			tx, err := v.VerifyPayment(context.Background(), paymentTx, ancestryBytes, opts...)
 			if test.expErrBinary != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, errors.Cause(err), test.expErrBinary.Error())
@@ -298,7 +302,11 @@ func TestVerifyAncestryBinary(t *testing.T) {
 				assert.NoError(t, err, "expected no error when creating binary from ancestry hex")
 
 				opts := append(test.setupOpts, test.overrideOpts...)
-				tx, err := v.VerifyPaymentWithAncestry(context.Background(), paymentBytes, ancestryBytes, opts...)
+				paymentTx, err := bt.NewTxFromBytes(paymentBytes)
+				if err != nil {
+					assert.NoError(t, err)
+				}
+				tx, err := v.VerifyPayment(context.Background(), paymentTx, ancestryBytes, opts...)
 				if test.expErr != nil {
 					assert.Error(t, err)
 					assert.EqualError(t, errors.Cause(err), test.expErr.Error())
