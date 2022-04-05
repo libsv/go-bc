@@ -6,6 +6,7 @@ import (
 	"github.com/libsv/go-bk/crypto"
 	"github.com/libsv/go-bt/v2"
 	"github.com/libsv/go-bt/v2/bscript"
+	"github.com/pkg/errors"
 
 	"github.com/libsv/go-bc"
 )
@@ -152,6 +153,21 @@ func VerifyAncestors(ctx context.Context, ancestry *Ancestry, mpv MerkleProofVer
 	if opts.fees {
 		if opts.feeQuote == nil {
 			return ErrNoFeeQuoteSupplied
+		}
+		for i, input := range ancestry.PaymentTx.Inputs {
+			var inputID [32]byte
+			copy(inputID[:], input.PreviousTxID())
+			parent, ok := ancestry.Ancestors[inputID]
+			if !ok {
+				return errors.Wrapf(ErrNoFeeQuoteSupplied, "missing tx for input %d", i)
+			}
+
+			out := parent.Tx.OutputIdx(int(input.PreviousTxOutIndex))
+			if out == nil {
+				return ErrMissingOutput
+			}
+
+			input.PreviousTxSatoshis = out.Satoshis
 		}
 		ok, err := ancestry.PaymentTx.IsFeePaidEnough(opts.feeQuote)
 		if err != nil {
