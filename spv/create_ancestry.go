@@ -9,15 +9,15 @@ import (
 )
 
 // CreateTxAncestry builds and returns an spv.TxAncestry for the provided tx.
-func (c *creator) CreateTxAncestry(ctx context.Context, tx *bt.Tx) (*TxAncestry, error) {
+func (c *creator) CreateTxAncestry(ctx context.Context, tx *bt.Tx) (*AncestryJSON, error) {
 	if len(tx.Inputs) == 0 {
 		return nil, ErrNoTxInputs
 	}
 
-	ancestry := &TxAncestry{
+	ancestry := &AncestryJSON{
 		TxID:    tx.TxID(),
 		RawTx:   tx.String(),
-		Parents: make(map[string]*TxAncestry),
+		Parents: make(map[string]*AncestryJSON),
 	}
 
 	for _, input := range tx.Inputs {
@@ -46,7 +46,7 @@ func (c *creator) CreateTxAncestry(ctx context.Context, tx *bt.Tx) (*TxAncestry,
 		}
 		// If a Merkle Proof is found, create the ancestry and skip any further recursion
 		if mp != nil {
-			ancestry.Parents[pTxID] = &TxAncestry{
+			ancestry.Parents[pTxID] = &AncestryJSON{
 				RawTx: pTx.String(),
 				TxID:  pTxID,
 				Proof: mp,

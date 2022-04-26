@@ -209,8 +209,8 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			testData := struct {
-				Envelope    *spv.TxAncestry `json:"data"`
-				Description string          `json:"description"`
+				Envelope    *spv.AncestryJSON `json:"data"`
+				Description string            `json:"description"`
 			}{}
 			if test.testFile != "" {
 				bb, err := data.SpvVerifyData.Load(test.testFile + ".json")
@@ -237,14 +237,15 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			if err != nil {
 				assert.NoError(t, err)
 			}
-			tx, err := v.VerifyPayment(context.Background(), paymentTx, ancestryBytes, opts...)
+			err = v.VerifyPayment(context.Background(), &spv.Payment{
+				PaymentTx: paymentTx,
+				Ancestry:  ancestryBytes,
+			}, opts...)
 			if test.expErrBinary != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, errors.Cause(err), test.expErrBinary.Error())
-				assert.Nil(t, tx)
 			} else {
 				assert.NoError(t, err)
-				assert.NotNil(t, tx)
 			}
 		})
 	}
@@ -306,14 +307,15 @@ func TestVerifyAncestryBinary(t *testing.T) {
 				if err != nil {
 					assert.NoError(t, err)
 				}
-				tx, err := v.VerifyPayment(context.Background(), paymentTx, ancestryBytes, opts...)
+				err = v.VerifyPayment(context.Background(), &spv.Payment{
+					PaymentTx: paymentTx,
+					Ancestry:  ancestryBytes,
+				}, opts...)
 				if test.expErr != nil {
 					assert.Error(t, err)
 					assert.EqualError(t, errors.Cause(err), test.expErr.Error())
-					assert.Nil(t, tx)
 				} else {
 					assert.NoError(t, err)
-					assert.NotNil(t, tx)
 				}
 			}
 		})

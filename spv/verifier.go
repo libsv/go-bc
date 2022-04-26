@@ -111,7 +111,7 @@ func VerifySPV() VerifyOpt {
 // The implementation of bc.BlockHeaderChain which is supplied will depend on the client
 // you are using, some may return a HeaderJSON response others may return the blockhash.
 type PaymentVerifier interface {
-	VerifyPayment(ctx context.Context, pTx *bt.Tx, ancestors []byte, opts ...VerifyOpt) (*bt.Tx, error)
+	VerifyPayment(ctx context.Context, p *Payment, opts ...VerifyOpt) error
 	MerkleProofVerifier
 }
 

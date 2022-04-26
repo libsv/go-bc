@@ -3,107 +3,98 @@ package spv
 import (
 	"encoding/hex"
 
-	"github.com/libsv/go-bc"
 	"github.com/libsv/go-bt/v2"
+	"github.com/pkg/errors"
+
+	"github.com/libsv/go-bc"
 )
 
-// AncestriesJSON spec at https://tsc.bitcoinassociation.net/standards/transaction-ancestors/ eventually.
-type AncestriesJSON []AncestryJSON
-
-// AncestryJSON is one of the serial objects within the overall list of ancestors.
+// AncestryJSON is a struct which contains all information needed for a transaction to be verified.
+// this contains all ancestors for the transaction allowing proofs etc to be verified.
+//
+// NOTE: this is the JSON format of the Ancestry but in a nested format (in comparison) with
+// the flat structure that the TSC uses. This allows verification to become a lot easier and
+// use a recursive function.
 type AncestryJSON struct {
-	RawTx         string             `json:"rawtx,omitempty"`
-	Proof         *bc.MerkleProof    `json:"proof,omitempty"`
-	MapiResponses []*bc.MapiCallback `json:"mapiResponses,omitempty"`
+	TxID          string                   `json:"txid,omitempty"`
+	RawTx         string                   `json:"rawTx,omitempty"`
+	Proof         *bc.MerkleProof          `json:"proof,omitempty"`
+	MapiResponses []bc.MapiCallback        `json:"mapiResponses,omitempty"`
+	Parents       map[string]*AncestryJSON `json:"parents,omitempty"`
 }
 
-// NewAncestryJSONFromBytes is a way to create the JSON format for Ancestry from the binary format.
-func NewAncestryJSONFromBytes(b []byte) (AncestriesJSON, error) {
-	ancestry, err := NewAncestryFromBytes(b)
+// IsAnchored returns true if the ancestry has a merkle proof.
+func (e *AncestryJSON) IsAnchored() bool {
+	return e.Proof != nil
+}
+
+// HasParents returns true if this ancestry has immediate parents.
+func (e *AncestryJSON) HasParents() bool {
+	return e.Parents != nil && len(e.Parents) > 0
+}
+
+// ParentTx will return a parent if found and convert the rawTx to a bt.TX, otherwise a ErrNotAllInputsSupplied error is returned.
+func (e *AncestryJSON) ParentTx(txID string) (*bt.Tx, error) {
+	env, ok := e.Parents[txID]
+	if !ok {
+		return nil, errors.Wrapf(ErrNotAllInputsSupplied, "expected parent tx %s is missing", txID)
+	}
+	return bt.NewTxFromString(env.RawTx)
+}
+
+// Bytes takes a TxAncestry struct and returns the serialised binary format.
+func (e *AncestryJSON) Bytes() ([]byte, error) {
+	ancestryBinary := make([]byte, 0)
+	ancestryBinary = append(ancestryBinary, 1) // Binary format version 1
+	binary, err := serialiseInputs(e.Parents)
 	if err != nil {
 		return nil, err
 	}
-	ancestors := make([]AncestryJSON, 0)
-	for _, ancestor := range ancestry.Ancestries {
-		rawTx := ancestor.Tx.String()
-		a := AncestryJSON{
-			RawTx:         rawTx,
-			MapiResponses: ancestor.MapiResponses,
-		}
-		if ancestor.Proof != nil {
-			mpb, err := parseBinaryMerkleProof(ancestor.Proof)
-			if err != nil {
-				return nil, err
-			}
-			a.Proof = &bc.MerkleProof{
-				Index:     mpb.index,
-				TxOrID:    mpb.txOrID,
-				Target:    mpb.target,
-				Nodes:     mpb.nodes,
-				ProofType: flagProofType(mpb.flags),
-			}
-		}
-		ancestors = append(ancestors, a)
-	}
-	return ancestors, nil
+	ancestryBinary = append(ancestryBinary, binary...)
+	return ancestryBinary, nil
 }
 
-// Bytes takes an AncestryJSON and returns the serialised bytes.
-func (j AncestriesJSON) Bytes() ([]byte, error) {
-	binaryTxContext := make([]byte, 0)
-
-	// Binary format version 1.
-	binaryTxContext = append(binaryTxContext, 1)
-
-	// follow with the list of ancestors, including their proof or mapi responses if present.
-	for _, ancestor := range j {
-		rawTx, err := hex.DecodeString(ancestor.RawTx)
+func serialiseInputs(parents map[string]*AncestryJSON) ([]byte, error) {
+	binary := make([]byte, 0)
+	for _, input := range parents {
+		currentTx, err := hex.DecodeString(input.RawTx)
 		if err != nil {
 			return nil, err
 		}
-		length := bt.VarInt(uint64(len(rawTx)))
-		binaryTxContext = append(binaryTxContext, flagTx)
-		binaryTxContext = append(binaryTxContext, length.Bytes()...)
-		binaryTxContext = append(binaryTxContext, rawTx...)
-		if ancestor.Proof != nil {
-			rawProof, err := ancestor.Proof.Bytes()
-			if err != nil {
-				return nil, err
-			}
-			length := bt.VarInt(uint64(len(rawProof)))
-			binaryTxContext = append(binaryTxContext, flagProof)
-			binaryTxContext = append(binaryTxContext, length.Bytes()...)
-			binaryTxContext = append(binaryTxContext, rawProof...)
-		}
-		if ancestor.MapiResponses != nil && len(ancestor.MapiResponses) > 0 {
-			binaryTxContext = append(binaryTxContext, flagMapi)
-			numOfMapiResponses := bt.VarInt(uint64(len(ancestor.MapiResponses)))
-			binaryTxContext = append(binaryTxContext, numOfMapiResponses.Bytes()...)
-			for _, mapiResponse := range ancestor.MapiResponses {
+		dataLength := bt.VarInt(uint64(len(currentTx)))
+		binary = append(binary, flagTx)                // first data will always be a rawTx.
+		binary = append(binary, dataLength.Bytes()...) // of this length.
+		binary = append(binary, currentTx...)          // the data.
+		if input.MapiResponses != nil && len(input.MapiResponses) > 0 {
+			binary = append(binary, flagMapi) // next data will be a mapi response.
+			numMapis := bt.VarInt(uint64(len(input.MapiResponses)))
+			binary = append(binary, numMapis.Bytes()...) // number of mapi reponses which follow
+			for _, mapiResponse := range input.MapiResponses {
 				mapiR, err := mapiResponse.Bytes()
 				if err != nil {
 					return nil, err
 				}
 				dataLength := bt.VarInt(uint64(len(mapiR)))
-				binaryTxContext = append(binaryTxContext, dataLength.Bytes()...)
-				binaryTxContext = append(binaryTxContext, mapiR...)
+				binary = append(binary, dataLength.Bytes()...) // of this length.
+				binary = append(binary, mapiR...)              // the data.
 			}
 		}
+		if input.Proof != nil {
+			proof, err := input.Proof.Bytes()
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to serialise this input's proof struct")
+			}
+			proofLength := bt.VarInt(uint64(len(proof)))
+			binary = append(binary, flagProof)              // it's going to be a proof.
+			binary = append(binary, proofLength.Bytes()...) // of this length.
+			binary = append(binary, proof...)               // the data.
+		} else if input.HasParents() {
+			parentsBinary, err := serialiseInputs(input.Parents)
+			if err != nil {
+				return nil, err
+			}
+			binary = append(binary, parentsBinary...)
+		}
 	}
-
-	return binaryTxContext, nil
-}
-
-func flagProofType(flags byte) string {
-	switch flags & targetTypeFlags {
-	// if bits 1 and 2 of flags are NOT set, target should contain a block hash (32 bytes).
-	// if bit 2 of flags is set, target should contain a merkle root (32 bytes).
-	case 0, 4:
-		return "blockhash"
-	// if bit 1 of flags is set, target should contain a block header (80 bytes).
-	case 2:
-		return "header"
-	default:
-		return ""
-	}
+	return binary, nil
 }

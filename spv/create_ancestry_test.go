@@ -813,7 +813,7 @@ func TestSPVEnvelope_CreateEnvelope(t *testing.T) {
 				bb, err := data.SpvCreateData.Load(test.expFile + ".json")
 				assert.NoError(t, err)
 
-				var env spv.TxAncestry
+				var env spv.AncestryJSON
 				assert.NoError(t, json.NewDecoder(bytes.NewReader(bb)).Decode(&env))
 				assert.Equal(t, env, *ancestry)
 			} else {

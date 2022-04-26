@@ -1,12 +1,9 @@
 package spv
 
 import (
-	"context"
-
 	"github.com/libsv/go-bk/crypto"
 	"github.com/libsv/go-bt/v2"
 	"github.com/libsv/go-bt/v2/bscript"
-	"github.com/pkg/errors"
 
 	"github.com/libsv/go-bc"
 )
@@ -19,15 +16,8 @@ const (
 
 // Payment is a payment and its ancestry.
 type Payment struct {
-	PaymentTx  *bt.Tx
-	Ancestries map[[32]byte]*Ancestry
-}
-
-// Ancestry is an internal struct for validating transactions with their ancestry.
-type Ancestry struct {
-	Tx            *bt.Tx
-	Proof         []byte
-	MapiResponses []*bc.MapiCallback
+	PaymentTx *bt.Tx
+	Ancestry  []byte
 }
 
 // binaryChunk is a clear way to pass around chunks while keeping their type explicit.
@@ -41,16 +31,21 @@ type extendedInput struct {
 	vin   int
 }
 
-// NewAncestryFromBytes creates a new struct from the bytes of a txContext.
-func NewAncestryFromBytes(b []byte) (*Payment, error) {
+type ancestry struct {
+	Tx            *bt.Tx
+	Proof         []byte
+	MapiResponses []*bc.MapiCallback
+}
+
+// parseAncestry creates a new struct from the bytes of a txContext.
+func parseAncestry(b []byte) (map[[32]byte]*ancestry, error) {
+
 	if b[0] != 1 { // the first byte is the version number.
 		return nil, ErrUnsupporredVersion
 	}
 	offset := uint64(1)
 	total := uint64(len(b))
-	ancestry := &Payment{
-		Ancestries: make(map[[32]byte]*Ancestry),
-	}
+	aa := make(map[[32]byte]*ancestry)
 
 	var TxID [32]byte
 
@@ -77,22 +72,22 @@ func NewAncestryFromBytes(b []byte) (*Payment, error) {
 			if len(tx.Inputs) == 0 {
 				return nil, ErrNoTxInputsToVerify
 			}
-			ancestry.Ancestries[TxID] = &Ancestry{
+			aa[TxID] = &ancestry{
 				Tx: tx,
 			}
 		case flagProof:
-			ancestry.Ancestries[TxID].Proof = chunk.Data
+			aa[TxID].Proof = chunk.Data
 		case flagMapi:
 			callBacks, err := parseMapiCallbacks(chunk.Data)
 			if err != nil {
 				return nil, err
 			}
-			ancestry.Ancestries[TxID].MapiResponses = callBacks
+			aa[TxID].MapiResponses = callBacks
 		default:
 			continue
 		}
 	}
-	return ancestry, nil
+	return aa, nil
 }
 
 func parseChunk(b []byte, start uint64) (binaryChunk, uint64) {
@@ -139,103 +134,6 @@ func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
 		mapiResponses = append(mapiResponses, mapiResponse)
 	}
 	return mapiResponses, nil
-}
-
-// VerifyAncestry will run through the map of Ancestries and check each input of each transaction to verify it.
-// Only if there is no Proof attached.
-func VerifyAncestry(ctx context.Context, payment *Payment, mpv MerkleProofVerifier, opts *verifyOptions) error {
-	ancestries := payment.Ancestries
-	var paymentTxID [32]byte
-	copy(paymentTxID[:], payment.PaymentTx.TxIDBytes())
-	ancestries[paymentTxID] = &Ancestry{
-		Tx: payment.PaymentTx,
-	}
-	if opts.fees {
-		if opts.feeQuote == nil {
-			return ErrNoFeeQuoteSupplied
-		}
-		for i, input := range payment.PaymentTx.Inputs {
-			var inputID [32]byte
-			copy(inputID[:], input.PreviousTxID())
-			parent, ok := payment.Ancestries[inputID]
-			if !ok {
-				return errors.Wrapf(ErrNoFeeQuoteSupplied, "missing tx for input %d", i)
-			}
-
-			out := parent.Tx.OutputIdx(int(input.PreviousTxOutIndex))
-			if out == nil {
-				return ErrMissingOutput
-			}
-
-			input.PreviousTxSatoshis = out.Satoshis
-		}
-		ok, err := payment.PaymentTx.IsFeePaidEnough(opts.feeQuote)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return ErrFeePaidNotEnough
-		}
-	}
-	for _, ancestry := range ancestries {
-		inputsToCheck := make(map[[32]byte]*extendedInput)
-		if len(ancestry.Tx.Inputs) == 0 {
-			return ErrNoTxInputsToVerify
-		}
-		for idx, input := range ancestry.Tx.Inputs {
-			var inputID [32]byte
-			copy(inputID[:], input.PreviousTxID())
-			inputsToCheck[inputID] = &extendedInput{
-				input: input,
-				vin:   idx,
-			}
-		}
-		// if we have a proof, check it.
-		if opts.proofs {
-			if ancestry.Proof == nil {
-				for inputID := range inputsToCheck {
-					// check if we have that ancestry, if not validation fail.
-					if payment.Ancestries[inputID] == nil {
-						return ErrProofOrInputMissing
-					}
-				}
-			} else {
-				// check proof.
-				response, err := mpv.VerifyMerkleProof(ctx, ancestry.Proof)
-				if response == nil {
-					return ErrInvalidProof
-				}
-				if response.TxID != "" && response.TxID != ancestry.Tx.TxID() {
-					return ErrTxIDMismatch
-				}
-				if err != nil || !response.Valid {
-					return ErrInvalidProof
-				}
-			}
-		}
-		if opts.script {
-			// otherwise check the inputs.
-			for inputID, extendedInput := range inputsToCheck {
-				input := extendedInput.input
-				// check if we have that ancestry, if not validation fail.
-				if payment.Ancestries[inputID] == nil {
-					if ancestry.Proof == nil && opts.proofs {
-						return ErrProofOrInputMissing
-					}
-					continue
-				}
-				if len(payment.Ancestries[inputID].Tx.Outputs) <= int(input.PreviousTxOutIndex) {
-					return ErrInputRefsOutOfBoundsOutput
-				}
-				lockingScript := payment.Ancestries[inputID].Tx.Outputs[input.PreviousTxOutIndex].LockingScript
-				unlockingScript := input.UnlockingScript
-				if !verifyInputOutputPair(ancestry.Tx, lockingScript, unlockingScript) {
-					return ErrPaymentNotVerified
-				}
-			}
-		}
-	}
-	return nil
 }
 
 func verifyInputOutputPair(tx *bt.Tx, lock *bscript.Script, unlock *bscript.Script) bool {
