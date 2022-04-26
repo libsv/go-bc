@@ -9,13 +9,13 @@ import (
 	"github.com/libsv/go-bc"
 )
 
-// An TxAncestryCreator is an interface used to build the spv.TransactionAncestor data type for
+// An TxAncestryCreator is an interface used to build the spv.TxAncestry data type for
 // Simple Payment Verification (SPV).
 //
 // The implementation of an spv.TxStore and spv.MerkleProofStore which is supplied will depend
 // on the client you are using.
 type TxAncestryCreator interface {
-	CreateTxAncestry(context.Context, *bt.Tx) (*TransactionAncestor, error)
+	CreateTxAncestry(context.Context, *bt.Tx) (*TxAncestry, error)
 }
 
 // TxStore interfaces the a tx store.

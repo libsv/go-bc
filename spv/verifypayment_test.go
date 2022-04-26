@@ -39,45 +39,45 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 		expErr       error
 		expErrBinary error
 	}{
-		"valid ancestor passes": {
+		"valid ancestry passes": {
 			exp:      true,
 			testFile: "valid",
 		},
-		"ancestor without any proof fails": {
+		"ancestry without any proof fails": {
 			exp:          false,
 			testFile:     "invalid_missing_merkle_proof",
 			expErr:       spv.ErrNoConfirmedTransaction,
 			expErrBinary: spv.ErrProofOrInputMissing,
 		},
-		"ancestor without any proof passes if proof disabled": {
+		"ancestry without any proof passes if proof disabled": {
 			exp:      true,
 			testFile: "invalid_missing_merkle_proof",
 			setupOpts: []spv.VerifyOpt{
 				spv.NoVerifyProofs(),
 			},
 		},
-		"ancestor without any proof passes if spv disabled": {
+		"ancestry without any proof passes if spv disabled": {
 			exp:      true,
 			testFile: "invalid_missing_merkle_proof",
 			setupOpts: []spv.VerifyOpt{
 				spv.NoVerifySPV(),
 			},
 		},
-		"ancestor without any proof passes if spv overridden": {
+		"ancestry without any proof passes if spv overridden": {
 			exp:      true,
 			testFile: "invalid_missing_merkle_proof",
 			overrideOpts: []spv.VerifyOpt{
 				spv.NoVerifyProofs(),
 			},
 		},
-		"valid ancestor with fee check supplied and valid fees passes": {
+		"valid ancestry with fee check supplied and valid fees passes": {
 			exp:      true,
 			testFile: "valid",
 			overrideOpts: []spv.VerifyOpt{
 				spv.VerifyFees(bt.NewFeeQuote()),
 			},
 		},
-		"valid ancestor with fee check supplied and invalid fees fails": {
+		"valid ancestry with fee check supplied and invalid fees fails": {
 			exp:          false,
 			testFile:     "valid",
 			expErr:       spv.ErrFeePaidNotEnough,
@@ -92,23 +92,23 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 				})),
 			},
 		},
-		"wrong tx supplied as input in ancestor errs": {
+		"wrong tx supplied as input in ancestry errs": {
 			exp:          false,
 			expErr:       spv.ErrNotAllInputsSupplied,
 			expErrBinary: spv.ErrProofOrInputMissing,
 			testFile:     "invalid_wrong_parent",
 		},
-		"tx with input missing from ancestor parents errors": {
+		"tx with input missing from ancestry parents errors": {
 			exp:          false,
 			testFile:     "invalid_deep_parent_missing",
 			expErr:       spv.ErrNotAllInputsSupplied,
 			expErrBinary: spv.ErrProofOrInputMissing,
 		},
-		"valid ancestor with merkle proof supplied as hex passes": {
+		"valid ancestry with merkle proof supplied as hex passes": {
 			exp:      true,
 			testFile: "valid_merkle_proof_hex",
 		},
-		"ancestor with tx no inputs errs": {
+		"ancestry with tx no inputs errs": {
 			exp:          false,
 			testFile:     "invalid_tx_missing_inputs",
 			expErr:       spv.ErrNoTxInputsToVerify,
@@ -126,7 +126,7 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			expErr:       spv.ErrNoTxInputsToVerify,
 			expErrBinary: spv.ErrNoTxInputsToVerify,
 		},
-		"ancestor with confirmed root errs": {
+		"ancestry with confirmed root errs": {
 			exp:          false,
 			testFile:     "invalid_confirmed_root",
 			expErr:       spv.ErrTipTxConfirmed,
@@ -209,8 +209,8 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			testData := struct {
-				Envelope    *spv.TransactionAncestor `json:"data"`
-				Description string                   `json:"description"`
+				Envelope    *spv.TxAncestry `json:"data"`
+				Description string          `json:"description"`
 			}{}
 			if test.testFile != "" {
 				bb, err := data.SpvVerifyData.Load(test.testFile + ".json")

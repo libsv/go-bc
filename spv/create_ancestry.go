@@ -8,16 +8,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-// CreateTxAncestry builds and returns an spv.TransactionAncestor for the provided tx.
-func (c *creator) CreateTxAncestry(ctx context.Context, tx *bt.Tx) (*TransactionAncestor, error) {
+// CreateTxAncestry builds and returns an spv.TxAncestry for the provided tx.
+func (c *creator) CreateTxAncestry(ctx context.Context, tx *bt.Tx) (*TxAncestry, error) {
 	if len(tx.Inputs) == 0 {
 		return nil, ErrNoTxInputs
 	}
 
-	ancestry := &TransactionAncestor{
+	ancestry := &TxAncestry{
 		TxID:    tx.TxID(),
 		RawTx:   tx.String(),
-		Parents: make(map[string]*TransactionAncestor),
+		Parents: make(map[string]*TxAncestry),
 	}
 
 	for _, input := range tx.Inputs {
@@ -46,7 +46,7 @@ func (c *creator) CreateTxAncestry(ctx context.Context, tx *bt.Tx) (*Transaction
 		}
 		// If a Merkle Proof is found, create the ancestry and skip any further recursion
 		if mp != nil {
-			ancestry.Parents[pTxID] = &TransactionAncestor{
+			ancestry.Parents[pTxID] = &TxAncestry{
 				RawTx: pTx.String(),
 				TxID:  pTxID,
 				Proof: mp,

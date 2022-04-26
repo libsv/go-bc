@@ -9,28 +9,28 @@ import (
 	"github.com/libsv/go-bc"
 )
 
-// TransactionAncestor is a struct which contains all information needed for a transaction to be verified.
+// TxAncestry is a struct which contains all information needed for a transaction to be verified.
 // this contains all ancestors for the transaction allowing proofs etc to be verified.
-type TransactionAncestor struct {
-	TxID          string                          `json:"txid,omitempty"`
-	RawTx         string                          `json:"rawTx,omitempty"`
-	Proof         *bc.MerkleProof                 `json:"proof,omitempty"`
-	MapiResponses []bc.MapiCallback               `json:"mapiResponses,omitempty"`
-	Parents       map[string]*TransactionAncestor `json:"parents,omitempty"`
+type TxAncestry struct {
+	TxID          string                 `json:"txid,omitempty"`
+	RawTx         string                 `json:"rawTx,omitempty"`
+	Proof         *bc.MerkleProof        `json:"proof,omitempty"`
+	MapiResponses []bc.MapiCallback      `json:"mapiResponses,omitempty"`
+	Parents       map[string]*TxAncestry `json:"parents,omitempty"`
 }
 
-// IsAnchored returns true if the ancestor is the anchor tx.
-func (e *TransactionAncestor) IsAnchored() bool {
+// IsAnchored returns true if the ancestry has a merkle proof.
+func (e *TxAncestry) IsAnchored() bool {
 	return e.Proof != nil
 }
 
-// HasParents returns true if this ancestor has immediate parents.
-func (e *TransactionAncestor) HasParents() bool {
+// HasParents returns true if this ancestry has immediate parents.
+func (e *TxAncestry) HasParents() bool {
 	return e.Parents != nil && len(e.Parents) > 0
 }
 
 // ParentTx will return a parent if found and convert the rawTx to a bt.TX, otherwise a ErrNotAllInputsSupplied error is returned.
-func (e *TransactionAncestor) ParentTx(txID string) (*bt.Tx, error) {
+func (e *TxAncestry) ParentTx(txID string) (*bt.Tx, error) {
 	env, ok := e.Parents[txID]
 	if !ok {
 		return nil, errors.Wrapf(ErrNotAllInputsSupplied, "expected parent tx %s is missing", txID)
@@ -38,8 +38,8 @@ func (e *TransactionAncestor) ParentTx(txID string) (*bt.Tx, error) {
 	return bt.NewTxFromString(env.RawTx)
 }
 
-// Bytes takes a TransactionAncestor struct and returns the serialised binary format.
-func (e *TransactionAncestor) Bytes() ([]byte, error) {
+// Bytes takes a TxAncestry struct and returns the serialised binary format.
+func (e *TxAncestry) Bytes() ([]byte, error) {
 	ancestryBinary := make([]byte, 0)
 	ancestryBinary = append(ancestryBinary, 1) // Binary format version 1
 	binary, err := serialiseInputs(e.Parents)
@@ -50,7 +50,7 @@ func (e *TransactionAncestor) Bytes() ([]byte, error) {
 	return ancestryBinary, nil
 }
 
-func serialiseInputs(parents map[string]*TransactionAncestor) ([]byte, error) {
+func serialiseInputs(parents map[string]*TxAncestry) ([]byte, error) {
 	binary := make([]byte, 0)
 	for _, input := range parents {
 		currentTx, err := hex.DecodeString(input.RawTx)
