@@ -17,14 +17,14 @@ const (
 	flagMapi  = byte(3)
 )
 
-// Ancestry is a payment and its ancestors.
-type Ancestry struct {
-	PaymentTx *bt.Tx
-	Ancestors map[[32]byte]*Ancestor
+// Payment is a payment and its ancestry.
+type Payment struct {
+	PaymentTx  *bt.Tx
+	Ancestries map[[32]byte]*Ancestry
 }
 
-// Ancestor is an internal struct for validating transactions with their ancestors.
-type Ancestor struct {
+// Ancestry is an internal struct for validating transactions with their ancestry.
+type Ancestry struct {
 	Tx            *bt.Tx
 	Proof         []byte
 	MapiResponses []*bc.MapiCallback
@@ -42,14 +42,14 @@ type extendedInput struct {
 }
 
 // NewAncestryFromBytes creates a new struct from the bytes of a txContext.
-func NewAncestryFromBytes(b []byte) (*Ancestry, error) {
+func NewAncestryFromBytes(b []byte) (*Payment, error) {
 	if b[0] != 1 { // the first byte is the version number.
 		return nil, ErrUnsupporredVersion
 	}
 	offset := uint64(1)
 	total := uint64(len(b))
-	ancestry := &Ancestry{
-		Ancestors: make(map[[32]byte]*Ancestor),
+	ancestry := &Payment{
+		Ancestries: make(map[[32]byte]*Ancestry),
 	}
 
 	var TxID [32]byte
@@ -77,17 +77,17 @@ func NewAncestryFromBytes(b []byte) (*Ancestry, error) {
 			if len(tx.Inputs) == 0 {
 				return nil, ErrNoTxInputsToVerify
 			}
-			ancestry.Ancestors[TxID] = &Ancestor{
+			ancestry.Ancestries[TxID] = &Ancestry{
 				Tx: tx,
 			}
 		case flagProof:
-			ancestry.Ancestors[TxID].Proof = chunk.Data
+			ancestry.Ancestries[TxID].Proof = chunk.Data
 		case flagMapi:
 			callBacks, err := parseMapiCallbacks(chunk.Data)
 			if err != nil {
 				return nil, err
 			}
-			ancestry.Ancestors[TxID].MapiResponses = callBacks
+			ancestry.Ancestries[TxID].MapiResponses = callBacks
 		default:
 			continue
 		}
@@ -141,23 +141,23 @@ func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
 	return mapiResponses, nil
 }
 
-// VerifyAncestors will run through the map of Ancestors and check each input of each transaction to verify it.
+// VerifyAncestry will run through the map of Ancestries and check each input of each transaction to verify it.
 // Only if there is no Proof attached.
-func VerifyAncestors(ctx context.Context, ancestry *Ancestry, mpv MerkleProofVerifier, opts *verifyOptions) error {
-	ancestors := ancestry.Ancestors
+func VerifyAncestry(ctx context.Context, payment *Payment, mpv MerkleProofVerifier, opts *verifyOptions) error {
+	ancestries := payment.Ancestries
 	var paymentTxID [32]byte
-	copy(paymentTxID[:], ancestry.PaymentTx.TxIDBytes())
-	ancestors[paymentTxID] = &Ancestor{
-		Tx: ancestry.PaymentTx,
+	copy(paymentTxID[:], payment.PaymentTx.TxIDBytes())
+	ancestries[paymentTxID] = &Ancestry{
+		Tx: payment.PaymentTx,
 	}
 	if opts.fees {
 		if opts.feeQuote == nil {
 			return ErrNoFeeQuoteSupplied
 		}
-		for i, input := range ancestry.PaymentTx.Inputs {
+		for i, input := range payment.PaymentTx.Inputs {
 			var inputID [32]byte
 			copy(inputID[:], input.PreviousTxID())
-			parent, ok := ancestry.Ancestors[inputID]
+			parent, ok := payment.Ancestries[inputID]
 			if !ok {
 				return errors.Wrapf(ErrNoFeeQuoteSupplied, "missing tx for input %d", i)
 			}
@@ -169,7 +169,7 @@ func VerifyAncestors(ctx context.Context, ancestry *Ancestry, mpv MerkleProofVer
 
 			input.PreviousTxSatoshis = out.Satoshis
 		}
-		ok, err := ancestry.PaymentTx.IsFeePaidEnough(opts.feeQuote)
+		ok, err := payment.PaymentTx.IsFeePaidEnough(opts.feeQuote)
 		if err != nil {
 			return err
 		}
@@ -177,12 +177,12 @@ func VerifyAncestors(ctx context.Context, ancestry *Ancestry, mpv MerkleProofVer
 			return ErrFeePaidNotEnough
 		}
 	}
-	for _, ancestor := range ancestors {
+	for _, ancestry := range ancestries {
 		inputsToCheck := make(map[[32]byte]*extendedInput)
-		if len(ancestor.Tx.Inputs) == 0 {
+		if len(ancestry.Tx.Inputs) == 0 {
 			return ErrNoTxInputsToVerify
 		}
-		for idx, input := range ancestor.Tx.Inputs {
+		for idx, input := range ancestry.Tx.Inputs {
 			var inputID [32]byte
 			copy(inputID[:], input.PreviousTxID())
 			inputsToCheck[inputID] = &extendedInput{
@@ -192,20 +192,20 @@ func VerifyAncestors(ctx context.Context, ancestry *Ancestry, mpv MerkleProofVer
 		}
 		// if we have a proof, check it.
 		if opts.proofs {
-			if ancestor.Proof == nil {
+			if ancestry.Proof == nil {
 				for inputID := range inputsToCheck {
-					// check if we have that ancestor, if not validation fail.
-					if ancestry.Ancestors[inputID] == nil {
+					// check if we have that ancestry, if not validation fail.
+					if payment.Ancestries[inputID] == nil {
 						return ErrProofOrInputMissing
 					}
 				}
 			} else {
 				// check proof.
-				response, err := mpv.VerifyMerkleProof(ctx, ancestor.Proof)
+				response, err := mpv.VerifyMerkleProof(ctx, ancestry.Proof)
 				if response == nil {
 					return ErrInvalidProof
 				}
-				if response.TxID != "" && response.TxID != ancestor.Tx.TxID() {
+				if response.TxID != "" && response.TxID != ancestry.Tx.TxID() {
 					return ErrTxIDMismatch
 				}
 				if err != nil || !response.Valid {
@@ -217,19 +217,19 @@ func VerifyAncestors(ctx context.Context, ancestry *Ancestry, mpv MerkleProofVer
 			// otherwise check the inputs.
 			for inputID, extendedInput := range inputsToCheck {
 				input := extendedInput.input
-				// check if we have that ancestor, if not validation fail.
-				if ancestry.Ancestors[inputID] == nil {
-					if ancestor.Proof == nil && opts.proofs {
+				// check if we have that ancestry, if not validation fail.
+				if payment.Ancestries[inputID] == nil {
+					if ancestry.Proof == nil && opts.proofs {
 						return ErrProofOrInputMissing
 					}
 					continue
 				}
-				if len(ancestry.Ancestors[inputID].Tx.Outputs) <= int(input.PreviousTxOutIndex) {
+				if len(payment.Ancestries[inputID].Tx.Outputs) <= int(input.PreviousTxOutIndex) {
 					return ErrInputRefsOutOfBoundsOutput
 				}
-				lockingScript := ancestry.Ancestors[inputID].Tx.Outputs[input.PreviousTxOutIndex].LockingScript
+				lockingScript := payment.Ancestries[inputID].Tx.Outputs[input.PreviousTxOutIndex].LockingScript
 				unlockingScript := input.UnlockingScript
-				if !verifyInputOutputPair(ancestor.Tx, lockingScript, unlockingScript) {
+				if !verifyInputOutputPair(ancestry.Tx, lockingScript, unlockingScript) {
 					return ErrPaymentNotVerified
 				}
 			}

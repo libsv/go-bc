@@ -805,17 +805,17 @@ func TestSPVEnvelope_CreateEnvelope(t *testing.T) {
 			c, err := spv.NewEnvelopeCreator(mock, mock)
 			assert.NoError(t, err)
 
-			ancestor, err := c.CreateTxAncestry(context.TODO(), testTx)
+			ancestry, err := c.CreateTxAncestry(context.TODO(), testTx)
 			if test.expErr == nil {
 				assert.NoError(t, err)
-				assert.NotNil(t, ancestor)
+				assert.NotNil(t, ancestry)
 
 				bb, err := data.SpvCreateData.Load(test.expFile + ".json")
 				assert.NoError(t, err)
 
 				var env spv.TxAncestry
 				assert.NoError(t, json.NewDecoder(bytes.NewReader(bb)).Decode(&env))
-				assert.Equal(t, env, *ancestor)
+				assert.Equal(t, env, *ancestry)
 			} else {
 				assert.Error(t, err)
 				assert.EqualError(t, err, test.expErr.Error())
