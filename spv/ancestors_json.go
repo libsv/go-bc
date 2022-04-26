@@ -7,7 +7,7 @@ import (
 	"github.com/libsv/go-bt/v2"
 )
 
-// AncestorsJSON spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/ eventually.
+// AncestorsJSON spec at https://tsc.bitcoinassociation.net/standards/spv-ancestor/ eventually.
 type AncestorsJSON struct {
 	Ancestors []AncestorJSON `json:"ancestors"`
 }
