@@ -84,7 +84,7 @@ func TestAncestryJSONToBinary(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			if test.testFile != "" {
-				testFile := &spv.AncestorsJSON{}
+				testFile := &spv.AncestryJSON{}
 				if test.testFile != "" {
 					jBinary, err := data.SpvSerialJSONData.Load(test.testFile + ".json")
 					assert.NoError(t, err)

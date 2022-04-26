@@ -7,8 +7,8 @@ import (
 	"github.com/libsv/go-bt/v2"
 )
 
-// AncestorsJSON spec at https://tsc.bitcoinassociation.net/standards/spv-ancestor/ eventually.
-type AncestorsJSON struct {
+// AncestryJSON spec at https://tsc.bitcoinassociation.net/standards/spv-ancestry/ eventually.
+type AncestryJSON struct {
 	Ancestors []AncestorJSON `json:"ancestors"`
 }
 
@@ -20,7 +20,7 @@ type AncestorJSON struct {
 }
 
 // NewAncestoryJSONFromBytes is a way to create the JSON format for Ancestry from the binary format.
-func NewAncestoryJSONFromBytes(b []byte) (*AncestorsJSON, error) {
+func NewAncestoryJSONFromBytes(b []byte) (*AncestryJSON, error) {
 	ancestry, err := NewAncestryFromBytes(b)
 	if err != nil {
 		return nil, err
@@ -47,13 +47,13 @@ func NewAncestoryJSONFromBytes(b []byte) (*AncestorsJSON, error) {
 		}
 		ancestors = append(ancestors, a)
 	}
-	return &AncestorsJSON{
+	return &AncestryJSON{
 		Ancestors: ancestors,
 	}, nil
 }
 
-// Bytes takes an AncestorsJSON and returns the serialised bytes.
-func (j AncestorsJSON) Bytes() ([]byte, error) {
+// Bytes takes an AncestryJSON and returns the serialised bytes.
+func (j AncestryJSON) Bytes() ([]byte, error) {
 	binaryTxContext := make([]byte, 0)
 
 	// Binary format version 1.
