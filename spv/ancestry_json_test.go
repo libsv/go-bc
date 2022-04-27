@@ -10,24 +10,24 @@ import (
 
 func TestEnvelope_IsAnchored(t *testing.T) {
 	tests := map[string]struct {
-		envelope Envelope
+		ancestry AncestryJSON
 		exp      bool
 	}{
 		"is anchored": {
-			envelope: Envelope{
+			ancestry: AncestryJSON{
 				Proof: &bc.MerkleProof{},
 			},
 			exp: true,
 		},
 		"is not anchored": {
-			envelope: Envelope{},
+			ancestry: AncestryJSON{},
 			exp:      false,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, test.exp, test.envelope.IsAnchored())
+			assert.Equal(t, test.exp, test.ancestry.IsAnchored())
 		})
 	}
 }
