@@ -9,11 +9,7 @@ import (
 // VerifyPayment is a method for parsing a binary payment transaction and its corresponding ancestry in binary.
 // It will return the paymentTx struct if all validations pass.
 func (v *verifier) VerifyPayment(ctx context.Context, p *Payment, opts ...VerifyOpt) error {
-	o := &verifyOptions{
-		proofs: true,
-		fees:   false,
-		script: true,
-	}
+	o := v.opts.clone()
 	for _, opt := range opts {
 		opt(o)
 	}
