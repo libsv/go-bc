@@ -1,6 +1,6 @@
 package bc
 
-// Merkle path data model json format according to BRC-58.
+// MerklePathData path data model json format according to BRC-58.
 type MerklePathData struct {
 	Index uint64   `json:"index"`
 	Path  []string `json:"path"`
@@ -25,7 +25,7 @@ func getPathElements(txIndex int, hashes []string) []string {
 	return append(path, getPathElements(txIndex/2, hashes[(len(hashes)+1)/2:])...)
 }
 
-// With merkle tree we calculate the merkle path for a given transaction.
+// GetTxMerklePath with merkle tree we calculate the merkle path for a given transaction.
 func GetTxMerklePath(txIndex int, merkleTree []string) *MerklePathData {
 	return &MerklePathData{
 		Index: uint64(txIndex),
