@@ -14,7 +14,7 @@ type MerklePath struct {
 	Path  []string `json:"path"`
 }
 
-// FromStringReverse decodes a hex string into a byte slice and reverses it.
+// BytesFromStringReverse decodes a hex string into a byte slice and reverses it.
 func BytesFromStringReverse(s string) []byte {
 	bytes, _ := hex.DecodeString(s)
 	rev := bt.ReverseBytes(bytes)
@@ -27,6 +27,7 @@ func StringFromBytesReverse(h []byte) string {
 	return hex.EncodeToString(rev)
 }
 
+// Sha256Sha256 calculates the double sha256 hash of a byte slice.
 func Sha256Sha256(digest []byte) []byte {
 	sha := sha256.Sum256(digest)
 	dsha := sha256.Sum256(sha[:])
@@ -114,5 +115,5 @@ func (mp *MerklePath) CalculateRoot(txid string) (string, error) {
 		workingHash = Sha256Sha256(digest)
 		lsb = lsb >> 1
 	}
-	// check result equality with root
+	return StringFromBytesReverse(workingHash), nil
 }
