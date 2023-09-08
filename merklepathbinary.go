@@ -7,12 +7,12 @@ import (
 )
 
 /*
-Merkle Path Binary Format according to BRC-71 [index, nLeaves, [leaf0, leaf1, leaf2, ... leafnLeaves-1]]
+MerklePath Binary Format according to BRC-71 [index, nLeaves, [leaf0, leaf1, leaf2, ... leafnLeaves-1]]
 for reference see https://bsv.brc.dev/transactions/0071
 */
 type MerklePath string
 
-// Based on merkle path data model builds merkle path binary format
+// BuildMerklePathBinary Based on merkle path data model builds merkle path binary format
 func BuildMerklePathBinary(merklePath *MerklePathData) (MerklePath, error) {
 	index := bt.VarInt(merklePath.Index)
 	nLeaves := bt.VarInt(len(merklePath.Path))
@@ -37,7 +37,7 @@ func BuildMerklePathBinary(merklePath *MerklePathData) (MerklePath, error) {
 	return MerklePath(hex.EncodeToString(bytes)), nil
 }
 
-// from merkle path binary decodes MerklePathData
+// DecodeMerklePathBinary from merkle path binary decodes MerklePathData
 func DecodeMerklePathBinary(merklePath MerklePath) (*MerklePathData, error) {
 	// convert hex to byte array
 	merklePathBinary, err := hex.DecodeString(string(merklePath))
