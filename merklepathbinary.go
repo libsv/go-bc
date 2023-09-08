@@ -12,7 +12,7 @@ for reference see https://bsv.brc.dev/transactions/0071
 */
 type MerklePath string
 
-// BuildMerklePathBinary Based on merkle path data model builds merkle path binary format
+// BuildMerklePathBinary Based on merkle path data model builds merkle path binary format.
 func BuildMerklePathBinary(merklePath *MerklePathData) (MerklePath, error) {
 	index := bt.VarInt(merklePath.Index)
 	nLeaves := bt.VarInt(len(merklePath.Path))
@@ -37,7 +37,7 @@ func BuildMerklePathBinary(merklePath *MerklePathData) (MerklePath, error) {
 	return MerklePath(hex.EncodeToString(bytes)), nil
 }
 
-// DecodeMerklePathBinary from merkle path binary decodes MerklePathData
+// DecodeMerklePathBinary from merkle path binary decodes MerklePathData.
 func DecodeMerklePathBinary(merklePath MerklePath) (*MerklePathData, error) {
 	// convert hex to byte array
 	merklePathBinary, err := hex.DecodeString(string(merklePath))
