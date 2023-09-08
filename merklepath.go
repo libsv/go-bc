@@ -39,13 +39,13 @@ func NewMerklePathFromBytes(bytes []byte) (*MerklePath, error) {
 	mp := &MerklePath{}
 	mp.Path = make([]string, 0)
 
-	// start paring transaction index
+	// start paring transaction index.
 	var offset int
 	index, size := bt.NewVarIntFromBytes(bytes[offset:])
 	offset += size
 	mp.Index = uint64(index)
 
-	// next value in the byte array is nLeaves (number of leaves in merkle path)
+	// next value in the byte array is nLeaves (number of leaves in merkle path).
 	nLeaves, size := bt.NewVarIntFromBytes(bytes[offset:])
 	offset += size
 
@@ -69,19 +69,18 @@ func NewMerklePathFromStr(str string) (*MerklePath, error) {
 }
 
 // Bytes encodes a MerklePath as a slice of bytes. MerklePath Binary Format according to BRC-71 https://brc.dev/71
-// [index, nLeaves, [leaf0, leaf1, leaf2, ... leafnLeaves-1]]
 func (mp *MerklePath) Bytes() ([]byte, error) {
 	index := bt.VarInt(mp.Index)
 	nLeaves := bt.VarInt(len(mp.Path))
 
-	// first two arguments in merkle path bynary format are index of the transaction and number of leaves
+	// first two arguments in merkle path bynary format are index of the transaction and number of leaves.
 	bytes := []byte{}
 	bytes = append(bytes, index.Bytes()...)
 	bytes = append(bytes, nLeaves.Bytes()...)
 
-	// now add each leaf into the binary path
+	// now add each leaf into the binary path.
 	for _, leaf := range mp.Path {
-		// append leaf bytes into binary path, little endian
+		// append leaf bytes into binary path, little endian.
 		bytes = append(bytes, BytesFromStringReverse(leaf)...)
 	}
 
@@ -106,7 +105,7 @@ func (mp *MerklePath) CalculateRoot(txid string) (string, error) {
 	for _, leaf := range mp.Path {
 		var digest []byte
 		leafBytes := BytesFromStringReverse(leaf)
-		// if the least significant bit is 1 then the working hash is on the right
+		// if the least significant bit is 1 then the working hash is on the right.
 		if lsb&1 > 0 {
 			digest = append(leafBytes, workingHash...)
 		} else {
@@ -120,8 +119,7 @@ func (mp *MerklePath) CalculateRoot(txid string) (string, error) {
 
 // getPathElements traverses the tree and returns the path to coinbase.
 func getPathElements(txIndex int, hashes []string) []string {
-	// if our hash index is odd the next hash of the path is the previous
-	// element in the array otherwise the next element
+	// if our hash index is odd the next hash of the path is the previous element in the array otherwise the next element.
 	var path []string
 	if txIndex%2 == 0 {
 		path = append(path, hashes[txIndex+1])
@@ -129,7 +127,7 @@ func getPathElements(txIndex int, hashes []string) []string {
 		path = append(path, hashes[txIndex-1])
 	}
 
-	// If we reach the coinbase hash stop path calculation
+	// If we reach the coinbase hash stop path calculation.
 	if len(hashes) == 3 {
 		return path
 	}

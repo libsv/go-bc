@@ -12,7 +12,7 @@ import (
 func TestBuildingMerklePathBinary(t *testing.T) {
 	t.Parallel()
 
-	// build example merkle path data
+	// build example merkle path data.
 	merklePath := bc.MerklePath{
 		Index: 136,
 		Path: []string{"6cf512411d03ab9b61643515e7aa9afd005bf29e1052ade95410b3475f02820c",
@@ -21,7 +21,7 @@ func TestBuildingMerklePathBinary(t *testing.T) {
 			"3470d882cf556a4b943639eba15dc795dffdbebdc98b9a98e3637fda96e3811e"},
 	}
 
-	// build binary path from it
+	// build binary path from it.
 	merklePathBinary, err := merklePath.Bytes()
 	if err != nil {
 		t.Error(err)
@@ -34,7 +34,7 @@ func TestBuildingMerklePathBinary(t *testing.T) {
 		return
 	}
 
-	// assert binary path is expected
+	// assert binary path is expected.
 	assert.Equal(t, mp, merklePathBinary)
 }
 
@@ -56,7 +56,7 @@ func TestDecodingMerklePathBinary(t *testing.T) {
 	// 		"3470d882cf556a4b943639eba15dc795dffdbebdc98b9a98e3637fda96e3811e"},
 	// }
 
-	// assert binary path is expected
+	// assert binary path is expected.
 	assert.Equal(t, uint64(136), merklePath.Index)
 	assert.Equal(t, 4, len(merklePath.Path))
 	assert.Equal(t, "6cf512411d03ab9b61643515e7aa9afd005bf29e1052ade95410b3475f02820c", merklePath.Path[0])
@@ -82,13 +82,13 @@ func TestGetMerklePath(t *testing.T) {
 	merkles, err := bc.BuildMerkleTreeStore(txids)
 	assert.NoError(t, err)
 
-	// build path for tx index 4
+	// build path for tx index 4.
 	path := bc.GetTxMerklePath(4, merkles)
 	root, err := bc.MerkleRootFromBranches("e3aa0230aa81abd483023886ad12790acf070e2a9f92d7f0ae3bebd90a904361", int(path.Index), path.Path)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, root)
 
-	// build path for tx index 3
+	// build path for tx index 3.
 	path = bc.GetTxMerklePath(3, merkles)
 	root, err = path.CalculateRoot("728714bbbddd81a54cae473835ae99eb92ed78191327eb11a9d7494273dcad2a")
 	assert.NoError(t, err)
