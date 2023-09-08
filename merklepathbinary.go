@@ -25,16 +25,16 @@ func BuildMerklePathBinary(merklePath *MerklePathData) (MerklePath, error) {
 	bytes = append(bytes, index.Bytes()...)
 	bytes = append(bytes, nLeaves.Bytes()...)
 
-	// now add each leave into the binary path
-	for _, leave := range merklePath.Path {
-		// decode hex leave into bytes
-		leaveBytes, err := hex.DecodeString(leave)
+	// now add each leaf into the binary path
+	for _, leaf := range merklePath.Path {
+		// decode hex leaf into bytes
+		leafBytes, err := hex.DecodeString(leaf)
 		if err != nil {
 			return "", err
 		}
 
-		// append leave bytes into binary path
-		bytes = append(bytes, leaveBytes...)
+		// append leaf bytes into binary path
+		bytes = append(bytes, leafBytes...)
 	}
 
 	return MerklePath(hex.EncodeToString(bytes)), nil
