@@ -6,13 +6,16 @@ import (
 	"github.com/libsv/go-bt/v2"
 )
 
-/*
-MerklePath Binary Format according to BRC-71 [index, nLeaves, [leaf0, leaf1, leaf2, ... leafnLeaves-1]]
-for reference see https://bsv.brc.dev/transactions/0071
-*/
+// Merkle path data model json format according to BRC-58.
+type MerklePathData struct {
+	Index uint64   `json:"index"`
+	Path  []string `json:"path"`
+}
+
+// Merkle Path Binary Format according to BRC-71 [index, nLeaves, [leaf0, leaf1, leaf2, ... leafnLeaves-1]].
 type MerklePath string
 
-// BuildMerklePathBinary Based on merkle path data model builds merkle path binary format.
+// Based on merkle path data model builds merkle path binary format.
 func BuildMerklePathBinary(merklePath *MerklePathData) (MerklePath, error) {
 	index := bt.VarInt(merklePath.Index)
 	nLeaves := bt.VarInt(len(merklePath.Path))
@@ -37,7 +40,7 @@ func BuildMerklePathBinary(merklePath *MerklePathData) (MerklePath, error) {
 	return MerklePath(hex.EncodeToString(bytes)), nil
 }
 
-// DecodeMerklePathBinary from merkle path binary decodes MerklePathData.
+// from merkle path binary decodes MerklePathData.
 func DecodeMerklePathBinary(merklePath MerklePath) (*MerklePathData, error) {
 	// convert hex to byte array
 	merklePathBinary, err := hex.DecodeString(string(merklePath))
