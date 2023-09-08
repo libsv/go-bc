@@ -1,12 +1,12 @@
 package bc
 
-// Merkle path data model json format according to BRC-58
+// Merkle path data model json format according to BRC-58.
 type MerklePathData struct {
 	Index uint64   `json:"index"`
 	Path  []string `json:"path"`
 }
 
-// GetMerklePath
+// getPathElements traverses the tree and returns the path to coinbase.
 func getPathElements(txIndex int, hashes []string) []string {
 	// if our hash index is odd the next hash of the path is the previous
 	// element in the array otherwise the next element
@@ -25,7 +25,7 @@ func getPathElements(txIndex int, hashes []string) []string {
 	return append(path, getPathElements(txIndex/2, hashes[(len(hashes)+1)/2:])...)
 }
 
-// With merkle tree we calculate the merkle path for a given transaction
+// With merkle tree we calculate the merkle path for a given transaction.
 func GetTxMerklePath(txIndex int, merkleTree []string) *MerklePathData {
 	return &MerklePathData{
 		Index: uint64(txIndex),
