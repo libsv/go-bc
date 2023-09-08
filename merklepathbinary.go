@@ -67,7 +67,8 @@ func NewMerklePathFromStr(str string) (*MerklePath, error) {
 	return NewMerklePathFromBytes(bytes)
 }
 
-// Bytes encodes a MerklePath as a slice of bytes.
+// Bytes encodes a MerklePath as a slice of bytes. MerklePath Binary Format according to BRC-71 https://brc.dev/71
+// [index, nLeaves, [leaf0, leaf1, leaf2, ... leafnLeaves-1]]
 func (mp *MerklePath) Bytes() ([]byte, error) {
 	index := bt.VarInt(mp.Index)
 	nLeaves := bt.VarInt(len(mp.Path))
