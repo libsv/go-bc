@@ -11,12 +11,6 @@ import (
 	"github.com/libsv/go-bc"
 )
 
-const (
-	flagTx    = 1
-	flagProof = 2
-	flagMapi  = 3
-)
-
 // Envelope is a struct which contains all information needed for a transaction to be verified.
 //
 // spec at https://tsc.bitcoinassociation.net/standards/spv-envelope/
@@ -79,9 +73,9 @@ func serialiseCrunchyNutInputs(parents map[string]*Envelope, flake *[]byte) erro
 			fmt.Print(err)
 		}
 		dataLength := bt.VarInt(uint64(len(currentTx)))
-		*flake = append(*flake, flagTx)        // first data will always be a rawTx.
-		*flake = append(*flake, dataLength...) // of this length.
-		*flake = append(*flake, currentTx...)  // the data.
+		*flake = append(*flake, flagTx)                // first data will always be a rawTx.
+		*flake = append(*flake, dataLength.Bytes()...) // of this length.
+		*flake = append(*flake, currentTx...)          // the data.
 		if input.MapiResponses != nil && len(input.MapiResponses) > 0 {
 			for _, mapiResponse := range input.MapiResponses {
 				mapiR, err := mapiResponse.Bytes()
@@ -89,20 +83,20 @@ func serialiseCrunchyNutInputs(parents map[string]*Envelope, flake *[]byte) erro
 					return err
 				}
 				dataLength := bt.VarInt(uint64(len(mapiR)))
-				*flake = append(*flake, flagMapi)      // next data will be a mapi response.
-				*flake = append(*flake, dataLength...) // of this length.
-				*flake = append(*flake, mapiR...)      // the data.
+				*flake = append(*flake, flagMapi)              // next data will be a mapi response.
+				*flake = append(*flake, dataLength.Bytes()...) // of this length.
+				*flake = append(*flake, mapiR...)              // the data.
 			}
 		}
 		if input.Proof != nil {
-			proof, err := input.Proof.ToBytes()
+			proof, err := input.Proof.Bytes()
 			if err != nil {
 				return errors.Wrap(err, "Failed to serialise this input's proof struct")
 			}
 			proofLength := bt.VarInt(uint64(len(proof)))
-			*flake = append(*flake, flagProof)      // it's going to be a proof.
-			*flake = append(*flake, proofLength...) // of this length.
-			*flake = append(*flake, proof...)       // the data.
+			*flake = append(*flake, flagProof)              // it's going to be a proof.
+			*flake = append(*flake, proofLength.Bytes()...) // of this length.
+			*flake = append(*flake, proof...)               // the data.
 		} else if input.HasParents() {
 			return serialiseCrunchyNutInputs(input.Parents, flake)
 		}
@@ -130,11 +124,11 @@ func NewCrunchyNutEnvelopeFromBytes(b []byte) (*Envelope, error) {
 func parseCrunchyNutFlakesRecursively(b []byte, offset *uint64, eCurrent *Envelope) {
 	typeOfNextData := b[*offset]
 	*offset++
-	l, size := bt.DecodeVarInt(b[*offset:])
+	l, size := bt.NewVarIntFromBytes(b[*offset:])
 	*offset += uint64(size)
 	switch typeOfNextData {
 	case flagTx:
-		tx, err := bt.NewTxFromBytes(b[*offset : *offset+l])
+		tx, err := bt.NewTxFromBytes(b[*offset : *offset+uint64(l)])
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -145,7 +139,7 @@ func parseCrunchyNutFlakesRecursively(b []byte, offset *uint64, eCurrent *Envelo
 		}
 		eCurrent.TxID = txid
 		eCurrent.RawTx = tx.String()
-		*offset += l
+		*offset += uint64(l)
 		if uint64(len(b)) > *offset && b[*offset] != flagTx {
 			parseCrunchyNutFlakesRecursively(b, offset, eCurrent)
 		} else {
@@ -157,7 +151,7 @@ func parseCrunchyNutFlakesRecursively(b []byte, offset *uint64, eCurrent *Envelo
 			}
 		}
 	case flagProof:
-		binaryProof, err := parseBinaryMerkleProof(b[*offset : *offset+l])
+		binaryProof, err := parseBinaryMerkleProof(b[*offset : *offset+uint64(l)])
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -170,9 +164,9 @@ func parseCrunchyNutFlakesRecursively(b []byte, offset *uint64, eCurrent *Envelo
 			// ignoring proofType and compositeType for this version.
 		}
 		eCurrent.Proof = &proof
-		*offset += l
+		*offset += uint64(l)
 	case flagMapi:
-		mapiResponse, err := bc.NewMapiCallbackFromBytes(b[*offset : *offset+l])
+		mapiResponse, err := bc.NewMapiCallbackFromBytes(b[*offset : *offset+uint64(l)])
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -181,10 +175,10 @@ func parseCrunchyNutFlakesRecursively(b []byte, offset *uint64, eCurrent *Envelo
 		} else {
 			eCurrent.MapiResponses = []bc.MapiCallback{*mapiResponse}
 		}
-		*offset += l
+		*offset += uint64(l)
 	default:
-		fmt.Printf("Unknown data type: %v, used for: %v", typeOfNextData, b[*offset:*offset+l])
-		*offset += l
+		fmt.Printf("Unknown data type: %v, used for: %v", typeOfNextData, b[*offset:*offset+uint64(l)])
+		*offset += uint64(l)
 	}
 	if uint64(len(b)) > *offset {
 		parseCrunchyNutFlakesRecursively(b, offset, eCurrent)
@@ -238,20 +232,20 @@ func serialiseSpecialKInputs(parents map[string]*Envelope, flake *[]byte) error 
 		}
 		// the transaction itself
 		dataLength := bt.VarInt(uint64(len(currentTx)))
-		*flake = append(*flake, dataLength...) // of this length.
-		*flake = append(*flake, currentTx...)  // the data.
+		*flake = append(*flake, dataLength.Bytes()...) // of this length.
+		*flake = append(*flake, currentTx...)          // the data.
 
 		// proof or zero
 		if input.Proof == nil {
 			*flake = append(*flake, 0)
 		} else {
-			proof, err := input.Proof.ToBytes()
+			proof, err := input.Proof.Bytes()
 			if err != nil {
 				return errors.Wrap(err, "Failed to serialise this input's proof struct")
 			}
 			proofLength := bt.VarInt(uint64(len(proof)))
-			*flake = append(*flake, proofLength...) // of this length.
-			*flake = append(*flake, proof...)       // the data.
+			*flake = append(*flake, proofLength.Bytes()...) // of this length.
+			*flake = append(*flake, proof...)               // the data.
 		}
 
 		if input.MapiResponses == nil || len(input.MapiResponses) == 0 {
@@ -259,18 +253,18 @@ func serialiseSpecialKInputs(parents map[string]*Envelope, flake *[]byte) error 
 		} else {
 			numOfMapiResponses := bt.VarInt(uint64(len(input.MapiResponses)))
 			var mapiResponsesBinary []byte
-			mapiResponsesBinary = append(mapiResponsesBinary, numOfMapiResponses...) // this many mapi responses follow
+			mapiResponsesBinary = append(mapiResponsesBinary, numOfMapiResponses.Bytes()...) // this many mapi responses follow
 			for _, mapiResponse := range input.MapiResponses {
 				mapiR, err := mapiResponse.Bytes()
 				if err != nil {
 					return err
 				}
 				dataLength := bt.VarInt(uint64(len(mapiR)))
-				mapiResponsesBinary = append(mapiResponsesBinary, dataLength...) // of this length.
-				mapiResponsesBinary = append(mapiResponsesBinary, mapiR...)      // the data.
+				mapiResponsesBinary = append(mapiResponsesBinary, dataLength.Bytes()...) // of this length.
+				mapiResponsesBinary = append(mapiResponsesBinary, mapiR...)              // the data.
 			}
 			fullDataLength := bt.VarInt(uint64(len(mapiResponsesBinary)))
-			*flake = append(*flake, fullDataLength...)
+			*flake = append(*flake, fullDataLength.Bytes()...)
 			*flake = append(*flake, mapiResponsesBinary...)
 		}
 
@@ -297,10 +291,10 @@ func NewSpecialKEnvelopeFromBytes(b []byte) (*Envelope, error) {
 	// split up the binary into flakes where each one is to be processed concurrently.
 	var flakes = [][]byte{}
 	for ok := true; ok; ok = allBinary > offset {
-		l, size := bt.DecodeVarInt(b[offset:])
+		l, size := bt.NewVarIntFromBytes(b[offset:])
 		offset += uint64(size)
-		flake := b[offset : offset+l]
-		offset += l
+		flake := b[offset : offset+uint64(l)]
+		offset += uint64(l)
 		flakes = append(flakes, flake)
 	}
 
@@ -505,10 +499,10 @@ func parseSpecialKMapi(b []byte) ([]bc.MapiCallback, error) {
 	// split up the binary into flakes where each one is to be processed concurrently.
 	var responses = [][]byte{}
 	for ok := true; ok; ok = allBinary > internalOffset {
-		l, size := bt.DecodeVarInt(b[internalOffset:])
+		l, size := bt.NewVarIntFromBytes(b[internalOffset:])
 		internalOffset += uint64(size)
-		response := b[internalOffset : internalOffset+l]
-		internalOffset += l
+		response := b[internalOffset : internalOffset+uint64(l)]
+		internalOffset += uint64(l)
 		responses = append(responses, response)
 	}
 
