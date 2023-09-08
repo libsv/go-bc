@@ -3,22 +3,74 @@ package bc
 import (
 	"encoding/hex"
 
+	"crypto/sha256"
+
 	"github.com/libsv/go-bt/v2"
 )
 
-// MerklePathData model json format according to BRC-58.
-type MerklePathData struct {
+// MerklePath data model json format according to BRC-58.
+type MerklePath struct {
 	Index uint64   `json:"index"`
 	Path  []string `json:"path"`
 }
 
-// MerklePath Path Binary Format according to BRC-71 [index, nLeaves, [leaf0, leaf1, leaf2, ... leafnLeaves-1]].
-type MerklePath string
+// FromStringReverse decodes a hex string into a byte slice and reverses it.
+func BytesFromStringReverse(s string) []byte {
+	bytes, _ := hex.DecodeString(s)
+	rev := bt.ReverseBytes(bytes)
+	return rev
+}
 
-// BuildMerklePathBinary on merkle path data model builds merkle path binary format.
-func BuildMerklePathBinary(merklePath *MerklePathData) (MerklePath, error) {
-	index := bt.VarInt(merklePath.Index)
-	nLeaves := bt.VarInt(len(merklePath.Path))
+// StringFromBytesReverse reverses a byte slice and encodes it as a hex string.
+func StringFromBytesReverse(h []byte) string {
+	rev := bt.ReverseBytes(h)
+	return hex.EncodeToString(rev)
+}
+
+func Sha256Sha256(digest []byte) []byte {
+	sha := sha256.Sum256(digest)
+	dsha := sha256.Sum256(sha[:])
+	return dsha[:]
+}
+
+// NewMerklePathFromBytes creates a new MerklePath from a byte slice.
+func NewMerklePathFromBytes(bytes []byte) (*MerklePath, error) {
+	mp := &MerklePath{}
+	mp.Path = make([]string, 0)
+
+	// start paring transaction index
+	var offset int
+	index, size := bt.NewVarIntFromBytes(bytes[offset:])
+	offset += size
+	mp.Index = uint64(index)
+
+	// next value in the byte array is nLeaves (number of leaves in merkle path)
+	nLeaves, size := bt.NewVarIntFromBytes(bytes[offset:])
+	offset += size
+
+	// parse each leaf from the binary path
+	for k := 0; k < int(nLeaves); k++ {
+		leaf := bytes[offset : offset+32]
+		mp.Path = append(mp.Path, StringFromBytesReverse(leaf))
+		offset += 32
+	}
+
+	return mp, nil
+}
+
+// NewMerklePathFromStr creates a MerklePath from hex string.
+func NewMerklePathFromStr(str string) (*MerklePath, error) {
+	bytes, err := hex.DecodeString(str)
+	if err != nil {
+		return nil, err
+	}
+	return NewMerklePathFromBytes(bytes)
+}
+
+// Bytes encodes a MerklePath as a slice of bytes.
+func (mp *MerklePath) Bytes() ([]byte, error) {
+	index := bt.VarInt(mp.Index)
+	nLeaves := bt.VarInt(len(mp.Path))
 
 	// first two arguments in merkle path bynary format are index of the transaction and number of leaves
 	bytes := []byte{}
@@ -26,47 +78,40 @@ func BuildMerklePathBinary(merklePath *MerklePathData) (MerklePath, error) {
 	bytes = append(bytes, nLeaves.Bytes()...)
 
 	// now add each leaf into the binary path
-	for _, leaf := range merklePath.Path {
-		// decode hex leaf into bytes
-		leafBytes, err := hex.DecodeString(leaf)
-		if err != nil {
-			return "", err
-		}
-
-		// append leaf bytes into binary path
-		bytes = append(bytes, leafBytes...)
+	for _, leaf := range mp.Path {
+		// append leaf bytes into binary path, little endian
+		bytes = append(bytes, BytesFromStringReverse(leaf)...)
 	}
 
-	return MerklePath(hex.EncodeToString(bytes)), nil
+	return bytes, nil
 }
 
-// DecodeMerklePathBinary from merkle path binary decodes MerklePathData.
-func DecodeMerklePathBinary(merklePath MerklePath) (*MerklePathData, error) {
-	// convert hex to byte array
-	merklePathBinary, err := hex.DecodeString(string(merklePath))
+// String encodes a MerklePath as a hex string.
+func (mp *MerklePath) String() (string, error) {
+	bytes, err := mp.Bytes()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+	return hex.EncodeToString(bytes), nil
+}
 
-	merklePathData := &MerklePathData{}
-	merklePathData.Path = make([]string, 0)
-
-	// start paring transaction index
-	var offset int
-	index, size := bt.NewVarIntFromBytes(merklePathBinary[offset:])
-	merklePathData.Index = uint64(index)
-	offset += size
-
-	// next value in the byte array is nLeaves (number of leaves in merkle path)
-	nLeaves, size := bt.NewVarIntFromBytes(merklePathBinary[offset:])
-	offset += size
-
-	// parse each leaf from the binary path
-	for k := 0; k < int(nLeaves); k++ {
-		leaf := merklePathBinary[offset : offset+32]
-		merklePathData.Path = append(merklePathData.Path, hex.EncodeToString(leaf))
-		offset += 32
+// CalculateRoot calculates the merkle root from a transaction ID and a MerklePath.
+func (mp *MerklePath) CalculateRoot(txid string) (string, error) {
+	// start with txid
+	workingHash := BytesFromStringReverse(txid)
+	lsb := mp.Index
+	// hash with each path branch
+	for _, leaf := range mp.Path {
+		var digest []byte
+		leafBytes := BytesFromStringReverse(leaf)
+		// if the least significant bit is 1 then the working hash is on the right
+		if lsb&1 > 0 {
+			digest = append(leafBytes, workingHash...)
+		} else {
+			digest = append(workingHash, leafBytes...)
+		}
+		workingHash = Sha256Sha256(digest)
+		lsb = lsb >> 1
 	}
-
-	return merklePathData, nil
+	// check result equality with root
 }
