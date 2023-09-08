@@ -41,6 +41,7 @@ func TestDecodingMerklePathBinary(t *testing.T) {
 		return
 	}
 
+	// data we are expecting to deserialize
 	// merklePathData := bc.MerklePathData{
 	// 	Index: 136,
 	// 	Path: []string{"0c82025f47b31054e9ad52109ef25b00fd9aaae7153564619bab031d4112f56c",

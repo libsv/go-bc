@@ -6,13 +6,10 @@ import (
 	"github.com/libsv/go-bt/v2"
 )
 
-// Merkle path data model json format according to BRC-58
-type MerklePathData struct {
-	Index uint64   `json:"index"`
-	Path  []string `json:"path"`
-}
-
-// Merkle Path Binary Format according to BRC-71 [index, nLeaves, [leaf0, leaf1, leaf2, ... leafnLeaves-1]]
+/*
+Merkle Path Binary Format according to BRC-71 [index, nLeaves, [leaf0, leaf1, leaf2, ... leafnLeaves-1]]
+for reference see https://bsv.brc.dev/transactions/0071
+*/
 type MerklePath string
 
 // Based on merkle path data model builds merkle path binary format
