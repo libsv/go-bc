@@ -23,7 +23,6 @@ func NewMapiCallbackFromBytes(b []byte) (*MapiCallback, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO check signature is valid.
 	return &mapiCallback, nil
 }
 
