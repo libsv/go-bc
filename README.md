@@ -3,7 +3,7 @@
 > The go-to Bitcoin Block Chain (BC) GoLang library  
 
 [![Release](https://img.shields.io/github/release-pre/libsv/go-bc.svg?logo=github&style=flat&v=1)](https://github.com/libsv/go-bc/releases)
-[![Build Status](https://img.shields.io/github/workflow/status/libsv/go-bc/run-go-tests?logo=github&v=3)](https://github.com/libsv/go-bc/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/libsv/go-bc/run-tests.yml?logo=github&v=3)](https://github.com/libsv/go-bc/actions)
 [![Report](https://goreportcard.com/badge/github.com/libsv/go-bc?style=flat&v=1)](https://goreportcard.com/report/github.com/libsv/go-bc)
 [![codecov](https://codecov.io/gh/libsv/go-bc/branch/master/graph/badge.svg?v=1)](https://codecov.io/gh/libsv/go-bc)
 [![Go](https://img.shields.io/github/go-mod/go-version/libsv/go-bc?v=1)](https://golang.org/)
