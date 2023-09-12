@@ -193,7 +193,7 @@ func flagType(flags byte) string {
 		return "blockhash"
 	// if bit 1 of flags is set, target should contain a block header (80 bytes).
 	case 2:
-		return "header"
+		return h
 	default:
 		return ""
 	}

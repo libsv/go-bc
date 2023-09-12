@@ -1,3 +1,4 @@
+// Package data contains test data for the spv package.
 package data
 
 import (

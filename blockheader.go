@@ -24,12 +24,12 @@ Nonce 								32-bit number (starts at 0) 	 																				4
 
 // A BlockHeader in the Bitcoin blockchain.
 type BlockHeader struct {
-	Version        uint32
-	Time           uint32
-	Nonce          uint32
-	HashPrevBlock  []byte
-	HashMerkleRoot []byte
-	Bits           []byte
+	Version        uint32 `json:"version"`
+	Time           uint32 `json:"time"`
+	Nonce          uint32 `json:"nonce"`
+	HashPrevBlock  []byte `json:"hashPrevBlock"`
+	HashMerkleRoot []byte `json:"merkleRoot"`
+	Bits           []byte `json:"bits"`
 }
 
 type bhJSON struct {

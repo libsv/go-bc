@@ -1,3 +1,7 @@
+// Package spv is a simple payment verification library for Bitcoin SV.
+// It is designed to be used by applications that need to verify payments
+// without needing to run a full node. It uses TSC formats for the extended
+// data required to verify an inbound transaction.
 package spv
 
 import (

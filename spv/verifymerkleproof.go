@@ -126,7 +126,7 @@ func (v *verifier) VerifyMerkleProofJSON(ctx context.Context, proof *bc.MerklePr
 		}
 		merkleRoot = blockHeader.HashMerkleRootStr()
 
-	} else if proof.TargetType == "header" && len(proof.Target) == 160 {
+	} else if proof.TargetType == h && len(proof.Target) == 160 {
 		// The `target` field contains a block header
 		var err error
 		merkleRoot, err = bc.ExtractMerkleRootFromBlockHeader(proof.Target)

@@ -1,3 +1,4 @@
+// Package bc is a bitcoin blockchain library bc = block chain.
 package bc
 
 import (
