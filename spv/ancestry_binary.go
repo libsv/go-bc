@@ -140,7 +140,7 @@ func parseMapiCallbacks(b []byte) ([]*bc.MapiCallback, error) {
 	return mapiResponses, nil
 }
 
-func verifyInputOutputPair(tx *bt.Tx, lock *bscript.Script, unlock *bscript.Script) bool {
+func verifyInputOutputPair(_ *bt.Tx, _ *bscript.Script, _ *bscript.Script) bool {
 	// TODO script interpreter.
 	return true
 }
