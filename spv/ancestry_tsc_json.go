@@ -7,6 +7,10 @@ import (
 	"github.com/libsv/go-bt/v2"
 )
 
+const (
+	h = "header"
+)
+
 // TSCAncestriesJSON spec at https://tsc.bitcoinassociation.net/standards/transaction-ancestors/ eventually.
 type TSCAncestriesJSON []TSCAncestryJSON
 
@@ -105,7 +109,7 @@ func flagProofType(flags byte) string {
 		return "blockhash"
 	// if bit 1 of flags is set, target should contain a block header (80 bytes).
 	case 2:
-		return "header"
+		return h
 	default:
 		return ""
 	}
