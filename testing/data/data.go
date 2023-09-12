@@ -6,8 +6,8 @@ import (
 	"path"
 )
 
-// TestDataDir a directory container test data.
-type TestDataDir struct {
+// sataDirTests a directory container test data.
+type dataDirTests struct {
 	prefix string
 	fs     embed.FS
 }
@@ -28,36 +28,36 @@ var spvVerifyData embed.FS
 var blockHeaderData embed.FS
 
 // SpvCreateData data for creating spv envelopes.
-var SpvCreateData = TestDataDir{
+var SpvCreateData = dataDirTests{
 	prefix: "spv/create",
 	fs:     spvCreateData,
 }
 
 // SpvBinaryData data for creating spv envelopes.
-var SpvBinaryData = TestDataDir{
+var SpvBinaryData = dataDirTests{
 	prefix: "spv/binary",
 	fs:     spvBinaryData,
 }
 
 // SpvSerialJSONData data for creating spv envelopes.
-var SpvSerialJSONData = TestDataDir{
+var SpvSerialJSONData = dataDirTests{
 	prefix: "spv/json",
 	fs:     spvSerialJSONData,
 }
 
 // SpvVerifyData data for verifying spv envelopes.
-var SpvVerifyData = TestDataDir{
+var SpvVerifyData = dataDirTests{
 	prefix: "spv/verify",
 	fs:     spvVerifyData,
 }
 
 // BlockHeaderData hash => block header mapping data.
-var BlockHeaderData = TestDataDir{
+var BlockHeaderData = dataDirTests{
 	prefix: "bhc",
 	fs:     blockHeaderData,
 }
 
 // Load the data of a file.
-func (d *TestDataDir) Load(file string) ([]byte, error) {
+func (d *dataDirTests) Load(file string) ([]byte, error) {
 	return d.fs.ReadFile(path.Join(d.prefix, file))
 }

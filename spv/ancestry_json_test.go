@@ -245,7 +245,6 @@ func TestEnvelope_IsAnchored(t *testing.T) {
 func TestEnvelope_Bytes_IsValid(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			fmt.Println("------------------------------------------------------------------ Crunchy Nut ------------------------------------------------------------------")
 			j := []byte(test.jsonString)
 			var e Envelope
 			err := json.Unmarshal(j, &e)
@@ -258,7 +257,7 @@ func TestEnvelope_Bytes_IsValid(t *testing.T) {
 				assert.Error(t, err, "Couldn't decode hexString")
 			}
 
-			efromB, err := NewCrunchyNutEnvelopeFromBytes(b)
+			_, err = NewCrunchyNutEnvelopeFromBytes(b)
 			if err != nil {
 				assert.Error(t, err, "Couldn't create envelope from bytes")
 			}
@@ -268,14 +267,9 @@ func TestEnvelope_Bytes_IsValid(t *testing.T) {
 				assert.Error(t, err, "Couldn't convert envelope to bytes")
 			}
 
-			fmt.Printf("%v bytes: \n\n%+v\n\n", name, hex.EncodeToString(*bFromE))
-			fmt.Printf("e: \n\n%+v\n\n", e)
-			fmt.Printf("efromB: \n\n%+v\n\n", efromB)
-
 			assert.Equal(t, b, *bFromE)
 			assert.NoError(t, err)
 
-			fmt.Println("------------------------------------------------------------------ Special K ------------------------------------------------------------------")
 			j2 := []byte(test.jsonString)
 			var e2 Envelope
 			err2 := json.Unmarshal(j2, &e2)
@@ -288,7 +282,7 @@ func TestEnvelope_Bytes_IsValid(t *testing.T) {
 				assert.Error(t, err, "Couldn't decode hexString")
 			}
 
-			efromB2, err2 := NewSpecialKEnvelopeFromBytes(b2)
+			_, err2 = NewSpecialKEnvelopeFromBytes(b2)
 			if err2 != nil {
 				assert.Error(t, err, "Couldn't create envelope from bytes")
 			}
@@ -297,10 +291,6 @@ func TestEnvelope_Bytes_IsValid(t *testing.T) {
 			if err2 != nil {
 				assert.Error(t, err, "Couldn't convert envelope to bytes")
 			}
-
-			fmt.Printf("%v bytes: \n\n%+v\n\n", name, hex.EncodeToString(*bFromE2))
-			fmt.Printf("e: \n\n%+v\n\n", e2)
-			fmt.Printf("efromB: \n\n%+v\n\n", efromB2)
 
 			assert.Equal(t, b2, *bFromE2)
 			assert.NoError(t, err2)
