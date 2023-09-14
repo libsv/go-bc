@@ -139,6 +139,7 @@ func TestGetMerklePathEmptyPathJson(t *testing.T) {
 
 	merkles, _ := bc.BuildMerkleTreeStore(txids)
 	path := bc.GetTxMerklePath(0, merkles)
-	js, _ := json.Marshal(path)
+	js, err := json.Marshal(path)
+	assert.NoError(t, err)
 	assert.Equal(t, string(js), "{\"index\":0,\"path\":null}")
 }
