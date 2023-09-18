@@ -117,7 +117,7 @@ func (mp *MerklePath) CalculateRoot(txid string) (string, error) {
 	return StringFromBytesReverse(workingHash), nil
 }
 
-// getPathElements traverses the tree and returns the path to coinbase.
+// getPathElements traverses the tree and returns the path to Merkle root.
 func getPathElements(txIndex int, hashes []string) []string {
 	// if our hash index is odd the next hash of the path is the previous element in the array otherwise the next element.
 	var path []string
@@ -135,7 +135,7 @@ func getPathElements(txIndex int, hashes []string) []string {
 		path = append(path, hash)
 	}
 
-	// If we reach the coinbase hash stop path calculation.
+	// If we reach the Merkle root hash stop path calculation.
 	if len(hashes) == 3 {
 		return path
 	}
