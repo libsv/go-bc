@@ -2,6 +2,7 @@ package bc_test
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"testing"
 
 	"github.com/libsv/go-bc"
@@ -93,4 +94,52 @@ func TestGetMerklePath(t *testing.T) {
 	root, err = path.CalculateRoot("728714bbbddd81a54cae473835ae99eb92ed78191327eb11a9d7494273dcad2a")
 	assert.NoError(t, err)
 	assert.Equal(t, expected, root)
+}
+
+func TestGetMerklePathOddPosition(t *testing.T) {
+	txids := []string{
+		"b6d4d13aa08bb4b6cdb3b329cef29b5a5d55d85a85c330d56fddbce78d99c7d6",
+		"426f65f6a6ce79c909e54d8959c874a767db3076e76031be70942b896cc64052",
+		"adc23d36cc457d5847968c2e4d5f017a6f12a2f165102d10d2843f5276cfe68e",
+		"728714bbbddd81a54cae473835ae99eb92ed78191327eb11a9d7494273dcad2a",
+		"e3aa0230aa81abd483023886ad12790acf070e2a9f92d7f0ae3bebd90a904361",
+	}
+
+	merkles, err := bc.BuildMerkleTreeStore(txids)
+	assert.NoError(t, err)
+
+	// build path for tx index 4.
+	path := bc.GetTxMerklePath(4, merkles)
+	root, err := bc.MerkleRootFromBranches("e3aa0230aa81abd483023886ad12790acf070e2a9f92d7f0ae3bebd90a904361", int(path.Index), path.Path)
+	assert.NoError(t, err)
+	assert.Equal(t, merkles[len(merkles)-1], root)
+}
+
+func TestGetMerklePathEmptyPath(t *testing.T) {
+	txids := []string{
+		"b6d4d13aa08bb4b6cdb3b329cef29b5a5d55d85a85c330d56fddbce78d99c7d6",
+	}
+
+	merkles, err := bc.BuildMerkleTreeStore(txids)
+	assert.NoError(t, err)
+
+	// build path for tx index 4.
+	path := bc.GetTxMerklePath(0, merkles)
+	root, err := bc.MerkleRootFromBranches("b6d4d13aa08bb4b6cdb3b329cef29b5a5d55d85a85c330d56fddbce78d99c7d6", int(path.Index), path.Path)
+	assert.NoError(t, err)
+	assert.Equal(t, merkles[len(merkles)-1], root)
+	assert.Equal(t, ([]string)(nil), path.Path)
+	assert.Equal(t, uint64(0), path.Index)
+}
+
+func TestGetMerklePathEmptyPathJson(t *testing.T) {
+	txids := []string{
+		"b6d4d13aa08bb4b6cdb3b329cef29b5a5d55d85a85c330d56fddbce78d99c7d6",
+	}
+
+	merkles, _ := bc.BuildMerkleTreeStore(txids)
+	path := bc.GetTxMerklePath(0, merkles)
+	js, err := json.Marshal(path)
+	assert.NoError(t, err)
+	assert.Equal(t, string(js), "{\"index\":0,\"path\":null}")
 }
