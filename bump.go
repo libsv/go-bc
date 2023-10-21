@@ -2,6 +2,7 @@ package bc
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -45,12 +46,13 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 		n, size := bt.NewVarIntFromBytes(bytes[skip:])
 		skip += size
 		nLeavesAtThisHeight := uint64(n)
+		bump.Path[lv] = make(map[string]leaf, nLeavesAtThisHeight)
 		// For each level we parse a bunch of leaves.
 		for lf := uint64(0); lf < nLeavesAtThisHeight; lf++ {
 			// For each leaf we need to parse the offset, hash, txid and duplicate.
 			offset, size := bt.NewVarIntFromBytes(bytes[skip:])
 			skip += size
-			flags := uint8(bytes[skip])
+			flags := bytes[skip]
 			skip++
 			var l leaf
 			var dup bool
@@ -65,7 +67,7 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 			}
 			l.Hash = StringFromBytesReverse(bytes[skip : skip+32])
 			skip += 32
-			bump.Path[lv] = map[string]leaf{fmt.Sprint(uint64(offset)): l}
+			bump.Path[lv][fmt.Sprint(uint64(offset))] = l
 		}
 	}
 
@@ -79,6 +81,15 @@ func NewBUMPFromStr(str string) (*BUMP, error) {
 		return nil, err
 	}
 	return NewBUMPFromBytes(bytes)
+}
+
+func NewBUMPFromJson(jsonStr string) (*BUMP, error) {
+	bump := &BUMP{}
+	err := json.Unmarshal([]byte(jsonStr), bump)
+	if err != nil {
+		return nil, err
+	}
+	return bump, nil
 }
 
 // Bytes encodes a BUMP as a slice of bytes. BUMP Binary Format according to BRC-74 https://brc.dev/74
