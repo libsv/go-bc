@@ -17,13 +17,14 @@ type BUMP struct {
 
 // It should be written such that the internal bytes are kept for calculations.
 // and the JSON is generated from the internal struct to an external format.
+// leaf represents a leaf in the Merkle tree.
 type leaf struct {
 	Hash      string `json:"hash"`
 	Txid      *bool  `json:"txid,omitempty"`
 	Duplicate *bool  `json:"duplicate,omitempty"`
 }
 
-// NewMerklePathFromBytes creates a new MerklePath from a byte slice.
+// NewBUMPFromBytes creates a new BUMP from a byte slice.
 func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 	bump := &BUMP{}
 
@@ -80,6 +81,7 @@ func NewBUMPFromStr(str string) (*BUMP, error) {
 	return NewBUMPFromBytes(bytes)
 }
 
+// Bytes encodes a BUMP as a slice of bytes. BUMP Binary Format according to BRC-74 https://brc.dev/74
 func (bump *BUMP) Bytes() ([]byte, error) {
 	bytes := []byte{}
 	bytes = append(bytes, bt.VarInt(bump.BlockHeight).Bytes()...)
@@ -101,7 +103,7 @@ func (bump *BUMP) Bytes() ([]byte, error) {
 			if leaf.Txid != nil {
 				flags |= 2
 			}
-			bytes = append(bytes, byte(flags))
+			bytes = append(bytes, flags)
 			if (flags & 1) == 0 {
 				bytes = append(bytes, BytesFromStringReverse(leaf.Hash)...)
 			}
@@ -118,6 +120,7 @@ func (bump *BUMP) String() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
+// CalculateRootGivenTxid calculates the root of the Merkle tree given a txid.
 func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 	// Find the index of the txid at the lowest level of the Merkle tree
 	var index uint64
@@ -141,7 +144,7 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 	workingHash := BytesFromStringReverse(txid)
 	for height, leaves := range bump.Path {
 		offset := (index >> height) ^ 1
-		leaf, exists := leaves[string(offset)]
+		leaf, exists := leaves[fmt.Sprint(offset)]
 		if !exists {
 			return "", fmt.Errorf("We do not have a hash for this index at height: %v", height)
 		}
