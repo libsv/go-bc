@@ -2,24 +2,25 @@ package bc
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/libsv/go-bt/v2"
 )
 
-// BumpJSON data model json format according to BRC-74.
-type BumpJSON struct {
+// BUMP data model json format according to BRC-74.
+type BUMP struct {
 	BlockHeight uint32            `json:"blockHeight"`
 	Path        []map[string]leaf `json:"path"`
 }
 
 // It should be written such that the internal bytes are kept for calculations.
 // and the JSON is generated from the internal struct to an external format.
-
 type leaf struct {
 	Hash      string `json:"hash"`
-	Txid      bool
-	Duplicate bool
+	Txid      *bool  `json:"txid,omitempty"`
+	Duplicate *bool  `json:"duplicate,omitempty"`
 }
 
 // NewMerklePathFromBytes creates a new MerklePath from a byte slice.
@@ -51,8 +52,16 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 			flags := uint8(bytes[skip])
 			skip++
 			var l leaf
-			l.Duplicate = flags&1 > 0
-			l.Txid = flags&2 > 0
+			var dup bool
+			var txid bool
+			dup = flags&1 > 0
+			txid = flags&2 > 0
+			if dup {
+				l.Duplicate = &dup
+			}
+			if txid {
+				l.Txid = &txid
+			}
 			l.Hash = StringFromBytesReverse(bytes[skip : skip+32])
 			skip += 32
 			bump.Path[lv] = map[string]leaf{fmt.Sprint(uint64(offset)): l}
@@ -71,92 +80,83 @@ func NewBUMPFromStr(str string) (*BUMP, error) {
 	return NewBUMPFromBytes(bytes)
 }
 
-// // Bytes encodes a MerklePath as a slice of bytes. MerklePath Binary Format according to BRC-71 https://brc.dev/71
-// func (mp *MerklePath) Bytes() ([]byte, error) {
-// 	index := bt.VarInt(mp.Index)
-// 	nLeaves := bt.VarInt(len(mp.Path))
+func (bump *BUMP) Bytes() ([]byte, error) {
+	bytes := []byte{}
+	bytes = append(bytes, bt.VarInt(bump.BlockHeight).Bytes()...)
+	treeHeight := len(bump.Path)
+	bytes = append(bytes, byte(treeHeight))
+	for level := 0; level < treeHeight; level++ {
+		nLeaves := len(bump.Path[level])
+		bytes = append(bytes, bt.VarInt(nLeaves).Bytes()...)
+		for offset, leaf := range bump.Path[level] {
+			offsetInt, err := strconv.ParseUint(offset, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			bytes = append(bytes, bt.VarInt(offsetInt).Bytes()...)
+			flags := byte(0)
+			if leaf.Duplicate != nil {
+				flags |= 1
+			}
+			if leaf.Txid != nil {
+				flags |= 2
+			}
+			bytes = append(bytes, byte(flags))
+			if (flags & 1) == 0 {
+				bytes = append(bytes, BytesFromStringReverse(leaf.Hash)...)
+			}
+		}
+	}
+	return bytes, nil
+}
 
-// 	// first two arguments in merkle path bynary format are index of the transaction and number of leaves.
-// 	bytes := []byte{}
-// 	bytes = append(bytes, index.Bytes()...)
-// 	bytes = append(bytes, nLeaves.Bytes()...)
+func (bump *BUMP) String() (string, error) {
+	bytes, err := bump.Bytes()
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
 
-// 	// now add each leaf into the binary path.
-// 	for _, leaf := range mp.Path {
-// 		// append leaf bytes into binary path, little endian.
-// 		bytes = append(bytes, BytesFromStringReverse(leaf)...)
-// 	}
+func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
+	// Find the index of the txid at the lowest level of the Merkle tree
+	var index uint64
+	found := false
+	for offset, leaf := range bump.Path[0] {
+		if leaf.Hash == txid {
+			found = true
+			i, err := strconv.ParseUint(offset, 10, 64)
+			if err != nil {
+				return "", err
+			}
+			index = i
+			break
+		}
+	}
+	if !found {
+		return "", errors.New("The BUMP does not contain the txid: " + txid)
+	}
 
-// 	return bytes, nil
-// }
-
-// // String encodes a MerklePath as a hex string.
-// func (mp *MerklePath) String() (string, error) {
-// 	bytes, err := mp.Bytes()
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	return hex.EncodeToString(bytes), nil
-// }
-
-// // CalculateRoot calculates the merkle root from a transaction ID and a MerklePath.
-// func (mp *MerklePath) CalculateRoot(txid string) (string, error) {
-// 	// start with txid
-// 	workingHash := BytesFromStringReverse(txid)
-// 	lsb := mp.Index
-// 	// hash with each path branch
-// 	for _, leaf := range mp.Path {
-// 		var digest []byte
-// 		leafBytes := BytesFromStringReverse(leaf)
-// 		// if the least significant bit is 1 then the working hash is on the right.
-// 		if lsb&1 > 0 {
-// 			digest = append(leafBytes, workingHash...)
-// 		} else {
-// 			digest = append(workingHash, leafBytes...)
-// 		}
-// 		workingHash = Sha256Sha256(digest)
-// 		lsb = lsb >> 1
-// 	}
-// 	return StringFromBytesReverse(workingHash), nil
-// }
-
-// // getPathElements traverses the tree and returns the path to Merkle root.
-// func getPathElements(txIndex int, hashes []string) []string {
-// 	// if our hash index is odd the next hash of the path is the previous element in the array otherwise the next element.
-// 	var path []string
-// 	var hash string
-// 	if txIndex%2 == 0 {
-// 		hash = hashes[txIndex+1]
-// 	} else {
-// 		hash = hashes[txIndex-1]
-// 	}
-
-// 	// when generating path if the neighbour is empty we append itself
-// 	if hash == "" {
-// 		path = append(path, hashes[txIndex])
-// 	} else {
-// 		path = append(path, hash)
-// 	}
-
-// 	// If we reach the Merkle root hash stop path calculation.
-// 	if len(hashes) == 3 {
-// 		return path
-// 	}
-
-// 	return append(path, getPathElements(txIndex/2, hashes[(len(hashes)+1)/2:])...)
-// }
-
-// // GetTxMerklePath with merkle tree we calculate the merkle path for a given transaction.
-// func GetTxMerklePath(txIndex int, merkleTree []string) *MerklePath {
-// 	merklePath := &MerklePath{
-// 		Index: uint64(txIndex),
-// 		Path:  nil,
-// 	}
-
-// 	// if we have only one transaction in the block there is no merkle path to calculate
-// 	if len(merkleTree) != 1 {
-// 		merklePath.Path = getPathElements(txIndex, merkleTree)
-// 	}
-
-// 	return merklePath
-// }
+	// Calculate the root using the index as a way to determine which direction to concatenate.
+	workingHash := BytesFromStringReverse(txid)
+	for height, leaves := range bump.Path {
+		offset := (index >> height) ^ 1
+		leaf, exists := leaves[string(offset)]
+		if !exists {
+			return "", fmt.Errorf("We do not have a hash for this index at height: %v", height)
+		}
+		var digest []byte
+		if leaf.Duplicate != nil {
+			digest = append(workingHash, workingHash...)
+		} else {
+			leafBytes := BytesFromStringReverse(leaf.Hash)
+			if (offset % 2) != 0 {
+				digest = append(leafBytes, workingHash...)
+			} else {
+				digest = append(workingHash, leafBytes...)
+			}
+		}
+		workingHash = Sha256Sha256(digest)
+	}
+	return StringFromBytesReverse(workingHash), nil
+}
