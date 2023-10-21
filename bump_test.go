@@ -61,7 +61,9 @@ func TestNewBUMPFromStr(t *testing.T) {
 	str, err := bump.String()
 	assert.NoError(t, err)
 	assert.Equal(t, hexExample, str)
+}
 
+func TestNewBUMPFromJson(t *testing.T) {
 	jBump, err := NewBUMPFromJson(jsonExample)
 	assert.NoError(t, err)
 	jStr, err := jBump.String()
