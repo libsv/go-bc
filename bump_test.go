@@ -64,7 +64,7 @@ func TestNewBUMPFromStr(t *testing.T) {
 }
 
 func TestNewBUMPFromJson(t *testing.T) {
-	jBump, err := NewBUMPFromJson(jsonExample)
+	jBump, err := NewBUMPFromJSON(jsonExample)
 	assert.NoError(t, err)
 	jStr, err := jBump.String()
 	assert.NoError(t, err)

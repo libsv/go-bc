@@ -83,7 +83,8 @@ func NewBUMPFromStr(str string) (*BUMP, error) {
 	return NewBUMPFromBytes(bytes)
 }
 
-func NewBUMPFromJson(jsonStr string) (*BUMP, error) {
+// NewBUMPFromJSON creates a BUMP from a JSON string.
+func NewBUMPFromJSON(jsonStr string) (*BUMP, error) {
 	bump := &BUMP{}
 	err := json.Unmarshal([]byte(jsonStr), bump)
 	if err != nil {
