@@ -3,7 +3,7 @@ package bc
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -14,16 +14,16 @@ const (
 
 func TestNewBUMPFromStr(t *testing.T) {
 	bump, err := NewBUMPFromStr(hexExample)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	str, err := bump.String()
-	assert.NoError(t, err)
-	assert.Equal(t, hexExample, str)
+	require.NoError(t, err)
+	require.Equal(t, hexExample, str)
 }
 
 func TestNewBUMPFromJson(t *testing.T) {
 	jBump, err := NewBUMPFromJSON(jsonExample)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	jStr, err := jBump.String()
-	assert.NoError(t, err)
-	assert.Equal(t, hexExample, jStr)
+	require.NoError(t, err)
+	require.Equal(t, hexExample, jStr)
 }
