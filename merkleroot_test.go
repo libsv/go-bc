@@ -3,7 +3,7 @@ package bc_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/libsv/go-bc"
 )
@@ -24,8 +24,8 @@ func TestBuildMerkleRoot(t *testing.T) {
 
 	root, err := bc.BuildMerkleRoot(txids)
 
-	assert.NoError(t, err)
-	assert.Equal(t, expected, root)
+	require.NoError(t, err)
+	require.Equal(t, expected, root)
 }
 
 func TestTxsToTxIDs(t *testing.T) {
@@ -53,6 +53,6 @@ func TestTxsToTxIDs(t *testing.T) {
 
 	txids, err := bc.TxsToTxIDs(txs)
 
-	assert.NoError(t, err)
-	assert.Equal(t, expected, txids)
+	require.NoError(t, err)
+	require.Equal(t, expected, txids)
 }

@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/libsv/go-bc"
 )
@@ -53,8 +53,8 @@ func TestMerkleProofBytes(t *testing.T) {
 
 			proof, err := test.merkleProofJSON.Bytes()
 
-			assert.NoError(t, err)
-			assert.Equal(t, expected, proof)
+			require.NoError(t, err)
+			require.Equal(t, expected, proof)
 		})
 	}
 }

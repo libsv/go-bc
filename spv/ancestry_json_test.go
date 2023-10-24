@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/libsv/go-bc"
 )
@@ -237,7 +237,7 @@ func TestEnvelope_IsAnchored(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, test.exp, test.ancestry.IsAnchored())
+			require.Equal(t, test.exp, test.ancestry.IsAnchored())
 		})
 	}
 }
@@ -249,51 +249,51 @@ func TestEnvelope_Bytes_IsValid(t *testing.T) {
 			var e Envelope
 			err := json.Unmarshal(j, &e)
 			if err != nil {
-				assert.Error(t, err, "Couldn't decode jsonString")
+				require.EqualError(t, err, "Couldn't decode jsonString")
 			}
 
 			b, err := hex.DecodeString(test.crunchyNutHexString)
 			if err != nil {
-				assert.Error(t, err, "Couldn't decode hexString")
+				require.EqualError(t, err, "Couldn't decode hexString")
 			}
 
 			_, err = NewCrunchyNutEnvelopeFromBytes(b)
 			if err != nil {
-				assert.Error(t, err, "Couldn't create envelope from bytes")
+				require.EqualError(t, err, "Couldn't create envelope from bytes")
 			}
 
 			bFromE, err := e.CrunchyNutBytes()
 			if err != nil {
-				assert.Error(t, err, "Couldn't convert envelope to bytes")
+				require.EqualError(t, err, "Couldn't convert envelope to bytes")
 			}
 
-			assert.Equal(t, b, *bFromE)
-			assert.NoError(t, err)
+			require.Equal(t, b, *bFromE)
+			require.NoError(t, err)
 
 			j2 := []byte(test.jsonString)
 			var e2 Envelope
 			err2 := json.Unmarshal(j2, &e2)
 			if err2 != nil {
-				assert.Error(t, err, "Couldn't decode jsonString")
+				require.EqualError(t, err, "Couldn't decode jsonString")
 			}
 
 			b2, err2 := hex.DecodeString(test.specialKHexString)
 			if err2 != nil {
-				assert.Error(t, err, "Couldn't decode hexString")
+				require.EqualError(t, err, "Couldn't decode hexString")
 			}
 
 			_, err2 = NewSpecialKEnvelopeFromBytes(b2)
 			if err2 != nil {
-				assert.Error(t, err, "Couldn't create envelope from bytes")
+				require.EqualError(t, err, "Couldn't create envelope from bytes")
 			}
 
 			bFromE2, err2 := e2.SpecialKBytes()
 			if err2 != nil {
-				assert.Error(t, err, "Couldn't convert envelope to bytes")
+				require.EqualError(t, err, "Couldn't convert envelope to bytes")
 			}
 
-			assert.Equal(t, b2, *bFromE2)
-			assert.NoError(t, err2)
+			require.Equal(t, b2, *bFromE2)
+			require.NoError(t, err2)
 		})
 	}
 }
@@ -322,7 +322,7 @@ func BenchmarkCerealizeCrunchyNut(b *testing.B) {
 		var e Envelope
 		err := json.Unmarshal(j, &e)
 		if err != nil {
-			assert.Error(b, err, "Couldn't decode jsonString")
+			require.EqualError(b, err, "Couldn't decode jsonString")
 		}
 		benchmarkCrunchyNutEnvelopeCerealize(b, &e)
 	}
@@ -332,7 +332,7 @@ func BenchmarkDecerealizeCrunchyNut(b *testing.B) {
 	for _, test := range tests {
 		binary, err := hex.DecodeString(test.crunchyNutHexString)
 		if err != nil {
-			assert.Error(b, err, "Couldn't decode hexString")
+			require.EqualError(b, err, "Couldn't decode hexString")
 		}
 		benchmarkCrunchyNutEnvelopeDecerealize(b, binary)
 	}
@@ -362,7 +362,7 @@ func BenchmarkCerealizeSpecialK(b *testing.B) {
 		var e Envelope
 		err := json.Unmarshal(j, &e)
 		if err != nil {
-			assert.Error(b, err, "Couldn't decode jsonString")
+			require.EqualError(b, err, "Couldn't decode jsonString")
 		}
 		benchmarkSpecialKEnvelopeCerealize(b, &e)
 	}
@@ -371,7 +371,7 @@ func BenchmarkDecerealizeSpecialK(b *testing.B) {
 	for _, test := range tests {
 		binary, err := hex.DecodeString(test.specialKHexString)
 		if err != nil {
-			assert.Error(b, err, "Couldn't decode hexString")
+			require.EqualError(b, err, "Couldn't decode hexString")
 		}
 		benchmarkSpecialKEnvelopeDecerealize(b, binary)
 	}

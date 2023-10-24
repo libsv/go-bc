@@ -6,10 +6,11 @@
 package require
 
 import (
-	assert "github.com/stretchr/testify/assert"
 	http "net/http"
 	url "net/url"
 	time "time"
+
+	assert "github.com/stretchr/testify/assert"
 )
 
 // Condition uses a Comparison to assert a complex condition.
@@ -283,7 +284,7 @@ func Equalf(t TestingT, expected interface{}, actual interface{}, msg string, ar
 // Error asserts that a function returned an error (i.e. not `nil`).
 //
 //	  actualObj, err := SomeFunction()
-//	  if assert.Error(t, err) {
+//	  if require.Error(t, err) {
 //		   assert.Equal(t, expectedError, err)
 //	  }
 func Error(t TestingT, err error, msgAndArgs ...interface{}) {
@@ -1347,7 +1348,7 @@ func NoDirExistsf(t TestingT, path string, msg string, args ...interface{}) {
 // NoError asserts that a function returned no error (i.e. `nil`).
 //
 //	  actualObj, err := SomeFunction()
-//	  if assert.NoError(t, err) {
+//	  if require.NoError(t, err) {
 //		   assert.Equal(t, expectedObj, actualObj)
 //	  }
 func NoError(t TestingT, err error, msgAndArgs ...interface{}) {

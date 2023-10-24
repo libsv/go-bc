@@ -6,10 +6,11 @@
 package require
 
 import (
-	assert "github.com/stretchr/testify/assert"
 	http "net/http"
 	url "net/url"
 	time "time"
+
+	assert "github.com/stretchr/testify/assert"
 )
 
 // Condition uses a Comparison to assert a complex condition.
@@ -230,7 +231,7 @@ func (a *Assertions) Equalf(expected interface{}, actual interface{}, msg string
 //
 //	  actualObj, err := SomeFunction()
 //	  if a.Error(err) {
-//		   assert.Equal(t, expectedError, err)
+//		   require.Equal(t, expectedError, err)
 //	  }
 func (a *Assertions) Error(err error, msgAndArgs ...interface{}) {
 	if h, ok := a.t.(tHelper); ok {
@@ -303,7 +304,7 @@ func (a *Assertions) ErrorIsf(err error, target error, msg string, args ...inter
 //
 //	  actualObj, err := SomeFunction()
 //	  if a.Errorf(err, "error message %s", "formatted") {
-//		   assert.Equal(t, expectedErrorf, err)
+//		   require.Equal(t, expectedErrorf, err)
 //	  }
 func (a *Assertions) Errorf(err error, msg string, args ...interface{}) {
 	if h, ok := a.t.(tHelper); ok {
@@ -1066,7 +1067,7 @@ func (a *Assertions) NoDirExistsf(path string, msg string, args ...interface{}) 
 //
 //	  actualObj, err := SomeFunction()
 //	  if a.NoError(err) {
-//		   assert.Equal(t, expectedObj, actualObj)
+//		   require.Equal(t, expectedObj, actualObj)
 //	  }
 func (a *Assertions) NoError(err error, msgAndArgs ...interface{}) {
 	if h, ok := a.t.(tHelper); ok {
@@ -1079,7 +1080,7 @@ func (a *Assertions) NoError(err error, msgAndArgs ...interface{}) {
 //
 //	  actualObj, err := SomeFunction()
 //	  if a.NoErrorf(err, "error message %s", "formatted") {
-//		   assert.Equal(t, expectedObj, actualObj)
+//		   require.Equal(t, expectedObj, actualObj)
 //	  }
 func (a *Assertions) NoErrorf(err error, msg string, args ...interface{}) {
 	if h, ok := a.t.(tHelper); ok {
@@ -1136,7 +1137,7 @@ func (a *Assertions) NotContainsf(s interface{}, contains interface{}, msg strin
 // a slice or a channel with len == 0.
 //
 //	if a.NotEmpty(obj) {
-//	  assert.Equal(t, "two", obj[1])
+//	  require.Equal(t, "two", obj[1])
 //	}
 func (a *Assertions) NotEmpty(object interface{}, msgAndArgs ...interface{}) {
 	if h, ok := a.t.(tHelper); ok {
@@ -1149,7 +1150,7 @@ func (a *Assertions) NotEmpty(object interface{}, msgAndArgs ...interface{}) {
 // a slice or a channel with len == 0.
 //
 //	if a.NotEmptyf(obj, "error message %s", "formatted") {
-//	  assert.Equal(t, "two", obj[1])
+//	  require.Equal(t, "two", obj[1])
 //	}
 func (a *Assertions) NotEmptyf(object interface{}, msg string, args ...interface{}) {
 	if h, ok := a.t.(tHelper); ok {
