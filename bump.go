@@ -176,9 +176,9 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 		} else {
 			leafBytes := BytesFromStringReverse(leafAtThisLevel.Hash)
 			if (offset % 2) != 0 {
-				digest = append(leafBytes, workingHash...)
-			} else {
 				digest = append(workingHash, leafBytes...)
+			} else {
+				digest = append(leafBytes, workingHash...)
 			}
 		}
 		workingHash = Sha256Sha256(digest)
