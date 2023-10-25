@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/libsv/go-bt/v2"
@@ -20,6 +21,13 @@ type BUMP struct {
 // and the JSON is generated from the internal struct to an external format.
 // leaf represents a leaf in the Merkle tree.
 type leaf struct {
+	Hash      string `json:"hash"`
+	Txid      *bool  `json:"txid,omitempty"`
+	Duplicate *bool  `json:"duplicate,omitempty"`
+}
+
+type leafWithOffset struct {
+	Offset    uint64 `json:"offset,omitempty"`
 	Hash      string `json:"hash"`
 	Txid      *bool  `json:"txid,omitempty"`
 	Duplicate *bool  `json:"duplicate,omitempty"`
@@ -93,6 +101,27 @@ func NewBUMPFromJSON(jsonStr string) (*BUMP, error) {
 	return bump, nil
 }
 
+func sortLeavesByOffset(leaves map[string]leaf) []leafWithOffset {
+	orderedLeaves := make([]leafWithOffset, 0)
+	for offset, leaf := range leaves {
+		offsetInt, err := strconv.ParseUint(offset, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		orderedLeaves = append(orderedLeaves, leafWithOffset{
+			Offset:    offsetInt,
+			Hash:      leaf.Hash,
+			Txid:      leaf.Txid,
+			Duplicate: leaf.Duplicate,
+		})
+	}
+	// sort by offset
+	sort.Slice(orderedLeaves, func(i, j int) bool {
+		return orderedLeaves[i].Offset < orderedLeaves[j].Offset
+	})
+	return orderedLeaves
+}
+
 // Bytes encodes a BUMP as a slice of bytes. BUMP Binary Format according to BRC-74 https://brc.dev/74
 func (bump *BUMP) Bytes() ([]byte, error) {
 	bytes := []byte{}
@@ -102,12 +131,10 @@ func (bump *BUMP) Bytes() ([]byte, error) {
 	for level := 0; level < treeHeight; level++ {
 		nLeaves := len(bump.Path[level])
 		bytes = append(bytes, bt.VarInt(nLeaves).Bytes()...)
-		for offset, leaf := range bump.Path[level] {
-			offsetInt, err := strconv.ParseUint(offset, 10, 64)
-			if err != nil {
-				return nil, err
-			}
-			bytes = append(bytes, bt.VarInt(offsetInt).Bytes()...)
+		// order by offset
+		orderedLeaves := sortLeavesByOffset(bump.Path[level])
+		for _, leaf := range orderedLeaves {
+			bytes = append(bytes, bt.VarInt(leaf.Offset).Bytes()...)
 			flags := byte(0)
 			if leaf.Duplicate != nil {
 				flags |= 1
@@ -166,9 +193,9 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 		} else {
 			leafBytes := BytesFromStringReverse(leaf.Hash)
 			if (offset % 2) != 0 {
-				digest = append(leafBytes, workingHash...)
-			} else {
 				digest = append(workingHash, leafBytes...)
+			} else {
+				digest = append(leafBytes, workingHash...)
 			}
 		}
 		workingHash = Sha256Sha256(digest)

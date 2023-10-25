@@ -10,7 +10,7 @@ import (
 	"github.com/libsv/go-bt/v2"
 )
 
-// BUMP data model json format according to BRC-74.
+// BUMP2 data model json format according to BRC-74.
 type BUMP2 struct {
 	BlockHeight uint32    `json:"blockHeight"`
 	Path        [][]leaf2 `json:"path"`
@@ -18,7 +18,7 @@ type BUMP2 struct {
 
 // It should be written such that the internal bytes are kept for calculations.
 // and the JSON is generated from the internal struct to an external format.
-// leaf represents a leaf in the Merkle tree.
+// leaf2 represents a leaf in the Merkle tree.
 type leaf2 struct {
 	Offset    uint64 `json:"offset,omitempty"`
 	Hash      string `json:"hash,omitempty"`
@@ -26,7 +26,7 @@ type leaf2 struct {
 	Duplicate *bool  `json:"duplicate,omitempty"`
 }
 
-// NewBUMPFromBytes creates a new BUMP from a byte slice.
+// NewBUMPFromBytes2 creates a new BUMP from a byte slice.
 func NewBUMPFromBytes2(bytes []byte) (*BUMP2, error) {
 	bump := &BUMP2{}
 
@@ -83,7 +83,7 @@ func NewBUMPFromBytes2(bytes []byte) (*BUMP2, error) {
 	return bump, nil
 }
 
-// NewBUMPFromStr creates a BUMP from hex string.
+// NewBUMPFromStr2 creates a BUMP from hex string.
 func NewBUMPFromStr2(str string) (*BUMP2, error) {
 	bytes, err := hex.DecodeString(str)
 	if err != nil {
@@ -92,7 +92,7 @@ func NewBUMPFromStr2(str string) (*BUMP2, error) {
 	return NewBUMPFromBytes2(bytes)
 }
 
-// NewBUMPFromJSON creates a BUMP from a JSON string.
+// NewBUMPFromJSON2 creates a BUMP from a JSON string.
 func NewBUMPFromJSON2(jsonStr string) (*BUMP2, error) {
 	bump := &BUMP2{}
 	err := json.Unmarshal([]byte(jsonStr), bump)
