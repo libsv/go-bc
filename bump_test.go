@@ -61,3 +61,22 @@ func TestCalculateRootGivenTxid2(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, rootExample, root)
 }
+func BenchmarkCalculateRootOption1(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		bump, err := NewBUMPFromStr(hexExample)
+		require.NoError(b, err)
+		root, err := bump.CalculateRootGivenTxid(txidExample)
+		require.NoError(b, err)
+		require.Equal(b, rootExample, root)
+	}
+}
+
+func BenchmarkCalculateRootOption2(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		bump, err := NewBUMPFromStr2(hexExample)
+		require.NoError(b, err)
+		root, err := bump.CalculateRootGivenTxid(txidExample)
+		require.NoError(b, err)
+		require.Equal(b, rootExample, root)
+	}
+}
