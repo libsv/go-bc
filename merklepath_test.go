@@ -7,7 +7,7 @@ import (
 
 	"github.com/libsv/go-bc"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildingMerklePathBinary(t *testing.T) {
@@ -36,7 +36,7 @@ func TestBuildingMerklePathBinary(t *testing.T) {
 	}
 
 	// assert binary path is expected.
-	assert.Equal(t, mp, merklePathBinary)
+	require.Equal(t, mp, merklePathBinary)
 }
 
 func TestDecodingMerklePathBinary(t *testing.T) {
@@ -58,12 +58,12 @@ func TestDecodingMerklePathBinary(t *testing.T) {
 	// }
 
 	// assert binary path is expected.
-	assert.Equal(t, uint64(136), merklePath.Index)
-	assert.Equal(t, 4, len(merklePath.Path))
-	assert.Equal(t, "6cf512411d03ab9b61643515e7aa9afd005bf29e1052ade95410b3475f02820c", merklePath.Path[0])
-	assert.Equal(t, "cd73c0c6bb645581816fa960fd2f1636062fcbf23cb57981074ab8d708a76e3b", merklePath.Path[1])
-	assert.Equal(t, "b4c8d919190a090e77b73ffcd52b85babaaeeb62da000473102aca7f070facef", merklePath.Path[2])
-	assert.Equal(t, "3470d882cf556a4b943639eba15dc795dffdbebdc98b9a98e3637fda96e3811e", merklePath.Path[3])
+	require.Equal(t, uint64(136), merklePath.Index)
+	require.Len(t, merklePath.Path, 4)
+	require.Equal(t, "6cf512411d03ab9b61643515e7aa9afd005bf29e1052ade95410b3475f02820c", merklePath.Path[0])
+	require.Equal(t, "cd73c0c6bb645581816fa960fd2f1636062fcbf23cb57981074ab8d708a76e3b", merklePath.Path[1])
+	require.Equal(t, "b4c8d919190a090e77b73ffcd52b85babaaeeb62da000473102aca7f070facef", merklePath.Path[2])
+	require.Equal(t, "3470d882cf556a4b943639eba15dc795dffdbebdc98b9a98e3637fda96e3811e", merklePath.Path[3])
 }
 
 func TestGetMerklePath(t *testing.T) {
@@ -81,19 +81,19 @@ func TestGetMerklePath(t *testing.T) {
 	expected := "1a1e779cd7dfc59f603b4e88842121001af822b2dc5d3b167ae66152e586a6b0"
 
 	merkles, err := bc.BuildMerkleTreeStore(txids)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// build path for tx index 4.
 	path := bc.GetTxMerklePath(4, merkles)
 	root, err := bc.MerkleRootFromBranches("e3aa0230aa81abd483023886ad12790acf070e2a9f92d7f0ae3bebd90a904361", int(path.Index), path.Path)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, root)
+	require.NoError(t, err)
+	require.Equal(t, expected, root)
 
 	// build path for tx index 3.
 	path = bc.GetTxMerklePath(3, merkles)
 	root, err = path.CalculateRoot("728714bbbddd81a54cae473835ae99eb92ed78191327eb11a9d7494273dcad2a")
-	assert.NoError(t, err)
-	assert.Equal(t, expected, root)
+	require.NoError(t, err)
+	require.Equal(t, expected, root)
 }
 
 func TestGetMerklePathOddPosition(t *testing.T) {
@@ -106,13 +106,13 @@ func TestGetMerklePathOddPosition(t *testing.T) {
 	}
 
 	merkles, err := bc.BuildMerkleTreeStore(txids)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// build path for tx index 4.
 	path := bc.GetTxMerklePath(4, merkles)
 	root, err := bc.MerkleRootFromBranches("e3aa0230aa81abd483023886ad12790acf070e2a9f92d7f0ae3bebd90a904361", int(path.Index), path.Path)
-	assert.NoError(t, err)
-	assert.Equal(t, merkles[len(merkles)-1], root)
+	require.NoError(t, err)
+	require.Equal(t, merkles[len(merkles)-1], root)
 }
 
 func TestGetMerklePathEmptyPath(t *testing.T) {
@@ -121,15 +121,15 @@ func TestGetMerklePathEmptyPath(t *testing.T) {
 	}
 
 	merkles, err := bc.BuildMerkleTreeStore(txids)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// build path for tx index 4.
 	path := bc.GetTxMerklePath(0, merkles)
 	root, err := bc.MerkleRootFromBranches("b6d4d13aa08bb4b6cdb3b329cef29b5a5d55d85a85c330d56fddbce78d99c7d6", int(path.Index), path.Path)
-	assert.NoError(t, err)
-	assert.Equal(t, merkles[len(merkles)-1], root)
-	assert.Equal(t, ([]string)(nil), path.Path)
-	assert.Equal(t, uint64(0), path.Index)
+	require.NoError(t, err)
+	require.Equal(t, merkles[len(merkles)-1], root)
+	require.Equal(t, ([]string)(nil), path.Path)
+	require.Equal(t, uint64(0), path.Index)
 }
 
 func TestGetMerklePathEmptyPathJson(t *testing.T) {
@@ -140,6 +140,6 @@ func TestGetMerklePathEmptyPathJson(t *testing.T) {
 	merkles, _ := bc.BuildMerkleTreeStore(txids)
 	path := bc.GetTxMerklePath(0, merkles)
 	js, err := json.Marshal(path)
-	assert.NoError(t, err)
-	assert.Equal(t, string(js), "{\"index\":0,\"path\":null}")
+	require.NoError(t, err)
+	require.Equal(t, "{\"index\":0,\"path\":null}", string(js))
 }

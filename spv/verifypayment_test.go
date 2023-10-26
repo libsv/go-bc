@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/libsv/go-bc"
 	"github.com/libsv/go-bc/spv"
@@ -214,38 +214,38 @@ func TestSPVEnvelope_VerifyPayment(t *testing.T) {
 			}{}
 			if test.testFile != "" {
 				bb, err := data.SpvVerifyData.Load(test.testFile + ".json")
-				assert.NoError(t, err)
-				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&testData))
+				require.NoError(t, err)
+				require.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&testData))
 			}
 
 			if test.testFile == "" {
-				assert.EqualError(t, errors.Cause(spv.ErrNilInitialPayment), test.expErr.Error())
+				require.EqualError(t, errors.Cause(spv.ErrNilInitialPayment), test.expErr.Error())
 				return
 			}
 
 			v, err := spv.NewPaymentVerifier(mch, test.setupOpts...)
-			assert.NoError(t, err, "expected no error when creating spv client")
+			require.NoError(t, err, "expected no error when creating spv client")
 
 			ancestryBytes, err := testData.Envelope.Bytes()
-			assert.NoError(t, err, "expected no error when creating binary from json")
+			require.NoError(t, err, "expected no error when creating binary from json")
 
 			paymentBytes, err := hex.DecodeString(testData.Envelope.RawTx)
-			assert.NoError(t, err, "decoding hex rawtx failed")
+			require.NoError(t, err, "decoding hex rawtx failed")
 
 			opts := append(test.setupOpts, test.overrideOpts...)
 			paymentTx, err := bt.NewTxFromBytes(paymentBytes)
 			if err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			err = v.VerifyPayment(context.Background(), &spv.Payment{
 				PaymentTx: paymentTx,
 				Ancestry:  ancestryBytes,
 			}, opts...)
 			if test.expErrBinary != nil {
-				assert.Error(t, err)
-				assert.EqualError(t, errors.Cause(err), test.expErrBinary.Error())
+				require.Error(t, err)
+				require.EqualError(t, errors.Cause(err), test.expErrBinary.Error())
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -290,32 +290,32 @@ func TestVerifyAncestryBinary(t *testing.T) {
 					Ancestry  string `json:"ancestors"`
 				}{}
 				bb, err := data.SpvBinaryData.Load(test.testFile + ".json")
-				assert.NoError(t, err)
-				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&testDataJSON))
+				require.NoError(t, err)
+				require.NoError(t, json.NewDecoder(bytes.NewBuffer(bb)).Decode(&testDataJSON))
 
 				v, err := spv.NewPaymentVerifier(mch, test.setupOpts...)
-				assert.NoError(t, err, "expected no error when creating spv client")
+				require.NoError(t, err, "expected no error when creating spv client")
 
 				paymentBytes, err := hex.DecodeString(testDataJSON.PaymentTx)
-				assert.NoError(t, err, "expected no error when creating binary from payemnt hex")
+				require.NoError(t, err, "expected no error when creating binary from payemnt hex")
 
 				ancestryBytes, err := hex.DecodeString(testDataJSON.Ancestry)
-				assert.NoError(t, err, "expected no error when creating binary from ancestry hex")
+				require.NoError(t, err, "expected no error when creating binary from ancestry hex")
 
 				opts := append(test.setupOpts, test.overrideOpts...)
 				paymentTx, err := bt.NewTxFromBytes(paymentBytes)
 				if err != nil {
-					assert.NoError(t, err)
+					require.NoError(t, err)
 				}
 				err = v.VerifyPayment(context.Background(), &spv.Payment{
 					PaymentTx: paymentTx,
 					Ancestry:  ancestryBytes,
 				}, opts...)
 				if test.expErr != nil {
-					assert.Error(t, err)
-					assert.EqualError(t, errors.Cause(err), test.expErr.Error())
+					require.Error(t, err)
+					require.EqualError(t, errors.Cause(err), test.expErr.Error())
 				} else {
-					assert.NoError(t, err)
+					require.NoError(t, err)
 				}
 			}
 		})

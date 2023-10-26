@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/libsv/go-bc"
 )
@@ -33,8 +34,8 @@ func TestNewBlockHeader(t *testing.T) {
 	headerBytes := "0000002074a17794e7890e9124d87e122b7f67b9d707dcb6c5b9d542b22eff3d13054678e9d8afa92026c2c0873524b18cbf2479720a8471952770c847d9ec8e1e939dfc1f593460ffff7f2000000000"
 	bh, err := bc.NewBlockHeaderFromStr(headerBytes)
 
-	assert.NoError(t, err)
-	assert.Equal(t, ebh, bh)
+	require.NoError(t, err)
+	require.Equal(t, ebh, bh)
 }
 
 func TestBlockHeaderString(t *testing.T) {
@@ -58,14 +59,14 @@ func TestBlockHeaderString(t *testing.T) {
 		Nonce: 0,
 	}
 
-	assert.Equal(t, expectedHeader, bh.String())
+	require.Equal(t, expectedHeader, bh.String())
 }
 
 func TestBlockHeaderStringAndBytesMatch(t *testing.T) {
 	headerStr := "0000002074a17794e7890e9124d87e122b7f67b9d707dcb6c5b9d542b22eff3d13054678e9d8afa92026c2c0873524b18cbf2479720a8471952770c847d9ec8e1e939dfc1f593460ffff7f2000000000"
 	bh, err := bc.NewBlockHeaderFromStr(headerStr)
-	assert.NoError(t, err)
-	assert.Equal(t, hex.EncodeToString(bh.Bytes()), bh.String())
+	require.NoError(t, err)
+	require.Equal(t, hex.EncodeToString(bh.Bytes()), bh.String())
 }
 
 func TestBlockHeaderInvalid(t *testing.T) {
@@ -90,8 +91,8 @@ func TestBlockHeaderInvalid(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			_, err := bc.NewBlockHeaderFromStr(test.expectedHeader)
-			assert.Error(t, err)
-			assert.EqualError(t, err, test.expErr.Error())
+			require.Error(t, err)
+			require.EqualError(t, err, test.expErr.Error())
 		})
 	}
 }
@@ -101,33 +102,33 @@ func TestExtractMerkleRootFromBlockHeader(t *testing.T) {
 
 	merkleRoot, err := bc.ExtractMerkleRootFromBlockHeader(header)
 
-	assert.NoError(t, err)
-	assert.Equal(t, merkleRoot, "96cbb75fd2ef98e4309eebc8a54d2386333d936ded2a0f3e06c23a91bb612f70")
+	require.NoError(t, err)
+	require.Equal(t, "96cbb75fd2ef98e4309eebc8a54d2386333d936ded2a0f3e06c23a91bb612f70", merkleRoot)
 }
 
 func TestEncodeAndDecodeBlockHeader(t *testing.T) {
 	// the genesis block
 	genesisHex := "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"
 	genesis, err := bc.NewBlockHeaderFromStr(genesisHex)
-	assert.NoError(t, err)
-	assert.Equal(t, genesisHex, genesis.String())
+	require.NoError(t, err)
+	require.Equal(t, genesisHex, genesis.String())
 }
 
 func TestVerifyBlockHeader(t *testing.T) {
 	// the genesis block
 	genesisHex := "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"
 	header, err := hex.DecodeString(genesisHex)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	genesis, err := bc.NewBlockHeaderFromBytes(header)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, genesisHex, genesis.String())
+	require.Equal(t, genesisHex, genesis.String())
 	assert.True(t, genesis.Valid())
 
 	// change one letter
 	header[0] = 222
 	genesisInvalid, err := bc.NewBlockHeaderFromBytes(header)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, genesisInvalid.Valid())
 }
 
@@ -186,8 +187,8 @@ func TestBlockHeader_MarshalJSON(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			bhj, err := json.MarshalIndent(test.bh, "", "\t")
-			assert.NoError(t, err)
-			assert.Equal(t, test.expJSON, string(bhj))
+			require.NoError(t, err)
+			require.Equal(t, test.expJSON, string(bhj))
 		})
 	}
 }
@@ -232,15 +233,15 @@ func TestBlockHeader_UnmarshalJSON(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			b, err := json.Marshal(test.bh)
 			if test.err != nil {
-				assert.Error(t, err)
-				assert.EqualError(t, err, test.err.Error())
+				require.Error(t, err)
+				require.EqualError(t, err, test.err.Error())
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			var bh *bc.BlockHeader
-			assert.NoError(t, json.Unmarshal(b, &bh))
-			assert.Equal(t, test.bh.String(), bh.String())
+			require.NoError(t, json.Unmarshal(b, &bh))
+			require.Equal(t, test.bh.String(), bh.String())
 		})
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/libsv/go-bc"
 )
@@ -17,8 +17,8 @@ func TestGetMerkleTreeParentStr(t *testing.T) {
 
 	parent, err := bc.MerkleTreeParentStr(leftNode, rightNode)
 
-	assert.NoError(t, err)
-	assert.Equal(t, expected, parent)
+	require.NoError(t, err)
+	require.Equal(t, expected, parent)
 }
 
 func TestGetMerkleTreeParent(t *testing.T) {
@@ -29,5 +29,5 @@ func TestGetMerkleTreeParent(t *testing.T) {
 
 	parent := bc.MerkleTreeParent(leftNode, rightNode)
 
-	assert.Equal(t, expected, parent)
+	require.Equal(t, expected, parent)
 }

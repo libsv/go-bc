@@ -10,6 +10,7 @@ import (
 
 	"github.com/libsv/go-bt/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/libsv/go-bc"
 	"github.com/libsv/go-bc/spv"
@@ -795,7 +796,7 @@ func TestSPVEnvelope_CreateEnvelope(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			testTx, err := bt.NewTxFromString(test.tx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			mock := &mockTxMerkleGetter{
 				txStoreFunc: test.txFunc,
@@ -803,22 +804,22 @@ func TestSPVEnvelope_CreateEnvelope(t *testing.T) {
 			}
 
 			c, err := spv.NewEnvelopeCreator(mock, mock)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			ancestry, err := c.CreateTxAncestry(context.TODO(), testTx)
 			if test.expErr == nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, ancestry)
 
 				bb, err := data.SpvCreateData.Load(test.expFile + ".json")
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				var env spv.AncestryJSON
-				assert.NoError(t, json.NewDecoder(bytes.NewReader(bb)).Decode(&env))
-				assert.Equal(t, env, *ancestry)
+				require.NoError(t, json.NewDecoder(bytes.NewReader(bb)).Decode(&env))
+				require.Equal(t, env, *ancestry)
 			} else {
-				assert.Error(t, err)
-				assert.EqualError(t, err, test.expErr.Error())
+				require.Error(t, err)
+				require.EqualError(t, err, test.expErr.Error())
 			}
 		})
 	}

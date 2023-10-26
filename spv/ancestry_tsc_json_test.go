@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/libsv/go-bc/spv"
 	"github.com/libsv/go-bc/testing/data"
@@ -43,18 +43,18 @@ func TestAncestryBinaryToTSCJSON(t *testing.T) {
 			if test.testFile != "" {
 				testData := &TestData{}
 				jBinary, err := data.SpvBinaryData.Load(test.testFile + ".json")
-				assert.NoError(t, err)
-				assert.NoError(t, json.NewDecoder(bytes.NewBuffer(jBinary)).Decode(&testData))
+				require.NoError(t, err)
+				require.NoError(t, json.NewDecoder(bytes.NewBuffer(jBinary)).Decode(&testData))
 
 				binary, err := hex.DecodeString(testData.Ancestors)
-				assert.NoError(t, err, "expected no error when creating binary from hex")
+				require.NoError(t, err, "expected no error when creating binary from hex")
 
 				j, err := spv.NewAncestryJSONFromBytes(binary)
-				assert.NoError(t, err, "expected no error when transforming to json struct")
+				require.NoError(t, err, "expected no error when transforming to json struct")
 
 				_, err = json.Marshal(j)
-				assert.NoError(t, err, "expected no error when transforming to json bytes")
-				assert.NoError(t, err)
+				require.NoError(t, err, "expected no error when transforming to json bytes")
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -90,22 +90,22 @@ func TestTSCAncestryJSONToBinary(t *testing.T) {
 				testFile := &spv.TSCAncestriesJSON{}
 				if test.testFile != "" {
 					jBinary, err := data.SpvSerialJSONData.Load(test.testFile + ".json")
-					assert.NoError(t, err)
-					assert.NoError(t, json.NewDecoder(bytes.NewBuffer(jBinary)).Decode(&testFile))
+					require.NoError(t, err)
+					require.NoError(t, json.NewDecoder(bytes.NewBuffer(jBinary)).Decode(&testFile))
 				}
 				_, err := testFile.Bytes()
-				assert.NoError(t, err, "expected no error when converting ancestry to bytes")
+				require.NoError(t, err, "expected no error when converting ancestry to bytes")
 
 				// FIXME:
 				// tx, err := bt.NewTxFromString(test.paymentTx)
-				// assert.NoError(t, err)
+				// require.NoError(t, err)
 				// m, err := spv.NewMerkleProofVerifier(&mockBlockHeaderClient{})
-				// assert.NoError(t, err)
+				// require.NoError(t, err)
 				// err = spv.VerifyAncestry(context.Background(), &spv.Payment{
 				// 	PaymentTx: tx,
 				// 	Ancestry:  a,
 				// }, m)
-				// assert.NoError(t, err)
+				// require.NoError(t, err)
 			}
 		})
 	}

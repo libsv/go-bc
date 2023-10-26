@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/libsv/go-bc"
 )
@@ -26,11 +27,11 @@ func TestParseBinaryMerkleProof(t *testing.T) {
 
 	mpb, err := parseBinaryMerkleProof(proof)
 
-	assert.NoError(t, err)
-	assert.Equal(t, proofJSON.Index, mpb.index)
-	assert.Equal(t, proofJSON.TxOrID, mpb.txOrID)
-	assert.Equal(t, proofJSON.Target, mpb.target)
-	assert.Equal(t, proofJSON.Nodes, mpb.nodes)
+	require.NoError(t, err)
+	require.Equal(t, proofJSON.Index, mpb.index)
+	require.Equal(t, proofJSON.TxOrID, mpb.txOrID)
+	require.Equal(t, proofJSON.Target, mpb.target)
+	require.Equal(t, proofJSON.Nodes, mpb.nodes)
 }
 
 func TestVerifyProof(t *testing.T) {
@@ -41,7 +42,7 @@ func TestVerifyProof(t *testing.T) {
 
 	valid, isLastInTree, err := verifyProof(c, merkleRoot, uint64(index), nodes)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, isLastInTree)
 	assert.True(t, valid)
 }

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/libsv/go-bc"
 	"github.com/libsv/go-bc/spv"
@@ -27,10 +27,10 @@ func TestPaymentVerifier_NewPaymentVerifier(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			_, err := spv.NewPaymentVerifier(test.bhc)
 			if test.expErr == nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.Error(t, err)
-				assert.EqualError(t, err, test.expErr.Error())
+				require.Error(t, err)
+				require.EqualError(t, err, test.expErr.Error())
 			}
 		})
 	}
@@ -53,10 +53,10 @@ func TestMerkleProofVerifier_NewMerkleProofVerifier(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			_, err := spv.NewMerkleProofVerifier(test.bhc)
 			if test.expErr == nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.Error(t, err)
-				assert.EqualError(t, err, test.expErr.Error())
+				require.Error(t, err)
+				require.EqualError(t, err, test.expErr.Error())
 			}
 		})
 	}
