@@ -20,10 +20,10 @@ type BUMP2 struct {
 // and the JSON is generated from the internal struct to an external format.
 // leaf2 represents a leaf in the Merkle tree.
 type leaf2 struct {
-	Offset    uint64 `json:"offset,omitempty"`
-	Hash      string `json:"hash,omitempty"`
-	Txid      *bool  `json:"txid,omitempty"`
-	Duplicate *bool  `json:"duplicate,omitempty"`
+	Offset    uint64  `json:"offset,omitempty"`
+	Hash      *string `json:"hash,omitempty"`
+	Txid      *bool   `json:"txid,omitempty"`
+	Duplicate *bool   `json:"duplicate,omitempty"`
 }
 
 // NewBUMPFromBytes2 creates a new BUMP from a byte slice.
@@ -64,7 +64,8 @@ func NewBUMPFromBytes2(bytes []byte) (*BUMP2, error) {
 			if dup {
 				l.Duplicate = &dup
 			} else {
-				l.Hash = StringFromBytesReverse(bytes[skip : skip+32])
+				h := StringFromBytesReverse(bytes[skip : skip+32])
+				l.Hash = &h
 				skip += 32
 			}
 			if txid {
@@ -123,7 +124,7 @@ func (bump *BUMP2) Bytes() ([]byte, error) {
 			}
 			bytes = append(bytes, flags)
 			if (flags & 1) == 0 {
-				bytes = append(bytes, BytesFromStringReverse(leaf.Hash)...)
+				bytes = append(bytes, BytesFromStringReverse(*leaf.Hash)...)
 			}
 		}
 	}
@@ -144,7 +145,7 @@ func (bump *BUMP2) CalculateRootGivenTxid(txid string) (string, error) {
 	var index uint64
 	txidFound := false
 	for _, l := range bump.Path[0] {
-		if l.Hash == txid {
+		if *l.Hash == txid {
 			txidFound = true
 			index = l.Offset
 			break
@@ -175,7 +176,7 @@ func (bump *BUMP2) CalculateRootGivenTxid(txid string) (string, error) {
 		if leafAtThisLevel.Duplicate != nil {
 			digest = append(workingHash, workingHash...)
 		} else {
-			leafBytes := BytesFromStringReverse(leafAtThisLevel.Hash)
+			leafBytes := BytesFromStringReverse(*leafAtThisLevel.Hash)
 			if (offset % 2) != 0 {
 				digest = append(workingHash, leafBytes...)
 			} else {
@@ -185,4 +186,69 @@ func (bump *BUMP2) CalculateRootGivenTxid(txid string) (string, error) {
 		workingHash = Sha256Sha256(digest)
 	}
 	return StringFromBytesReverse(workingHash), nil
+}
+
+// compareRoots2 compares the roots of two BUMP objects.
+func compareRoots2(bump *BUMP2, another *BUMP2) error {
+	var firstTxid string
+	// keys of map
+	for _, leaf := range bump.Path[0] {
+		if leaf.Hash != nil {
+			firstTxid = *leaf.Hash
+			break
+		}
+	}
+	// keys of the first level are the txids
+	root1, err := bump.CalculateRootGivenTxid(firstTxid)
+	if err != nil {
+		return err
+	}
+	var firstTxidInOther string
+	// keys of map
+	for _, leaf := range another.Path[0] {
+		if leaf.Hash != nil {
+			firstTxidInOther = *leaf.Hash
+			break
+		}
+	}
+	root2, err := another.CalculateRootGivenTxid(firstTxidInOther)
+	if err != nil {
+		return err
+	}
+	if root1 != root2 {
+		return errors.New("roots mismatch")
+	}
+	return nil
+}
+
+// Add combines two BUMP objects.
+func (bump *BUMP2) Add(another *BUMP2) error {
+	if bump.BlockHeight != another.BlockHeight {
+		return errors.New("block height mismatch")
+	}
+	if len(bump.Path) != len(another.Path) {
+		return errors.New("tree height mismatch")
+	}
+	err := compareRoots2(bump, another)
+	if err != nil {
+		return err
+	}
+	for level, leaves := range another.Path {
+		for _, anotherLeaf := range leaves {
+			found := false
+			for _, leaf := range bump.Path[level] {
+				if leaf.Offset == anotherLeaf.Offset {
+					if leaf.Txid == nil {
+						leaf.Txid = anotherLeaf.Txid
+					}
+					found = true
+					break
+				}
+			}
+			if !found {
+				bump.Path[level] = append(bump.Path[level], anotherLeaf)
+			}
+		}
+	}
+	return nil
 }

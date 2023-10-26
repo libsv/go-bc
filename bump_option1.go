@@ -145,7 +145,7 @@ func (bump *BUMP) Bytes() ([]byte, error) {
 				flags |= 2
 			}
 			bytes = append(bytes, flags)
-			if (flags & 1) == 0 {
+			if leaf.Duplicate == nil {
 				bytes = append(bytes, BytesFromStringReverse(*leaf.Hash)...)
 			}
 		}
@@ -185,15 +185,15 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 	workingHash := BytesFromStringReverse(txid)
 	for height, leaves := range bump.Path {
 		offset := (index >> height) ^ 1
-		leaf, exists := leaves[fmt.Sprint(offset)]
+		lf, exists := leaves[fmt.Sprint(offset)]
 		if !exists {
 			return "", fmt.Errorf("We do not have a hash for this index at height: %v", height)
 		}
 		var digest []byte
-		if leaf.Duplicate != nil {
+		if lf.Duplicate != nil {
 			digest = append(workingHash, workingHash...)
 		} else {
-			leafBytes := BytesFromStringReverse(*leaf.Hash)
+			leafBytes := BytesFromStringReverse(*lf.Hash)
 			if (offset % 2) != 0 {
 				digest = append(workingHash, leafBytes...)
 			} else {
@@ -205,12 +205,13 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 	return StringFromBytesReverse(workingHash), nil
 }
 
+// compareRoots compares the roots of two BUMP objects.
 func compareRoots(bump *BUMP, another *BUMP) error {
 	var firstTxid string
 	// keys of map
-	for _, leaf := range bump.Path[0] {
-		if leaf.Hash != nil {
-			firstTxid = *leaf.Hash
+	for _, lf := range bump.Path[0] {
+		if lf.Hash != nil {
+			firstTxid = *lf.Hash
 			break
 		}
 	}
@@ -221,9 +222,9 @@ func compareRoots(bump *BUMP, another *BUMP) error {
 	}
 	var firstTxidInOther string
 	// keys of map
-	for _, leaf := range another.Path[0] {
-		if leaf.Hash != nil {
-			firstTxidInOther = *leaf.Hash
+	for _, lf := range another.Path[0] {
+		if lf.Hash != nil {
+			firstTxidInOther = *lf.Hash
 			break
 		}
 	}
@@ -238,27 +239,42 @@ func compareRoots(bump *BUMP, another *BUMP) error {
 }
 
 // Add combines two BUMP objects.
-func (bump *BUMP) Add(another *BUMP) error {
+func (bump *BUMP) Add(another *BUMP) (*BUMP, error) {
 	if bump.BlockHeight != another.BlockHeight {
-		return errors.New("block height mismatch")
+		return nil, errors.New("block height mismatch")
 	}
 	if len(bump.Path) != len(another.Path) {
-		return errors.New("tree height mismatch")
+		return nil, errors.New("tree height mismatch")
 	}
 	err := compareRoots(bump, another)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	combinedPath := make([]map[string]leaf, 0)
 	for level, leaves := range another.Path {
+		leavesAtThisLevel := bump.Path[level]
 		for offset, anotherLeaf := range leaves {
-			if leaf, exists := bump.Path[level][offset]; exists {
-				if leaf.Txid == nil && leaf.Txid != nil {
-					leaf.Txid = anotherLeaf.Txid
+			if lf, exists := bump.Path[level][offset]; exists {
+				if lf.Txid == nil && lf.Txid != nil {
+					lf.Txid = anotherLeaf.Txid
 				}
 			} else {
-				bump.Path[level][offset] = anotherLeaf
+				leavesAtThisLevel[offset] = anotherLeaf
 			}
 		}
+		orderedLeaves := sortLeavesByOffset(leavesAtThisLevel)
+		latl := make(map[string]leaf, 0)
+		for _, l := range orderedLeaves {
+			latl[fmt.Sprint(l.Offset)] = leaf{
+				Hash:      l.Hash,
+				Txid:      l.Txid,
+				Duplicate: l.Duplicate,
+			}
+		}
+		combinedPath = append(combinedPath, latl)
 	}
-	return nil
+	return &BUMP{
+		BlockHeight: bump.BlockHeight,
+		Path:        combinedPath,
+	}, nil
 }
