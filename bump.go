@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 
 	"github.com/libsv/go-bt/v2"
@@ -20,10 +21,10 @@ type BUMP struct {
 // and the JSON is generated from the internal struct to an external format.
 // leaf represents a leaf in the Merkle tree.
 type leaf struct {
-	Offset    uint64 `json:"offset,omitempty"`
-	Hash      string `json:"hash,omitempty"`
-	Txid      *bool  `json:"txid,omitempty"`
-	Duplicate *bool  `json:"duplicate,omitempty"`
+	Offset    *uint64 `json:"offset,omitempty"`
+	Hash      *string `json:"hash,omitempty"`
+	Txid      *bool   `json:"txid,omitempty"`
+	Duplicate *bool   `json:"duplicate,omitempty"`
 }
 
 // NewBUMPFromBytes creates a new BUMP from a byte slice.
@@ -54,20 +55,20 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 			offset, size := bt.NewVarIntFromBytes(bytes[skip:])
 			skip += size
 			var l leaf
-			l.Offset = uint64(offset)
+			o := uint64(offset)
+			l.Offset = &o
 			flags := bytes[skip]
 			skip++
-			var dup bool
-			var txid bool
-			dup = flags&1 > 0
-			txid = flags&2 > 0
+			dup := flags&1 > 0
+			txid := flags&2 > 0
 			if dup {
 				l.Duplicate = &dup
 			}
 			if txid {
 				l.Txid = &txid
 			}
-			l.Hash = StringFromBytesReverse(bytes[skip : skip+32])
+			h := StringFromBytesReverse(bytes[skip : skip+32])
+			l.Hash = &h
 			skip += 32
 			bump.Path[lv][lf] = l
 		}
@@ -76,7 +77,7 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 	// Sort each of the levels by the offset for consistency.
 	for _, level := range bump.Path {
 		sort.Slice(level, func(i, j int) bool {
-			return level[i].Offset < level[j].Offset
+			return *level[i].Offset < *level[j].Offset
 		})
 	}
 
@@ -112,7 +113,7 @@ func (bump *BUMP) Bytes() ([]byte, error) {
 		nLeaves := len(bump.Path[level])
 		bytes = append(bytes, bt.VarInt(nLeaves).Bytes()...)
 		for _, leaf := range bump.Path[level] {
-			bytes = append(bytes, bt.VarInt(leaf.Offset).Bytes()...)
+			bytes = append(bytes, bt.VarInt(*leaf.Offset).Bytes()...)
 			flags := byte(0)
 			if leaf.Duplicate != nil {
 				flags |= 1
@@ -122,7 +123,7 @@ func (bump *BUMP) Bytes() ([]byte, error) {
 			}
 			bytes = append(bytes, flags)
 			if (flags & 1) == 0 {
-				bytes = append(bytes, BytesFromStringReverse(leaf.Hash)...)
+				bytes = append(bytes, BytesFromStringReverse(*leaf.Hash)...)
 			}
 		}
 	}
@@ -143,9 +144,9 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 	var index uint64
 	txidFound := false
 	for _, l := range bump.Path[0] {
-		if l.Hash == txid {
+		if *l.Hash == txid {
 			txidFound = true
-			index = l.Offset
+			index = *l.Offset
 			break
 		}
 	}
@@ -160,7 +161,7 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 		var leafAtThisLevel leaf
 		offsetFound := false
 		for _, l := range leaves {
-			if l.Offset == offset {
+			if *l.Offset == offset {
 				offsetFound = true
 				leafAtThisLevel = l
 				break
@@ -174,7 +175,7 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 		if leafAtThisLevel.Duplicate != nil {
 			digest = append(workingHash, workingHash...)
 		} else {
-			leafBytes := BytesFromStringReverse(leafAtThisLevel.Hash)
+			leafBytes := BytesFromStringReverse(*leafAtThisLevel.Hash)
 			if (offset % 2) != 0 {
 				digest = append(workingHash, leafBytes...)
 			} else {
@@ -184,4 +185,46 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 		workingHash = Sha256Sha256(digest)
 	}
 	return StringFromBytesReverse(workingHash), nil
+}
+
+// NewBUMPFromMerkleTree with merkle tree we calculate the merkle path for a given transaction.
+func NewBUMPFromMerkleTree(blockHeight uint32, merkleTree []string) (*BUMP, error) {
+	bump := &BUMP{
+		BlockHeight: blockHeight,
+		Path:        [][]leaf{},
+	}
+	t := true
+
+	numofHashes := len(merkleTree) / 2
+	exponent := int(math.Log2(float64(numofHashes))) + 1
+
+	// if we have only one transaction in the block there is no merkle path to calculate
+	if len(merkleTree) != 1 {
+		// if our hash index is odd the next hash of the path is the previous element in the array otherwise the next element.
+		for height := 0; height < exponent; height++ {
+			leaves := []leaf{}
+			bump.Path = append(bump.Path, leaves)
+			for offset := 0; offset <= numofHashes; offset++ {
+				o := uint64(offset)
+				thisLeaf := leaf{Offset: &o}
+				hash := merkleTree[height*2+offset]
+				if hash == "" {
+					thisLeaf.Duplicate = &t
+				} else {
+					thisLeaf.Hash = &hash
+					if height == 0 {
+						thisLeaf.Txid = &t
+					}
+				}
+				bump.Path[height] = append(bump.Path[height], thisLeaf)
+			}
+			numofHashes >>= 1
+		}
+	} else {
+		h := merkleTree[0]
+		o := uint64(0)
+		bump.Path[0][0] = leaf{Hash: &h, Offset: &o, Txid: &t}
+	}
+
+	return bump, nil
 }
