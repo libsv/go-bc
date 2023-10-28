@@ -32,14 +32,17 @@ var blockTxExample = []string{
 func TestNewBUMPFromMerkleTree(t *testing.T) {
 	merkles, err := BuildMerkleTreeStore(blockTxExample)
 	require.NoError(t, err)
+	fmt.Println(merkles)
 	bump, err := NewBUMPFromMerkleTree(fakeMadeUpNum, merkles)
 	require.NoError(t, err)
 	bytes, err := json.MarshalIndent(bump, "", "  ")
 	require.NoError(t, err)
 	fmt.Println(string(bytes))
-	root, err := bump.CalculateRootGivenTxid("b6d4d13aa08bb4b6cdb3b329cef29b5a5d55d85a85c330d56fddbce78d99c7d6")
-	require.NoError(t, err)
-	require.Equal(t, rootOfBlockTxExample, root)
+	for _, txid := range blockTxExample {
+		root, err := bump.CalculateRootGivenTxid(txid)
+		require.NoError(t, err)
+		require.Equal(t, rootOfBlockTxExample, root)
+	}
 }
 
 func TestNewBUMPFromStr(t *testing.T) {

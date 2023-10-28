@@ -195,19 +195,22 @@ func NewBUMPFromMerkleTree(blockHeight uint32, merkleTree []string) (*BUMP, erro
 	}
 	t := true
 
-	numofHashes := len(merkleTree) / 2
-	exponent := int(math.Log2(float64(numofHashes))) + 1
+	numOfTxid := len(merkleTree) / 2
+	exponent := int(math.Log2(float64(numOfTxid))) + 1
+	base := int(math.Pow(2, float64(exponent)))
+	numOfHashes := base
 
 	// if we have only one transaction in the block there is no merkle path to calculate
 	if len(merkleTree) != 1 {
 		// if our hash index is odd the next hash of the path is the previous element in the array otherwise the next element.
+		levelOffset := 0
 		for height := 0; height < exponent; height++ {
 			leaves := []leaf{}
 			bump.Path = append(bump.Path, leaves)
-			for offset := 0; offset <= numofHashes; offset++ {
+			for offset := 0; offset < numOfHashes; offset++ {
 				o := uint64(offset)
 				thisLeaf := leaf{Offset: &o}
-				hash := merkleTree[height*2+offset]
+				hash := merkleTree[levelOffset+offset]
 				if hash == "" {
 					thisLeaf.Duplicate = &t
 				} else {
@@ -218,7 +221,8 @@ func NewBUMPFromMerkleTree(blockHeight uint32, merkleTree []string) (*BUMP, erro
 				}
 				bump.Path[height] = append(bump.Path[height], thisLeaf)
 			}
-			numofHashes >>= 1
+			levelOffset += (base / int(math.Pow(2, float64(height))))
+			numOfHashes >>= 1
 		}
 	} else {
 		h := merkleTree[0]
