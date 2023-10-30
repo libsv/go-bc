@@ -66,7 +66,7 @@ func Emptyf(t TestingT, object interface{}, msg string, args ...interface{}) boo
 
 // Equalf asserts that two objects are equal.
 //
-//	require.Equalf(t, 123, 123, "error message %s", "formatted")
+//	assert.Equalf(t, 123, 123, "error message %s", "formatted")
 //
 // Pointer variable equality is determined based on the equality of the
 // referenced values (as opposed to the memory addresses). Function equality
@@ -82,7 +82,7 @@ func Equalf(t TestingT, expected interface{}, actual interface{}, msg string, ar
 // and that it is equal to the provided error.
 //
 //	actualObj, err := SomeFunction()
-//	require.EqualErrorf(t, err,  expectedErrorString, "error message %s", "formatted")
+//	assert.EqualErrorf(t, err,  expectedErrorString, "error message %s", "formatted")
 func EqualErrorf(t TestingT, theError error, errString string, msg string, args ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
@@ -98,8 +98,8 @@ func EqualErrorf(t TestingT, theError error, errString string, msg string, args 
 //		Exported     	int
 //		notExported   	int
 //	 }
-//	 require.EqualExportedValuesf(t, S{1, 2}, S{1, 3}, "error message %s", "formatted") => true
-//	 require.EqualExportedValuesf(t, S{1, 2}, S{2, 3}, "error message %s", "formatted") => false
+//	 assert.EqualExportedValuesf(t, S{1, 2}, S{1, 3}, "error message %s", "formatted") => true
+//	 assert.EqualExportedValuesf(t, S{1, 2}, S{2, 3}, "error message %s", "formatted") => false
 func EqualExportedValuesf(t TestingT, expected interface{}, actual interface{}, msg string, args ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
@@ -110,7 +110,7 @@ func EqualExportedValuesf(t TestingT, expected interface{}, actual interface{}, 
 // EqualValuesf asserts that two objects are equal or convertable to the same types
 // and equal.
 //
-//	require.EqualValuesf(t, uint32(123), int32(123), "error message %s", "formatted")
+//	assert.EqualValuesf(t, uint32(123), int32(123), "error message %s", "formatted")
 func EqualValuesf(t TestingT, expected interface{}, actual interface{}, msg string, args ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
@@ -122,7 +122,7 @@ func EqualValuesf(t TestingT, expected interface{}, actual interface{}, msg stri
 //
 //	  actualObj, err := SomeFunction()
 //	  if assert.Errorf(t, err, "error message %s", "formatted") {
-//		   require.Equal(t, expectedErrorf, err)
+//		   assert.Equal(t, expectedErrorf, err)
 //	  }
 func Errorf(t TestingT, err error, msg string, args ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
@@ -540,7 +540,7 @@ func NoDirExistsf(t TestingT, path string, msg string, args ...interface{}) bool
 //
 //	  actualObj, err := SomeFunction()
 //	  if assert.NoErrorf(t, err, "error message %s", "formatted") {
-//		   require.Equal(t, expectedObj, actualObj)
+//		   assert.Equal(t, expectedObj, actualObj)
 //	  }
 func NoErrorf(t TestingT, err error, msg string, args ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
@@ -575,7 +575,7 @@ func NotContainsf(t TestingT, s interface{}, contains interface{}, msg string, a
 // a slice or a channel with len == 0.
 //
 //	if assert.NotEmptyf(t, obj, "error message %s", "formatted") {
-//	  require.Equal(t, "two", obj[1])
+//	  assert.Equal(t, "two", obj[1])
 //	}
 func NotEmptyf(t TestingT, object interface{}, msg string, args ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
