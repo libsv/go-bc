@@ -1,8 +1,6 @@
 package bc
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -32,12 +30,8 @@ var blockTxExample = []string{
 func TestNewBUMPFromMerkleTree(t *testing.T) {
 	merkles, err := BuildMerkleTreeStore(blockTxExample)
 	require.NoError(t, err)
-	fmt.Println(merkles)
 	bump, err := NewBUMPFromMerkleTree(fakeMadeUpNum, merkles)
 	require.NoError(t, err)
-	bytes, err := json.MarshalIndent(bump, "", "  ")
-	require.NoError(t, err)
-	fmt.Println(string(bytes))
 	for _, txid := range blockTxExample {
 		root, err := bump.CalculateRootGivenTxid(txid)
 		require.NoError(t, err)
