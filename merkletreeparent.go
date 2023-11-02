@@ -41,7 +41,7 @@ func MerkleTreeParent(leftNode, rightNode []byte) []byte {
 }
 
 // MerkleTreeParentBytes returns the Merkle Tree parent of two Merkle Tree children.
-// The expectation is that the bytes are not reversed
+// The expectation is that the bytes are not reversed.
 func MerkleTreeParentBytes(l *chainhash.Hash, r *chainhash.Hash) *chainhash.Hash {
 	lb := l.CloneBytes()
 	rb := r.CloneBytes()
