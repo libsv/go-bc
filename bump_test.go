@@ -3,6 +3,7 @@ package bc
 import (
 	"testing"
 
+	"github.com/libsv/go-p2p/chaincfg/chainhash"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,11 +29,17 @@ var blockTxExample = []string{
 }
 
 func TestNewBUMPFromMerkleTree(t *testing.T) {
-	merkles, err := BuildMerkleTreeStore(blockTxExample)
-	require.NoError(t, err)
-	bump, err := NewBUMPFromMerkleTree(fakeMadeUpNum, merkles)
-	require.NoError(t, err)
+	chainHashBlock := make([]*chainhash.Hash, 0)
 	for _, txid := range blockTxExample {
+		hash, err := chainhash.NewHashFromStr(txid)
+		require.NoError(t, err)
+		chainHashBlock = append(chainHashBlock, hash)
+	}
+	merkles, err := BuildMerkleTreeStoreChainHash(chainHashBlock)
+	require.NoError(t, err)
+	for txIndex, txid := range blockTxExample {
+		bump, err := NewBUMPFromMerkleTreeAndIndex(fakeMadeUpNum, merkles, uint64(txIndex))
+		require.NoError(t, err)
 		root, err := bump.CalculateRootGivenTxid(txid)
 		require.NoError(t, err)
 		require.Equal(t, rootOfBlockTxExample, root)
