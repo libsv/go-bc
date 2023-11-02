@@ -5,6 +5,7 @@ import (
 
 	"github.com/libsv/go-bk/crypto"
 	"github.com/libsv/go-bt/v2"
+	"github.com/libsv/go-p2p/chaincfg/chainhash"
 )
 
 // MerkleTreeParentStr returns the Merkle Tree parent of two Merkle
@@ -37,4 +38,17 @@ func MerkleTreeParent(leftNode, rightNode []byte) []byte {
 
 	// swap endianness at the end and convert to hex string
 	return bt.ReverseBytes(hash)
+}
+
+// MerkleTreeParentBytes returns the Merkle Tree parent of two Merkle Tree children.
+// The expectation is that the bytes are not reversed.
+func MerkleTreeParentBytes(l *chainhash.Hash, r *chainhash.Hash) *chainhash.Hash {
+	lb := l.CloneBytes()
+	rb := r.CloneBytes()
+	concat := append(lb, rb...)
+	hash, err := chainhash.NewHash(crypto.Sha256d(concat))
+	if err != nil {
+		return &chainhash.Hash{}
+	}
+	return hash
 }

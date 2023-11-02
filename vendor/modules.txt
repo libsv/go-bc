@@ -15,6 +15,9 @@ github.com/libsv/go-bk/crypto
 github.com/libsv/go-bt/v2
 github.com/libsv/go-bt/v2/bscript
 github.com/libsv/go-bt/v2/sighash
+# github.com/libsv/go-p2p v0.1.3
+## explicit; go 1.19
+github.com/libsv/go-p2p/chaincfg/chainhash
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
@@ -23,8 +26,6 @@ github.com/pkg/errors
 github.com/pmezard/go-difflib/difflib
 # github.com/rogpeppe/go-internal v1.9.0
 ## explicit; go 1.17
-# github.com/stretchr/objx v0.5.0
-## explicit; go 1.12
 # github.com/stretchr/testify v1.8.4
 ## explicit; go 1.20
 github.com/stretchr/testify/assert

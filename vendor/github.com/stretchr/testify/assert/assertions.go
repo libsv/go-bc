@@ -397,7 +397,7 @@ func IsType(t TestingT, expectedType interface{}, object interface{}, msgAndArgs
 
 // Equal asserts that two objects are equal.
 //
-//	require.Equal(t, 123, 123)
+//	assert.Equal(t, 123, 123)
 //
 // Pointer variable equality is determined based on the equality of the
 // referenced values (as opposed to the memory addresses). Function equality
@@ -526,7 +526,7 @@ func truncatingFormat(data interface{}) string {
 // EqualValues asserts that two objects are equal or convertable to the same types
 // and equal.
 //
-//	require.EqualValues(t, uint32(123), int32(123))
+//	assert.EqualValues(t, uint32(123), int32(123))
 func EqualValues(t TestingT, expected, actual interface{}, msgAndArgs ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
@@ -552,8 +552,8 @@ func EqualValues(t TestingT, expected, actual interface{}, msgAndArgs ...interfa
 //		Exported     	int
 //		notExported   	int
 //	 }
-//	 require.EqualExportedValues(t, S{1, 2}, S{1, 3}) => true
-//	 require.EqualExportedValues(t, S{1, 2}, S{2, 3}) => false
+//	 assert.EqualExportedValues(t, S{1, 2}, S{1, 3}) => true
+//	 assert.EqualExportedValues(t, S{1, 2}, S{2, 3}) => false
 func EqualExportedValues(t TestingT, expected, actual interface{}, msgAndArgs ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
@@ -716,7 +716,7 @@ func Empty(t TestingT, object interface{}, msgAndArgs ...interface{}) bool {
 // a slice or a channel with len == 0.
 //
 //	if assert.NotEmpty(t, obj) {
-//	  require.Equal(t, "two", obj[1])
+//	  assert.Equal(t, "two", obj[1])
 //	}
 func NotEmpty(t TestingT, object interface{}, msgAndArgs ...interface{}) bool {
 	pass := !isEmpty(object)
@@ -1484,8 +1484,8 @@ func InEpsilonSlice(t TestingT, expected, actual interface{}, epsilon float64, m
 // NoError asserts that a function returned no error (i.e. `nil`).
 //
 //	  actualObj, err := SomeFunction()
-//	  if require.NoError(t, err) {
-//		   require.Equal(t, expectedObj, actualObj)
+//	  if assert.NoError(t, err) {
+//		   assert.Equal(t, expectedObj, actualObj)
 //	  }
 func NoError(t TestingT, err error, msgAndArgs ...interface{}) bool {
 	if err != nil {
@@ -1501,8 +1501,8 @@ func NoError(t TestingT, err error, msgAndArgs ...interface{}) bool {
 // Error asserts that a function returned an error (i.e. not `nil`).
 //
 //	  actualObj, err := SomeFunction()
-//	  if require.Error(t, err) {
-//		   require.Equal(t, expectedError, err)
+//	  if assert.Error(t, err) {
+//		   assert.Equal(t, expectedError, err)
 //	  }
 func Error(t TestingT, err error, msgAndArgs ...interface{}) bool {
 	if err == nil {
@@ -1519,7 +1519,7 @@ func Error(t TestingT, err error, msgAndArgs ...interface{}) bool {
 // and that it is equal to the provided error.
 //
 //	actualObj, err := SomeFunction()
-//	require.EqualError(t, err,  expectedErrorString)
+//	assert.EqualError(t, err,  expectedErrorString)
 func EqualError(t TestingT, theError error, errString string, msgAndArgs ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
