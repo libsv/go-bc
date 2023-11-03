@@ -15,6 +15,7 @@ const (
 	txidExample          = `3ecead27a44d013ad1aae40038acbb1883ac9242406808bb4667c15b4f164eac`
 	rootOfBlockTxExample = `1a1e779cd7dfc59f603b4e88842121001af822b2dc5d3b167ae66152e586a6b0`
 	fakeMadeUpNum        = 814435
+	txidSmallBlock       = `be7853d7685ed5b5ec61a0ca8e3f193a7b0632cb2db950528c2041ee5d7dd95d`
 )
 
 var blockTxExample = []string{
@@ -26,6 +27,20 @@ var blockTxExample = []string{
 	"4848b9e94dd0e4f3173ebd6982ae7eb6b793de305d8450624b1d86c02a5c61d9",
 	"912f77eefdd311e24f96850ed8e701381fc4943327f9cf73f9c4dec0d93a056d",
 	"397fe2ae4d1d24efcc868a02daae42d1b419289d9a1ded3a5fe771efcc1219d9",
+}
+
+func TestNewBUMPFromMerkleTreeWithOnlyOneTxid(t *testing.T) {
+	chainHashBlock := make([]*chainhash.Hash, 0)
+	hash, err := chainhash.NewHashFromStr(txidSmallBlock)
+	require.NoError(t, err)
+	chainHashBlock = append(chainHashBlock, hash)
+	merkles, err := BuildMerkleTreeStoreChainHash(chainHashBlock)
+	require.NoError(t, err)
+	bump, err := NewBUMPFromMerkleTreeAndIndex(fakeMadeUpNum, merkles, uint64(0))
+	require.NoError(t, err)
+	root, err := bump.CalculateRootGivenTxid(txidSmallBlock)
+	require.NoError(t, err)
+	require.Equal(t, txidSmallBlock, root)
 }
 
 func TestNewBUMPFromMerkleTree(t *testing.T) {

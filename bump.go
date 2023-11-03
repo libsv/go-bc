@@ -141,6 +141,9 @@ func (bump *BUMP) String() (string, error) {
 
 // CalculateRootGivenTxid calculates the root of the Merkle tree given a txid.
 func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
+	if len(bump.Path) < 2 {
+		return txid, nil
+	}
 	// Find the index of the txid at the lowest level of the Merkle tree
 	var index uint64
 	txidFound := false
@@ -241,7 +244,7 @@ func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.H
 	} else {
 		sh := merkleTree[0].String()
 		o := uint64(0)
-		bump.Path[0][0] = leaf{Hash: &sh, Offset: &o, Txid: &t}
+		bump.Path = [][]leaf{{leaf{Hash: &sh, Offset: &o, Txid: &t}}}
 	}
 
 	return bump, nil
