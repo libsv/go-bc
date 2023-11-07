@@ -1,7 +1,6 @@
 package bc_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -83,5 +82,44 @@ func TestBuildMerkleTreeStoreChainHash(t *testing.T) {
 
 	expected := "1a1e779cd7dfc59f603b4e88842121001af822b2dc5d3b167ae66152e586a6b0"
 	require.Equal(t, expected, actual)
-	fmt.Println(merkleTreeChainStore)
+}
+
+func TestBuildMerkleTreeStoreChainHashDifferentSizes(t *testing.T) {
+	txids := []string{
+		"b6d4d13aa08bb4b6cdb3b329cef29b5a5d55d85a85c330d56fddbce78d99c7d6",
+		"3783b6638131c8e573410597f2418b7c55be00f6c45aee63f5c1c6d04671ef22",
+		"8ac670905831ee210f1abd206ca4c468979709564ca27450c5fb6c3ab78886cc",
+		"6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+		"eb1e33e8a81b697b75855af6bfcdbcbf7cbbde9f94962ceaec1ed8af21f5a50f",
+		"524b2d27a1e7fbc3a1614fa661e2dcad68462352feeb8bf633deaccfb8aa84f3",
+		"1897ccddda13e71fa04d46700db9dfc4f020fa139943fc9f43e6b3066a0a4fac",
+		"c664049c48318a7965d7fa61233fc7ee0f4ea556f2f6481be328a50388c019d2",
+	}
+
+	expectations := []string{
+		"b6d4d13aa08bb4b6cdb3b329cef29b5a5d55d85a85c330d56fddbce78d99c7d6",
+		"1e2ead1d2c9c5471e885cdd2842c516deda57eeebe249385a8650fa7b6e9fc5d",
+		"a85c9ebf2b24c881eab3b3a81c886e7b882ec706fa95f5d33bfefe1e22fa6158",
+		"113447163e01962e56f6e953f7107f034ab58a8bcac785f0f5e39441e99c9ccf",
+		"292356bcb20ac8ea6d84afc176ab8dbc08e73dd8c94ff3aca2df2ec7f369f0eb",
+		"d68413306c79b03459f02d126bbb0ec2fd55b880f9ad2de18ca004d260231f65",
+		"f4ae9da203450b32785dd17374afe94591347794c59c7c025430fc55ed1ff6c2",
+		"684f9b477809d2db9f3ac1dbf660ad578c287130f5ff83bf9cbe8bddf2a6061c",
+	}
+
+	for i := 1; i <= 8; i++ {
+		transactionHashes := make([]*chainhash.Hash, i)
+		for idx := range transactionHashes {
+			h, _ := chainhash.NewHashFromStr(txids[idx])
+			transactionHashes[idx] = h
+		}
+
+		merkleTreeChainStore, err := bc.BuildMerkleTreeStoreChainHash(transactionHashes)
+		require.NoError(t, err)
+
+		actual := merkleTreeChainStore[len(merkleTreeChainStore)-1].String()
+
+		expected := expectations[i-1]
+		require.Equal(t, expected, actual)
+	}
 }
