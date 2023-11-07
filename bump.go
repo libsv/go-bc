@@ -227,7 +227,7 @@ func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.H
 				o := uint64(offset)
 				thisLeaf := leaf{Offset: &o}
 				hash := merkleTree[levelOffset+offset]
-				if hash.IsEqual(&chainhash.Hash{}) {
+				if hash.IsEqual(nil) {
 					thisLeaf.Duplicate = &t
 				} else {
 					sh := hash.String()
