@@ -20,6 +20,11 @@ const (
 	testnetHexExample  = `0202ac5abbdc202bd6d50260825dd5465bd0798b052b2115c7abed277a41e403b21d0a61f6e257da3871657d324a31a449aa58a83b61967f1f2192eca71b3c21f68f`
 	testnetRootExample = `e4bbc8329d950749cb844ba2dac1e09bfc418d5c96d03fb688eff95bb90965b8`
 	testnetTxidExample = `8d15f64f8a35e94eb3cdbc07d9bc28952fdbdd13315fe3a94b393e635a9307aa`
+
+	twoTxExample = `fd0d020102000209d1fab394d14fc4d5819dffe7af320744b51469569fde7bd76c57c917d91ce10102b98551d22cd578c430374bde629322f72b72c9f64f5425ac307b679cfacd4525`
+	twoTxid      = `2545cdfa9c677b30ac25544ff6c9722bf7229362de4b3730c478d52cd25185b9`
+
+	oneTxidHeightOne = `0101010102912f77eefdd311e24f96850ed8e701381fc4943327f9cf73f9c4dec0d93a056d`
 )
 
 var testnetBlockExample = []string{
@@ -115,4 +120,35 @@ func TestTestnetCalculateRootGivenTxid(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, testnetRootExample, root)
 	}
+}
+
+func TestTwoTxsInBlock(t *testing.T) {
+	bump, err := NewBUMPFromStr(twoTxExample)
+	require.NoError(t, err)
+
+	_, err = bump.CalculateRootGivenTxid(twoTxid)
+	require.NoError(t, err)
+}
+
+func TestOneTxidHeightOne(t *testing.T) {
+	bump, err := NewBUMPFromStr(oneTxidHeightOne)
+	require.NoError(t, err)
+
+	_, err = bump.CalculateRootGivenTxid("6d053ad9c0dec4f973cff9273394c41f3801e7d80e85964fe211d3fdee772f91")
+	require.NoError(t, err)
+}
+
+func TestEmptyBytes(t *testing.T) {
+	_, err := NewBUMPFromStr("")
+	require.Error(t, err)
+}
+
+func TestTooFewBytes(t *testing.T) {
+	_, err := NewBUMPFromStr("01010101026d053ad9c0dec4f973cff9273394c41f3801e7d80e85964fe211d3fdee772f")
+	require.Error(t, err)
+}
+
+func TestNotEnoughLeavesInHeight(t *testing.T) {
+	_, err := NewBUMPFromStr("01020101026d053ad9c0dec4f973cff9273394c41f3801e7d80e85964fe211d3fdee772f9100")
+	require.Error(t, err)
 }
