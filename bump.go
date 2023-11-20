@@ -30,6 +30,9 @@ type leaf struct {
 
 // NewBUMPFromBytes creates a new BUMP from a byte slice.
 func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
+	if len(bytes) < 37 {
+		return nil, errors.New("BUMP bytes do not contain enough data to be valid")
+	}
 	bump := &BUMP{}
 
 	// first bytes are the block height.
@@ -50,6 +53,9 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 		n, size := bt.NewVarIntFromBytes(bytes[skip:])
 		skip += size
 		nLeavesAtThisHeight := uint64(n)
+		if nLeavesAtThisHeight == 0 {
+			return nil, errors.New("There are no leaves at height: " + fmt.Sprint(lv) + " which makes this invalid")
+		}
 		bump.Path[lv] = make([]leaf, nLeavesAtThisHeight)
 		for lf := uint64(0); lf < nLeavesAtThisHeight; lf++ {
 			// For each leaf we parse the offset, hash, txid and duplicate.
@@ -65,6 +71,9 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 			if dup {
 				l.Duplicate = &dup
 			} else {
+				if len(bytes) < skip+32 {
+					return nil, errors.New("BUMP bytes do not contain enough data to be valid")
+				}
 				h := StringFromBytesReverse(bytes[skip : skip+32])
 				l.Hash = &h
 				skip += 32
@@ -142,8 +151,11 @@ func (bump *BUMP) String() (string, error) {
 
 // CalculateRootGivenTxid calculates the root of the Merkle tree given a txid.
 func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
-	if len(bump.Path) < 2 {
-		return txid, nil
+	if len(bump.Path) == 1 {
+		// if there is only one txid in the block then the root is the txid.
+		if len(bump.Path[0]) == 1 {
+			return txid, nil
+		}
 	}
 	// Find the index of the txid at the lowest level of the Merkle tree
 	var index uint64
@@ -233,7 +245,7 @@ func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.H
 				} else {
 					sh := hash.String()
 					thisLeaf.Hash = &sh
-					if height == 0 {
+					if height == 0 && txIndex == o {
 						thisLeaf.Txid = &t
 					}
 				}
