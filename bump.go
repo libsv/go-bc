@@ -245,7 +245,7 @@ func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.H
 				} else {
 					sh := hash.String()
 					thisLeaf.Hash = &sh
-					if height == 0 {
+					if height == 0 && txIndex == o {
 						thisLeaf.Txid = &t
 					}
 				}
