@@ -64,13 +64,14 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 			txid := flags&2 > 0
 			if dup {
 				l.Duplicate = &dup
+			} else {
+				h := StringFromBytesReverse(bytes[skip : skip+32])
+				l.Hash = &h
+				skip += 32
 			}
 			if txid {
 				l.Txid = &txid
 			}
-			h := StringFromBytesReverse(bytes[skip : skip+32])
-			l.Hash = &h
-			skip += 32
 			bump.Path[lv][lf] = l
 		}
 	}
