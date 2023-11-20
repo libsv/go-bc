@@ -1,7 +1,6 @@
 package bc
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/libsv/go-p2p/chaincfg/chainhash"
@@ -110,12 +109,8 @@ func TestTestnetCalculateRootGivenTxid(t *testing.T) {
 		require.NoError(t, err)
 		b2, err := bump.String()
 		require.NoError(t, err)
-		fmt.Println(b2)
 		b3, err := NewBUMPFromStr(b2)
 		require.NoError(t, err)
-		b4, err := b3.String()
-		require.NoError(t, err)
-		fmt.Println(b4)
 		root, err := b3.CalculateRootGivenTxid(txid)
 		require.NoError(t, err)
 		require.Equal(t, testnetRootExample, root)
