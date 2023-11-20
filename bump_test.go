@@ -16,7 +16,17 @@ const (
 	rootOfBlockTxExample = `1a1e779cd7dfc59f603b4e88842121001af822b2dc5d3b167ae66152e586a6b0`
 	fakeMadeUpNum        = 814435
 	txidSmallBlock       = `be7853d7685ed5b5ec61a0ca8e3f193a7b0632cb2db950528c2041ee5d7dd95d`
+
+	testnetHexExample  = `0202ac5abbdc202bd6d50260825dd5465bd0798b052b2115c7abed277a41e403b21d0a61f6e257da3871657d324a31a449aa58a83b61967f1f2192eca71b3c21f68f`
+	testnetRootExample = `e4bbc8329d950749cb844ba2dac1e09bfc418d5c96d03fb688eff95bb90965b8`
+	testnetTxidExample = `8d15f64f8a35e94eb3cdbc07d9bc28952fdbdd13315fe3a94b393e635a9307aa`
 )
+
+var testnetBlockExample = []string{
+	"c615bb1649384ebe491151c2c1afd4d5f75bf8d81f8c2f76b48305e96f58c40e",
+	"8d15f64f8a35e94eb3cdbc07d9bc28952fdbdd13315fe3a94b393e635a9307aa",
+	"1db203e4417a27edabc715212b058b79d05b46d55d826002d5d62b20dcbb5aac",
+}
 
 var blockTxExample = []string{
 	"b6d4d13aa08bb4b6cdb3b329cef29b5a5d55d85a85c330d56fddbce78d99c7d6",
@@ -83,4 +93,26 @@ func TestCalculateRootGivenTxid(t *testing.T) {
 	root, err := bump.CalculateRootGivenTxid(txidExample)
 	require.NoError(t, err)
 	require.Equal(t, rootExample, root)
+}
+
+func TestTestnetCalculateRootGivenTxid(t *testing.T) {
+	chainHashBlock := make([]*chainhash.Hash, 0)
+	for _, txid := range testnetBlockExample {
+		hash, err := chainhash.NewHashFromStr(txid)
+		require.NoError(t, err)
+		chainHashBlock = append(chainHashBlock, hash)
+	}
+	merkles, err := BuildMerkleTreeStoreChainHash(chainHashBlock)
+	require.NoError(t, err)
+	for txIndex, txid := range testnetBlockExample {
+		bump, err := NewBUMPFromMerkleTreeAndIndex(1575794, merkles, uint64(txIndex))
+		require.NoError(t, err)
+		b2, err := bump.String()
+		require.NoError(t, err)
+		b3, err := NewBUMPFromStr(b2)
+		require.NoError(t, err)
+		root, err := b3.CalculateRootGivenTxid(txid)
+		require.NoError(t, err)
+		require.Equal(t, testnetRootExample, root)
+	}
 }
