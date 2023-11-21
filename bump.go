@@ -141,6 +141,7 @@ func (bump *BUMP) Bytes() ([]byte, error) {
 	return bytes, nil
 }
 
+// String encodes a BUMP as a hex string.
 func (bump *BUMP) String() (string, error) {
 	bytes, err := bump.Bytes()
 	if err != nil {
@@ -149,6 +150,8 @@ func (bump *BUMP) String() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
+// Txids returns the txids within the BUMP which the client is expecting.
+// This allows a client to receive one BUMP for a whole block and it will know which txids it should update.
 func (bump *BUMP) Txids() []string {
 	txids := make([]string, 0)
 	for _, leaf := range bump.Path[0] {
