@@ -149,6 +149,16 @@ func (bump *BUMP) String() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
+func (bump *BUMP) Txids() []string {
+	txids := make([]string, 0)
+	for _, leaf := range bump.Path[0] {
+		if leaf.Txid != nil {
+			txids = append(txids, *leaf.Hash)
+		}
+	}
+	return txids
+}
+
 // CalculateRootGivenTxid calculates the root of the Merkle tree given a txid.
 func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 	if len(bump.Path) == 1 {
