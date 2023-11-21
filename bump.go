@@ -141,12 +141,25 @@ func (bump *BUMP) Bytes() ([]byte, error) {
 	return bytes, nil
 }
 
+// String encodes a BUMP as a hex string.
 func (bump *BUMP) String() (string, error) {
 	bytes, err := bump.Bytes()
 	if err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+// Txids returns the txids within the BUMP which the client is expecting.
+// This allows a client to receive one BUMP for a whole block and it will know which txids it should update.
+func (bump *BUMP) Txids() []string {
+	txids := make([]string, 0)
+	for _, leaf := range bump.Path[0] {
+		if leaf.Txid != nil {
+			txids = append(txids, *leaf.Hash)
+		}
+	}
+	return txids
 }
 
 // CalculateRootGivenTxid calculates the root of the Merkle tree given a txid.

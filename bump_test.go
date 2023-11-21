@@ -152,3 +152,19 @@ func TestNotEnoughLeavesInHeight(t *testing.T) {
 	_, err := NewBUMPFromStr("01020101026d053ad9c0dec4f973cff9273394c41f3801e7d80e85964fe211d3fdee772f9100")
 	require.Error(t, err)
 }
+
+func TestTxids(t *testing.T) {
+	chainHashBlock := make([]*chainhash.Hash, 0)
+	for _, txid := range testnetBlockExample {
+		hash, err := chainhash.NewHashFromStr(txid)
+		require.NoError(t, err)
+		chainHashBlock = append(chainHashBlock, hash)
+	}
+	merkles, err := BuildMerkleTreeStoreChainHash(chainHashBlock)
+	require.NoError(t, err)
+
+	bump, err := NewBUMPFromMerkleTreeAndIndex(1575794, merkles, uint64(0))
+	require.NoError(t, err)
+	txids := bump.Txids()
+	require.Equal(t, []string{testnetBlockExample[0]}, txids)
+}
