@@ -1,6 +1,7 @@
 package bc
 
 import (
+	"math"
 	"testing"
 
 	"github.com/libsv/go-p2p/chaincfg/chainhash"
@@ -167,4 +168,28 @@ func TestTxids(t *testing.T) {
 	require.NoError(t, err)
 	txids := bump.Txids()
 	require.Equal(t, []string{testnetBlockExample[0]}, txids)
+}
+
+func TestOnlySpecifiedPathsStored(t *testing.T) {
+	chainHashBlock := make([]*chainhash.Hash, 0)
+	for _, txid := range blockTxExample {
+		hash, err := chainhash.NewHashFromStr(txid)
+		require.NoError(t, err)
+		chainHashBlock = append(chainHashBlock, hash)
+	}
+	merkles, err := BuildMerkleTreeStoreChainHash(chainHashBlock)
+	require.NoError(t, err)
+
+	for idx := range blockTxExample {
+		bump, err := NewBUMPFromMerkleTreeAndIndex(1575794, merkles, uint64(idx))
+		require.NoError(t, err)
+		totalHashes := 0
+		for _, level := range bump.Path {
+			totalHashes += len(level)
+		}
+		// number of levels plus the txid itself.
+		l := int(math.Log2(float64(len(blockTxExample)))) + 1
+		require.Equal(t, l, totalHashes)
+	}
+
 }
