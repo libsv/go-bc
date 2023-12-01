@@ -233,6 +233,7 @@ func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.H
 		return nil, errors.New("merkle tree is empty")
 	}
 
+	// these are the offsets for the txid we're interested in.
 	offsets := make([]uint64, treeHeight)
 	for i := 0; i < treeHeight; i++ {
 		if txIndex>>uint64(i)&1 == 0 {
@@ -251,6 +252,16 @@ func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.H
 			bump.Path = append(bump.Path, leaves)
 			for offset := 0; offset < numOfHashes; offset++ {
 				o := uint64(offset)
+				// only include the hashes for the txid we're interested in.
+				if height == 0 {
+					if o != txIndex && o != offsets[height] {
+						continue
+					}
+				} else {
+					if o != offsets[height] {
+						continue
+					}
+				}
 				thisLeaf := leaf{Offset: &o}
 				hash := merkleTree[levelOffset+offset]
 				if hash.IsEqual(nil) {
