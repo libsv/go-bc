@@ -130,7 +130,7 @@ func BuildMerkleTreeStore(txids []string) ([]string, error) {
 }
 
 // BuildMerkleTreeStoreChainHash has the same functionality as BuildMerkleTreeStore but uses chainhash as a type to avoid string conversions.
-func BuildMerkleTreeStoreChainHash(txids []*chainhash.Hash) ([]*chainhash.Hash, error) {
+func BuildMerkleTreeStoreChainHash(txids []*chainhash.Hash) []*chainhash.Hash {
 	// // Calculate how many entries are re?n array of that size.
 	nextPoT := nextPowerOfTwo(len(txids))
 	arraySize := nextPoT*2 - 1
@@ -161,7 +161,7 @@ func BuildMerkleTreeStoreChainHash(txids []*chainhash.Hash) ([]*chainhash.Hash, 
 		offset++
 	}
 
-	return merkles, nil
+	return merkles
 }
 
 // nextPowerOfTwo returns the next highest power of two from a given number if

@@ -50,8 +50,7 @@ func TestNewBUMPFromMerkleTreeWithOnlyOneTxid(t *testing.T) {
 	hash, err := chainhash.NewHashFromStr(txidSmallBlock)
 	require.NoError(t, err)
 	chainHashBlock = append(chainHashBlock, hash)
-	merkles, err := BuildMerkleTreeStoreChainHash(chainHashBlock)
-	require.NoError(t, err)
+	merkles := BuildMerkleTreeStoreChainHash(chainHashBlock)
 	bump, err := NewBUMPFromMerkleTreeAndIndex(fakeMadeUpNum, merkles, uint64(0))
 	require.NoError(t, err)
 	root, err := bump.CalculateRootGivenTxid(txidSmallBlock)
@@ -66,8 +65,7 @@ func TestNewBUMPFromMerkleTree(t *testing.T) {
 		require.NoError(t, err)
 		chainHashBlock = append(chainHashBlock, hash)
 	}
-	merkles, err := BuildMerkleTreeStoreChainHash(chainHashBlock)
-	require.NoError(t, err)
+	merkles := BuildMerkleTreeStoreChainHash(chainHashBlock)
 	for txIndex, txid := range blockTxExample {
 		bump, err := NewBUMPFromMerkleTreeAndIndex(fakeMadeUpNum, merkles, uint64(txIndex))
 		require.NoError(t, err)
@@ -108,8 +106,7 @@ func TestTestnetCalculateRootGivenTxid(t *testing.T) {
 		require.NoError(t, err)
 		chainHashBlock = append(chainHashBlock, hash)
 	}
-	merkles, err := BuildMerkleTreeStoreChainHash(chainHashBlock)
-	require.NoError(t, err)
+	merkles := BuildMerkleTreeStoreChainHash(chainHashBlock)
 	for txIndex, txid := range testnetBlockExample {
 		bump, err := NewBUMPFromMerkleTreeAndIndex(1575794, merkles, uint64(txIndex))
 		require.NoError(t, err)
@@ -161,8 +158,7 @@ func TestTxids(t *testing.T) {
 		require.NoError(t, err)
 		chainHashBlock = append(chainHashBlock, hash)
 	}
-	merkles, err := BuildMerkleTreeStoreChainHash(chainHashBlock)
-	require.NoError(t, err)
+	merkles := BuildMerkleTreeStoreChainHash(chainHashBlock)
 
 	bump, err := NewBUMPFromMerkleTreeAndIndex(1575794, merkles, uint64(0))
 	require.NoError(t, err)
@@ -177,8 +173,7 @@ func TestOnlySpecifiedPathsStored(t *testing.T) {
 		require.NoError(t, err)
 		chainHashBlock = append(chainHashBlock, hash)
 	}
-	merkles, err := BuildMerkleTreeStoreChainHash(chainHashBlock)
-	require.NoError(t, err)
+	merkles := BuildMerkleTreeStoreChainHash(chainHashBlock)
 
 	for idx := range blockTxExample {
 		bump, err := NewBUMPFromMerkleTreeAndIndex(1575794, merkles, uint64(idx))
