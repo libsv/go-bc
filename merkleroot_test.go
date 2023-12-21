@@ -75,8 +75,7 @@ func TestBuildMerkleTreeStoreChainHash(t *testing.T) {
 		transactionHashes[i], _ = chainhash.NewHashFromStr(txid)
 	}
 
-	merkleTreeChainStore, err := bc.BuildMerkleTreeStoreChainHash(transactionHashes)
-	require.NoError(t, err)
+	merkleTreeChainStore := bc.BuildMerkleTreeStoreChainHash(transactionHashes)
 
 	actual := merkleTreeChainStore[len(merkleTreeChainStore)-1].String()
 
@@ -114,8 +113,7 @@ func TestBuildMerkleTreeStoreChainHashDifferentSizes(t *testing.T) {
 			transactionHashes[idx] = h
 		}
 
-		merkleTreeChainStore, err := bc.BuildMerkleTreeStoreChainHash(transactionHashes)
-		require.NoError(t, err)
+		merkleTreeChainStore := bc.BuildMerkleTreeStoreChainHash(transactionHashes)
 
 		actual := merkleTreeChainStore[len(merkleTreeChainStore)-1].String()
 
