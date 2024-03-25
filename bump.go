@@ -219,61 +219,62 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 
 // NewBUMPFromMerkleTreeAndIndex with merkle tree we calculate the merkle path for a given transaction.
 func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.Hash, txIndex uint64) (*BUMP, error) {
+	if len(merkleTree) == 0 {
+		return nil, errors.New("merkle tree is empty")
+	}
+
 	bump := &BUMP{
 		BlockHeight: blockHeight,
-		Path:        [][]leaf{},
 	}
-	t := true
 
+	truePointer := true
 	txid := merkleTree[txIndex].String()
-	txidLeaf := leaf{Txid: &t, Hash: &txid, Offset: &txIndex}
+	txidLeaf := leaf{Txid: &truePointer, Hash: &txid, Offset: &txIndex}
+
+	if len(merkleTree) == 1 {
+		// there is no merkle path to calculate
+		bump.Path = [][]leaf{{txidLeaf}}
+		return bump, nil
+	}
+
 	oddTxIndex := false
 
 	numOfTxids := (len(merkleTree) + 1) / 2
 	treeHeight := int(math.Log2(float64(numOfTxids)))
 	numOfHashes := numOfTxids
+	bump.Path = make([][]leaf, treeHeight)
 
-	switch len(merkleTree) {
-	case 0:
-		return nil, errors.New("merkle tree is empty")
-	case 1:
-		// if we have only one transaction in the block there is no merkle path to calculate
-		sh := merkleTree[0].String()
-		o := uint64(0)
-		bump.Path = [][]leaf{{leaf{Hash: &sh, Offset: &o, Txid: &t}}}
-		return bump, nil
-	default:
-		// if our hash index is odd the next hash of the path is the previous element in the array otherwise the next element.
-		levelOffset := 0
-		for height := 0; height < treeHeight; height++ {
-			leaves := []leaf{}
-			bump.Path = append(bump.Path, leaves)
-			offset := txIndex >> uint64(height)
-			if offset&1 == 0 {
-				offset++
-			} else {
-				oddTxIndex = true
-				offset--
-			}
-			thisLeaf := leaf{Offset: &offset}
-			hash := merkleTree[levelOffset+int(offset)]
-			if hash.IsEqual(nil) {
-				thisLeaf.Duplicate = &t
-			} else {
-				sh := hash.String()
-				thisLeaf.Hash = &sh
-			}
-			bump.Path[height] = append(bump.Path[height], thisLeaf)
-			levelOffset += numOfHashes
-			numOfHashes >>= 1
-		}
-		if oddTxIndex {
-			// if the txIndex is odd we need to add the txid to the path.
-			bump.Path[0] = append(bump.Path[0], txidLeaf)
+	levelOffset := 0
+	for height := 0; height < treeHeight; height++ {
+		leaves := []leaf{}
+		bump.Path = append(bump.Path, leaves)
+		offset := txIndex >> uint64(height)
+		if offset&1 == 0 {
+			// offset is even we need to use the hash to the right.
+			offset++
 		} else {
-			// otherwise prepend it.
-			bump.Path[0] = append([]leaf{txidLeaf}, bump.Path[0]...)
+			// we need to use the hash to the left.
+			oddTxIndex = true
+			offset--
 		}
+		thisLeaf := leaf{Offset: &offset}
+		hash := merkleTree[levelOffset+int(offset)]
+		if hash.IsEqual(nil) {
+			thisLeaf.Duplicate = &truePointer
+		} else {
+			sh := hash.String()
+			thisLeaf.Hash = &sh
+		}
+		bump.Path[height] = append(bump.Path[height], thisLeaf)
+		levelOffset += numOfHashes
+		numOfHashes >>= 1
+	}
+	if oddTxIndex {
+		// if the txIndex is odd we need to add the txid to the path.
+		bump.Path[0] = append(bump.Path[0], txidLeaf)
+	} else {
+		// otherwise prepend it.
+		bump.Path[0] = append([]leaf{txidLeaf}, bump.Path[0]...)
 	}
 
 	return bump, nil
