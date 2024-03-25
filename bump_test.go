@@ -191,7 +191,7 @@ func TestOnlySpecifiedPathsStored(t *testing.T) {
 }
 
 func BenchmarkNewBUMPFromMerkleTreeAndIndex(b *testing.B) {
-	transactions := 100
+	transactions := 100000
 	// test how quickly we can calculate the BUMP Merkle Paths from a block of 100,000 random txids
 	chainHashBlock := make([]*chainhash.Hash, 0)
 	for i := 0; i < transactions; i++ {
