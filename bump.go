@@ -246,8 +246,6 @@ func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.H
 
 	levelOffset := 0
 	for height := 0; height < treeHeight; height++ {
-		leaves := []leaf{}
-		bump.Path = append(bump.Path, leaves)
 		offset := txIndex >> uint64(height)
 		if offset&1 == 0 {
 			// offset is even we need to use the hash to the right.
@@ -265,7 +263,7 @@ func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.H
 			sh := hash.String()
 			thisLeaf.Hash = &sh
 		}
-		bump.Path[height] = append(bump.Path[height], thisLeaf)
+		bump.Path[height] = []leaf{thisLeaf}
 		levelOffset += numOfHashes
 		numOfHashes >>= 1
 	}
