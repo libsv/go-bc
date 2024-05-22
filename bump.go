@@ -28,10 +28,12 @@ type leaf struct {
 	Duplicate *bool   `json:"duplicate,omitempty"`
 }
 
-// NewBUMPFromBytes creates a new BUMP from a byte slice.
-func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
+// NewBUMPFromStream takes an array of bytes and contructs a BUMP from it, returning the BUMP
+// and the bytes used. Despite the name, this is not actually reading a stream in the true sense:
+// it is a byte slice that contains many BUMPs one after another.
+func NewBUMPFromStream(bytes []byte) (*BUMP, int, error) {
 	if len(bytes) < 37 {
-		return nil, errors.New("BUMP bytes do not contain enough data to be valid")
+		return nil, 0, errors.New("BUMP bytes do not contain enough data to be valid")
 	}
 	bump := &BUMP{}
 
@@ -54,7 +56,7 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 		skip += size
 		nLeavesAtThisHeight := uint64(n)
 		if nLeavesAtThisHeight == 0 {
-			return nil, errors.New("There are no leaves at height: " + fmt.Sprint(lv) + " which makes this invalid")
+			return nil, 0, errors.New("There are no leaves at height: " + fmt.Sprint(lv) + " which makes this invalid")
 		}
 		bump.Path[lv] = make([]leaf, nLeavesAtThisHeight)
 		for lf := uint64(0); lf < nLeavesAtThisHeight; lf++ {
@@ -72,7 +74,7 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 				l.Duplicate = &dup
 			} else {
 				if len(bytes) < skip+32 {
-					return nil, errors.New("BUMP bytes do not contain enough data to be valid")
+					return nil, 0, errors.New("BUMP bytes do not contain enough data to be valid")
 				}
 				h := StringFromBytesReverse(bytes[skip : skip+32])
 				l.Hash = &h
@@ -92,6 +94,15 @@ func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
 		})
 	}
 
+	return bump, skip, nil
+}
+
+// NewBUMPFromBytes creates a new BUMP from a byte slice.
+func NewBUMPFromBytes(bytes []byte) (*BUMP, error) {
+	bump, _, err := NewBUMPFromStream(bytes)
+	if err != nil {
+		return nil, err
+	}
 	return bump, nil
 }
 
