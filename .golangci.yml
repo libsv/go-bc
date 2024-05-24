@@ -336,7 +336,6 @@ linters:
     - revive
     - unconvert
     - dupl
-    - maligned
     - misspell
     - dogsled
     - prealloc
@@ -385,7 +384,6 @@ issues:
         - goconst
         - dupl
         - gosec
-        - maligned
         - lll
 
     # Exclude known linters from partially hard-vendored code,
