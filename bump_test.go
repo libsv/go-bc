@@ -219,3 +219,37 @@ func BenchmarkNewBUMPFromMerkleTreeAndIndex(b *testing.B) {
 		require.Equal(b, l, totalHashes)
 	}
 }
+
+// TestNewBUMPFromMerkleTreeEverySizeAndIndex covers every block size up to one
+// past a full 32-leaf tree, and every transaction position within each block.
+// It guards against the txid leaf being misplaced in Path[0] for blocks with
+// an odd number of transactions (offset flag accumulated across all levels
+// instead of taken from the leaf level), which made CalculateRootGivenTxid
+// dereference a nil hash on the duplicate leaf and panic.
+func TestNewBUMPFromMerkleTreeEverySizeAndIndex(t *testing.T) {
+	const maxBlockSize = 33
+
+	for blockSize := 1; blockSize <= maxBlockSize; blockSize++ {
+		chainHashBlock := make([]*chainhash.Hash, 0, blockSize)
+		for i := 0; i < blockSize; i++ {
+			var hashBytes [32]byte
+			hashBytes[0] = byte(i + 1)
+			hash, err := chainhash.NewHash(hashBytes[:])
+			require.NoError(t, err)
+			chainHashBlock = append(chainHashBlock, hash)
+		}
+		merkles := BuildMerkleTreeStoreChainHash(chainHashBlock)
+		expectedRoot := merkles[len(merkles)-1].String()
+
+		for txIndex := 0; txIndex < blockSize; txIndex++ {
+			txid := chainHashBlock[txIndex].String()
+
+			bump, err := NewBUMPFromMerkleTreeAndIndex(fakeMadeUpNum, merkles, uint64(txIndex))
+			require.NoErrorf(t, err, "blockSize=%d txIndex=%d", blockSize, txIndex)
+
+			root, err := bump.CalculateRootGivenTxid(txid)
+			require.NoErrorf(t, err, "blockSize=%d txIndex=%d", blockSize, txIndex)
+			require.Equalf(t, expectedRoot, root, "blockSize=%d txIndex=%d", blockSize, txIndex)
+		}
+	}
+}

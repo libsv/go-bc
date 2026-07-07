@@ -185,7 +185,8 @@ func (bump *BUMP) CalculateRootGivenTxid(txid string) (string, error) {
 	var index uint64
 	txidFound := false
 	for _, l := range bump.Path[0] {
-		if *l.Hash == txid {
+		// l.Hash is nil for duplicate leaves.
+		if l.Hash != nil && *l.Hash == txid {
 			txidFound = true
 			index = *l.Offset
 			break
@@ -248,7 +249,9 @@ func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.H
 		return bump, nil
 	}
 
-	oddTxIndex := false
+	// Only the parity of the leaf-level index decides on which side of its
+	// sibling the txid leaf belongs in Path[0].
+	oddTxIndex := txIndex&1 == 1
 
 	numOfTxids := (len(merkleTree) + 1) / 2
 	treeHeight := int(math.Log2(float64(numOfTxids)))
@@ -263,7 +266,6 @@ func NewBUMPFromMerkleTreeAndIndex(blockHeight uint64, merkleTree []*chainhash.H
 			offset++
 		} else {
 			// we need to use the hash to the left.
-			oddTxIndex = true
 			offset--
 		}
 		thisLeaf := leaf{Offset: &offset}
