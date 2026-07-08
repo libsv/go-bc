@@ -247,9 +247,51 @@ func TestNewBUMPFromMerkleTreeEverySizeAndIndex(t *testing.T) {
 			bump, err := NewBUMPFromMerkleTreeAndIndex(fakeMadeUpNum, merkles, uint64(txIndex))
 			require.NoErrorf(t, err, "blockSize=%d txIndex=%d", blockSize, txIndex)
 
+			// CalculateRootGivenTxid looks leaves up by offset, so it cannot
+			// detect misordering; assert the order explicitly.
+			for height, leaves := range bump.Path {
+				for i := 1; i < len(leaves); i++ {
+					require.Lessf(t, *leaves[i-1].Offset, *leaves[i].Offset,
+						"blockSize=%d txIndex=%d: leaves at height %d not ordered by offset", blockSize, txIndex, height)
+				}
+			}
+
 			root, err := bump.CalculateRootGivenTxid(txid)
 			require.NoErrorf(t, err, "blockSize=%d txIndex=%d", blockSize, txIndex)
 			require.Equalf(t, expectedRoot, root, "blockSize=%d txIndex=%d", blockSize, txIndex)
 		}
 	}
+}
+
+// TestNewBUMPFromMerkleTreeTxidLeafOrder pins the exact shape of the ordering
+// bug: for the last transaction at an even index of an odd-sized block, the
+// txid leaf must come first in Path[0], before its duplicate padding sibling.
+func TestNewBUMPFromMerkleTreeTxidLeafOrder(t *testing.T) {
+	const blockSize = 11
+	const txIndex = uint64(10)
+
+	chainHashBlock := make([]*chainhash.Hash, 0, blockSize)
+	for i := 0; i < blockSize; i++ {
+		var hashBytes [32]byte
+		hashBytes[0] = byte(i + 1)
+		hash, err := chainhash.NewHash(hashBytes[:])
+		require.NoError(t, err)
+		chainHashBlock = append(chainHashBlock, hash)
+	}
+	merkles := BuildMerkleTreeStoreChainHash(chainHashBlock)
+
+	bump, err := NewBUMPFromMerkleTreeAndIndex(fakeMadeUpNum, merkles, txIndex)
+	require.NoError(t, err)
+
+	levelZero := bump.Path[0]
+	require.Len(t, levelZero, 2)
+
+	require.NotNil(t, levelZero[0].Txid)
+	require.True(t, *levelZero[0].Txid)
+	require.Equal(t, txIndex, *levelZero[0].Offset)
+	require.Equal(t, chainHashBlock[txIndex].String(), *levelZero[0].Hash)
+
+	require.NotNil(t, levelZero[1].Duplicate)
+	require.True(t, *levelZero[1].Duplicate)
+	require.Equal(t, txIndex+1, *levelZero[1].Offset)
 }
