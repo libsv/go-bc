@@ -62,7 +62,7 @@ pull_request_rules:
     actions:
       assign:
         add_users:
-          - "{{author}}"
+          - "{{ author }}"
 
   # ===============================================================================
   # ALERTS
@@ -196,12 +196,6 @@ pull_request_rules:
   # ===============================================================================
   # BRANCHES
   # ===============================================================================
-
-  - name: Delete head branch after merge
-    conditions:
-      - merged
-    actions:
-      delete_head_branch:
 
   #- name: automatic update for PR marked as “Ready-to-Go“
   #  conditions:
